@@ -1,0 +1,2 @@
+include ':app', ':auth', ':avs', ':AlexaAndroid1'
+project(':AlexaAndroid1').projectDir = new File('AlexaAndroid')

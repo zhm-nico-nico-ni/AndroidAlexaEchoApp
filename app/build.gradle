@@ -1,0 +1,79 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion Integer.parseInt(project.COMPILE_SDK_VERSION)
+    buildToolsVersion project.BUILD_TOOLS_VERSION
+//    compileOptions {
+//        sourceCompatibility JavaVersion.VERSION_1_8
+//        targetCompatibility JavaVersion.VERSION_1_8
+//    }
+    defaultConfig {
+        minSdkVersion Integer.parseInt(project.MIN_SDK_VERSION)
+        targetSdkVersion Integer.parseInt(project.TARGET_SDK_VERSION)
+//        applicationId "com.ggec.voice.assistservice"
+        applicationId project.APPLICATION_ID
+        versionCode 1
+        versionName "1.0"
+
+        buildConfigField "String", "PRODUCT_ID", "\"" + project.PRODUCT_ID + "\""
+        buildConfigField "String", "APP_PACKAGE_NAME", "\"" + project.APPLICATION_ID + "\""
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags ""
+            }
+        }
+//        jackOptions {
+//            enabled true
+//        }
+        packagingOptions {
+            exclude 'META-INF/DEPENDENCIES'
+            exclude 'META-INF/NOTICE'
+            exclude 'META-INF/LICENSE'
+            exclude 'META-INF/LICENSE.txt'
+            exclude 'META-INF/NOTICE.txt'
+            exclude 'META-INF/ASL2.0'
+        }
+    }
+
+    signingConfigs {
+        lwa {
+            storeFile file('e:/zhouhaomingkeystore.jks')
+            keyAlias 'myandroidkeystore'
+            keyPassword 'qwatse123456'
+            storePassword 'qwatse123456'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.lwa
+        }
+
+        release {
+            signingConfig signingConfigs.lwa
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    testCompile 'junit:junit:4.12'
+    compile project(':auth')
+    //    compile 'com.squareup.okhttp3:okhttp:3.6.0'
+    //    compile 'com.intellij:annotations:+@jar'
+    //    compile 'com.google.code.gson:gson:2.7'
+    compile project(':AlexaAndroid1')
+}
