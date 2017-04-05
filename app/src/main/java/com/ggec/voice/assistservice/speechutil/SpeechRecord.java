@@ -18,11 +18,13 @@ import com.ggec.voice.assistservice.log.Log;
 public class SpeechRecord extends AudioRecord {
     private String TAG = "SpeechRecord";
 
+    private final static int AUDIO_SOURCE = MediaRecorder.AudioSource.DEFAULT;
+
     public SpeechRecord(int sampleRateInHz, int bufferSizeInBytes)
             throws IllegalArgumentException {
 
         this(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                AUDIO_SOURCE,
                 sampleRateInHz,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
@@ -38,7 +40,7 @@ public class SpeechRecord extends AudioRecord {
             throws IllegalArgumentException {
 
         this(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                AUDIO_SOURCE,
                 sampleRateInHz,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,

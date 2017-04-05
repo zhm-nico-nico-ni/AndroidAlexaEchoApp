@@ -81,13 +81,13 @@ public class ClientUtil {
                 }
             });
             mClient = client
-                    .readTimeout(15000, TimeUnit.MILLISECONDS)
-                    .writeTimeout(15000, TimeUnit.MILLISECONDS)
-                    .connectTimeout(15000, TimeUnit.MILLISECONDS)
-                    .retryOnConnectionFailure(false)
+                    .readTimeout(8000, TimeUnit.MILLISECONDS)
+                    .writeTimeout(8000, TimeUnit.MILLISECONDS)
+                    .connectTimeout(12000, TimeUnit.MILLISECONDS)
+                    .retryOnConnectionFailure(true)
 
                     .addNetworkInterceptor(new StethoInterceptor())
-//                    .addInterceptor(new RetryInterceptor())
+                    .addInterceptor(new RetryInterceptor())
                     .build();
             Log.i("zhm", "new client");
         }

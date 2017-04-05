@@ -2,6 +2,7 @@ package com.ggec.voice.assistservice;
 
 import android.app.Application;
 import android.content.Context;
+import android.support.multidex.MultiDex;
 
 import com.facebook.stetho.Stetho;
 
@@ -18,6 +19,7 @@ public class MyApplication extends Application {
         sContext = this;
 
         Stetho.initializeWithDefaults(this);
+        MultiDex.install(this);
     }
 
     public static Context getContext(){

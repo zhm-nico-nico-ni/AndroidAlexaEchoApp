@@ -25,7 +25,7 @@ public class SpeechSendAudio extends SpeechSendEvent {
     private final static String TAG = "SpeechSendAudio";
 
     long start = 0;
-    DataRequestBody requestBody;
+    RequestBody requestBody;
 
     /**
      * Post an audio byte[] to the Alexa Speech Recognizer API
@@ -36,7 +36,7 @@ public class SpeechSendAudio extends SpeechSendEvent {
      * @param callback our event callbacks
      * @throws IOException
      */
-    public void sendAudio(final String url, final String accessToken, @NotNull DataRequestBody requestBody,
+    public void sendAudio(final String url, final String accessToken, @NotNull RequestBody requestBody,
                           final AsyncCallback<AvsResponse, Exception> callback) throws IOException {
         this.requestBody = requestBody;
         if(callback != null){

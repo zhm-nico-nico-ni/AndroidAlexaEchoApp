@@ -126,6 +126,33 @@ public class SampleLoginWithAmazonActivity extends Activity {
 
             }
         });
+        findViewById(R.id.btn_start_record_t).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent it = new Intent(v.getContext(), BgProcessIntentService.class);
+                BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(2);
+                it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+                startService(it);
+
+//                cmd.type = 2;
+//                startService(it);
+
+            }
+        });
+
+        findViewById(R.id.btn_start_record_file).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent it = new Intent(v.getContext(), BgProcessIntentService.class);
+                BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(3);
+                it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+                startService(it);
+
+//                cmd.type = 2;
+//                startService(it);
+
+            }
+        });
     }
 
 

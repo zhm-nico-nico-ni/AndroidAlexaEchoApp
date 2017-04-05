@@ -59,7 +59,7 @@ public abstract class AbstractAudioRecorder implements AudioRecorder {
         mBuffer = new byte[framePeriod * RESOLUTION_IN_BYTES * CHANNELS];
     }
 
-    public int getBufferSize() {
+    protected int getBufferSize() {
         return getBufferSize(mSampleRate);
     }
 
@@ -118,20 +118,30 @@ public abstract class AbstractAudioRecorder implements AudioRecorder {
         return 0;
     }
 
+    float tempFloatBuffer[] = new float[3];
+    int tempIndex = 0;
+    int totalReadBytes = 0;
+    byte totalByteBuffer[] = new byte[60 * 44100 * 2];
     /**
      * Copy data from the given recorder into the given buffer, and append to the complete recording.
      * public int read (byte[] audioData, int offsetInBytes, int sizeInBytes)
      */
     protected int read(SpeechRecord recorder, byte[] buffer) {
         int len = buffer.length;
-        int numOfBytes = recorder.read(buffer, 0, len);
-        int status = getStatus(numOfBytes, len);
-        if (status == 0 && numOfBytes >= 0) {
+        int numOfReadBytes = recorder.read(buffer, 0, len);
+        int status = getStatus(numOfReadBytes, len);
+        if (status == 0 && numOfReadBytes >= 0) {
             // arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
             // numOfBytes <= len, typically == len, but at the end of the recording can be < len.
-            System.arraycopy(buffer, 0, mRecording, mRecordedLength, numOfBytes);
+            System.arraycopy(buffer, 0, mRecording, mRecordedLength, numOfReadBytes);
             mRecordedLength += len;
         }
+
+
+
+        //////////////
+
+        /////////////
         return status;
     }
 
@@ -201,13 +211,17 @@ public abstract class AbstractAudioRecorder implements AudioRecorder {
         return mRecordedLength;
     }
 
+    public boolean isAllStop(){
+        return getState() == State.ERROR
+                || getState() == State.STOPPED && mConsumedLength >= mRecordedLength;
+    }
 
     /**
      * @return <code>true</code> iff a speech-ending pause has occurred at the end of the recorded data
      */
     public boolean isPausing() {
         double pauseScore = getPauseScore();
-        Log.i(TAG, "Pause score: " + pauseScore);
+//        Log.i(TAG, "Pause score: " + pauseScore);
         return pauseScore > 7;
     }
 
@@ -354,7 +368,7 @@ public abstract class AbstractAudioRecorder implements AudioRecorder {
         Log.e(TAG, msg);
     }
 
-    private int getSpeechRecordState() {
+    public int getSpeechRecordState() {
         if (mRecorder == null) {
             return SpeechRecord.STATE_UNINITIALIZED;
         }

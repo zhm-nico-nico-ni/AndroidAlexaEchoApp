@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
 
+import okhttp3.RequestBody;
 import okio.BufferedSink;
 
 /**
@@ -678,7 +679,7 @@ public class AlexaManager {
      * @param requestBody a request body that incorporates either a static byte[] write to the BufferedSink or a streamed, managed byte[] data source
      * @param callback    the state change callback
      */
-    public void sendAudioRequest(final DataRequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+    public void sendAudioRequest(final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
