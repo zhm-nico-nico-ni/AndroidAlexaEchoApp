@@ -6,5 +6,5 @@ package com.ggec.voice.assistservice.audio;
 
 public interface IMyVoiceRecordListener {
 
-    void recordFinish(boolean recordSuccess, String filePath);
+    void recordFinish(boolean recordSuccess, String filePath, long actuallyLong);
 }

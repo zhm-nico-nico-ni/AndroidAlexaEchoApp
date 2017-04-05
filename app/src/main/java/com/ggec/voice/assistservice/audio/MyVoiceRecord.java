@@ -42,7 +42,7 @@ public class MyVoiceRecord extends Thread {
     private final AudioRecord audioRecorder;
     private final int bufferSizeInBytes;
     private final SilenceDetector continuingSilenceDetector;
-    private boolean mIsSlient;
+    private boolean mIsSilent;
     private State mState;
     private IMyVoiceRecordListener mListener;
 
@@ -93,7 +93,8 @@ public class MyVoiceRecord extends Thread {
 
         mState = new State();
         mState.initTime = SystemClock.elapsedRealtime();
-        mIsSlient = true;
+        mIsSilent = true;
+
         long currentDataPointer = 0;
         try {
             FileOutputStream stream = new FileOutputStream(mFilePath);
@@ -115,16 +116,16 @@ public class MyVoiceRecord extends Thread {
                         Log.d(TAG, "begin ");
                         mState.beginSpeakTime = currentTime;
                     } else {
-                        if (isSilent != mIsSlient) {
+                        if (isSilent != mIsSilent) {
 
-                            if (!mIsSlient) {
+                            if (!mIsSilent) {
                                 mState.lastSilentTime = currentTime;
                                 mState.lastSilentRecordIndex = currentDataPointer;
                                 Log.d(TAG, "record silent time :" + currentTime);
                             } else {
                                 Log.d(TAG, "current is " + isSilent);
                             }
-                            mIsSlient = isSilent;
+                            mIsSilent = isSilent;
                         }
                     }
 
@@ -141,23 +142,25 @@ public class MyVoiceRecord extends Thread {
                     }
 
                     if (mState.beginSpeakTime > 0) {
-                        //write file
                         try {
+                            //write file
                             stream.write(audioBuffer, 0, numberOfReadFloat);
                             currentDataPointer += numberOfReadFloat;
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+
                     }
                 }
             }
 
+            Log.d("zhm", " important !!!!!!!!!!!!!!!! size:" + currentDataPointer +" act:"+mState.lastSilentRecordIndex);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             interrupt();
         }
-        stopRecord();
+        stopRecord(mState.lastSilentRecordIndex);
     }
 
     @Override
@@ -169,16 +172,16 @@ public class MyVoiceRecord extends Thread {
         }
     }
 
-    private void stopRecord() {
+    private void stopRecord(long actuallyLong) {
         audioRecorder.release();
         Log.i(TAG, " record finish, success:" + (recordState != RecordState.interrupt)
                 + " file:" + mFilePath + " state:" + mState.toString());
         boolean success = recordState != RecordState.interrupt;
-        if (success){
-            mListener.recordFinish(true, mFilePath);
+        if (success) {
+            mListener.recordFinish(true, mFilePath, actuallyLong);
         } else {
             new File(mFilePath).delete();
-            mListener.recordFinish(false, "");
+            mListener.recordFinish(false, "", 0);
         }
     }
 
@@ -187,6 +190,26 @@ public class MyVoiceRecord extends Thread {
         recordState = RecordState.interrupt;
         super.interrupt();
     }
+
+//    private int appendByteArray(byte[] left, int appendIndex, byte[] right, int rightOffset, int rightAvail) {
+//        if (appendIndex + rightAvail > left.length) {
+//            throw new IndexOutOfBoundsException("not enough! left:" + left.length + ", max is " + appendIndex + rightAvail);
+//        }
+//        int i = appendIndex;
+//        if (rightAvail > 0) {
+//            int rightIndex = rightOffset;
+//            int maxRightIndex = rightOffset + rightAvail;
+//
+//            for (; i < left.length; i++) {
+//                left[i] = right[rightIndex];
+//                rightIndex++;
+//                if (rightIndex >= maxRightIndex) {
+//                    break;
+//                }
+//            }
+//        }
+//        return i;
+//    }
 
     class State {
         long initTime;
@@ -197,8 +220,12 @@ public class MyVoiceRecord extends Thread {
         @Override
         public String toString() {
             long now = SystemClock.elapsedRealtime();
-            return "event duration:" + (now - initTime)
-                    + " , speak duration:" + (now - beginSpeakTime);
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("event duration:").append(now - initTime);
+            if (beginSpeakTime > 0) {
+                stringBuilder.append(" , speak duration:").append(now - beginSpeakTime);
+            }
+            return stringBuilder.toString();
         }
     }
 }

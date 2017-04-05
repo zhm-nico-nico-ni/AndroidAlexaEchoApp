@@ -114,10 +114,10 @@ public class BgProcessIntentService extends IntentService {
                 }
                 myVoiceRecord = new MyVoiceRecord(MyVoiceRecord.DEFAULT_SILENT_THRESHOLD, new IMyVoiceRecordListener() {
                     @Override
-                    public void recordFinish(boolean recordSuccess, String path) {
+                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
                         if(recordSuccess){
                             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                            alexaManager.sendAudioRequest(FileDataRequestBody.createRequestBody(path), getFileCallBack(path));
+                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack(path));
                         } else {
                             playError();
                         }

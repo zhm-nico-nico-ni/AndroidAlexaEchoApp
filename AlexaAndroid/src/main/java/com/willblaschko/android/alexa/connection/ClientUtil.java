@@ -87,7 +87,7 @@ public class ClientUtil {
                     .retryOnConnectionFailure(true)
 
                     .addNetworkInterceptor(new StethoInterceptor())
-                    .addInterceptor(new RetryInterceptor())
+//                    .addInterceptor(new RetryInterceptor())
                     .build();
             Log.i("zhm", "new client");
         }
