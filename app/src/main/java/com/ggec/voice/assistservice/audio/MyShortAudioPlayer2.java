@@ -32,11 +32,13 @@ public class MyShortAudioPlayer2 implements MediaPlayer.OnCompletionListener {
 
     @Override
     public void onCompletion(final MediaPlayer mp) {
+        mp.stop();
+        mp.release();
         sMainHandler.post(new Runnable() {
             @Override
             public void run() {
 //                Log.d("TAGG", "onCompleteeee");
-                mp.release();
+
                 if(mOnCompleteListener != null){
                     mOnCompleteListener.onCompletion(mp);
                 }

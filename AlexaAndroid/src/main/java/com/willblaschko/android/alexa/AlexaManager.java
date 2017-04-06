@@ -21,6 +21,7 @@ import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.GenericSendEvent;
+import com.willblaschko.android.alexa.interfaces.PingSendEvent;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendText;
@@ -247,6 +248,7 @@ public class AlexaManager {
                                 protected void onPostExecute(Boolean canceled) {
                                     super.onPostExecute(canceled);
                                     openDownchannel = null;
+                                    Log.d(TAG, "sendOpenDownchannelDirective");
                                     if (!canceled) {
                                         try {
                                             new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
@@ -293,7 +295,11 @@ public class AlexaManager {
         sendEvent(Event.getSynchronizeStateEvent(), callback);
     }
 
-    public boolean hasOpenDownchannel() {
+    public void sendSynchronizeStateEvent2(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+        sendEvent(Event.createSystemSynchronizeStateEvent(), callback);
+    }
+
+    public boolean hasOpenDownchannel() { //FIXME 这个不需要检查连接是否close的吗？
         return openDownchannel != null;
     }
 
@@ -905,6 +911,48 @@ public class AlexaManager {
         });
     }
 
+    public void sendPingEvent() {
+        //check if the user is already logged in
+        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+
+            @Override
+            public void success(Boolean result) {
+                if (result) {
+                    //if the user is logged in
+
+                    //set our URL
+                    final String url = getPingUrl();
+                    //get our access token
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                        @Override
+                        public void onSuccess(final String token) {
+                            //do this off the main thread
+                            new AsyncTask<Void, Void, AvsResponse>() {
+                                @Override
+                                protected AvsResponse doInBackground(Void... params) {
+                                    return new PingSendEvent(url, token
+                                            , new AsyncEventHandler(AlexaManager.this, null))
+                                                .doWork();
+                                }
+
+                                @Override
+                                protected void onPostExecute(AvsResponse avsResponse) {
+                                    super.onPostExecute(avsResponse);
+                                }
+                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                        }
+
+                        @Override
+                        public void onFailure(Throwable e) {
+
+                        }
+                    });
+                }
+            }
+
+        });
+    }
+
     private boolean isAudioPlayItem(AvsItem item) {
         return item != null && (item instanceof AvsPlayAudioItem || !(item instanceof AvsSpeakItem));
     }
@@ -926,6 +974,14 @@ public class AlexaManager {
                 .append(mContext.getString(R.string.alexa_api_version))
                 .append("/")
                 .append("directives")
+                .toString();
+    }
+
+    private String getPingUrl() {
+        return new StringBuilder()
+                .append(mContext.getString(R.string.alexa_api))
+                .append("/")
+                .append("ping")
                 .toString();
     }
 

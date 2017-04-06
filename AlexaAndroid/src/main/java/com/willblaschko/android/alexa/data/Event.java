@@ -1,6 +1,8 @@
 package com.willblaschko.android.alexa.data;
 
 import com.google.gson.Gson;
+import com.willblaschko.android.alexa.data.message.Payload;
+import com.willblaschko.android.alexa.data.message.PayloadFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,7 @@ public class Event {
     }
 
     public Payload getPayload() {
-        return payload;
+        return  payload;
     }
 
     public void setPayload(Payload payload) {
@@ -76,25 +78,6 @@ public class Event {
         public void setDialogRequestId(String dialogRequestId) {
             this.dialogRequestId = dialogRequestId;
         }
-    }
-
-    public static class Payload{
-        String token;
-        String profile;
-        String format;
-        boolean muted;
-        long volume;
-        long offsetInMilliseconds;
-
-        public String getProfile() {
-            return profile;
-        }
-
-        public String getFormat() {
-            return format;
-        }
-
-
     }
 
     public static class EventWrapper{
@@ -168,32 +151,12 @@ public class Event {
             return this;
         }
 
-        public Builder setPayloadProfile(String profile){
-            payload.profile = profile;
-            return this;
-        }
-        public Builder setPayloadFormat(String format){
-            payload.format = format;
+        public Builder setPayload(Payload payload){
+            this.payload = payload;
+            event.setPayload(payload);
             return this;
         }
 
-        public Builder setPayloadMuted(boolean muted){
-            payload.muted = muted;
-            return this;
-        }
-
-        public Builder setPayloadVolume(long volume){
-            payload.volume = volume;
-            return this;
-        }
-        public Builder setPayloadToken(String token){
-            payload.token = token;
-            return this;
-        }
-        public Builder setPlayloadOffsetInMilliseconds(long offsetInMilliseconds){
-            payload.offsetInMilliseconds = offsetInMilliseconds;
-            return this;
-        }
     }
 
     public static String getSpeechRecognizerEvent(){
@@ -202,8 +165,10 @@ public class Event {
                 .setHeaderName("Recognize")
                 .setHeaderMessageId(getUuid())
                 .setHeaderDialogRequestId("dialogRequest-321")
-                .setPayloadFormat("AUDIO_L16_RATE_16000_CHANNELS_1")
-                .setPayloadProfile("NEAR_FIELD");
+                .setPayload(PayloadFactory
+                        .createSpeechRecognizerPayload("AUDIO_L16_RATE_16000_CHANNELS_1"
+                                ,"NEAR_FIELD"))
+                ;
         return builder.toJson();
     }
 
@@ -212,8 +177,8 @@ public class Event {
         builder.setHeaderNamespace("Speaker")
                 .setHeaderName("VolumeChanged")
                 .setHeaderMessageId(getUuid())
-                .setPayloadVolume(volume)
-                .setPayloadMuted(isMute);
+                .setPayload(PayloadFactory.createVolumeChangedPayload(isMute, volume))
+                ;
         return builder.toJson();
     }
     public static String getMuteEvent(boolean isMute){
@@ -221,7 +186,7 @@ public class Event {
         builder.setHeaderNamespace("Speaker")
                 .setHeaderName("VolumeChanged")
                 .setHeaderMessageId(getUuid())
-                .setPayloadMuted(isMute);
+                .setPayload(PayloadFactory.createSetMutePayload(isMute));
         return builder.toJson();
     }
 
@@ -238,8 +203,9 @@ public class Event {
         builder.setHeaderNamespace("SpeechSynthesizer")
                 .setHeaderName("PlaybackNearlyFinished")
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token)
-                .setPlayloadOffsetInMilliseconds(offsetInMilliseconds);
+                .setPayload(PayloadFactory
+                        .createAudioPlayerPayload(token, offsetInMilliseconds))
+                ;
         return builder.toJson();
     }
 
@@ -248,8 +214,10 @@ public class Event {
         builder.setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackNearlyFinished")
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token)
-                .setPlayloadOffsetInMilliseconds(offsetInMilliseconds);
+                .setPayload(PayloadFactory
+                        .createAudioPlayerPayload(token, offsetInMilliseconds))
+        ;
+
         return builder.toJson();
     }
 
@@ -290,7 +258,7 @@ public class Event {
         builder.setHeaderNamespace("Alerts")
                 .setHeaderName(type)
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token);
+                .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
     }
 
@@ -299,7 +267,7 @@ public class Event {
         builder.setHeaderNamespace("SpeechSynthesizer")
                 .setHeaderName("SpeechStarted")
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token);
+                .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
     }
 
@@ -308,7 +276,7 @@ public class Event {
         builder.setHeaderNamespace("SpeechSynthesizer")
                 .setHeaderName("SpeechFinished")
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token);
+                .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
     }
 
@@ -318,7 +286,7 @@ public class Event {
         builder.setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackStarted")
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token);
+                .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
     }
 
@@ -327,7 +295,7 @@ public class Event {
         builder.setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackFinished")
                 .setHeaderMessageId(getUuid())
-                .setPayloadToken(token);
+                .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
     }
 
@@ -337,6 +305,46 @@ public class Event {
         builder.setHeaderNamespace("System")
                 .setHeaderName("SynchronizeState")
                 .setHeaderMessageId(getUuid());
+        return builder.toJson();
+    }
+
+    public static String createSystemSynchronizeStateEvent(){
+        List<Event> list = new ArrayList<>();
+        String token = "";
+
+        Builder playbackEventBuilder = new Builder()
+                .setHeaderNamespace("AudioPlayer")
+                .setHeaderName("PlaybackState")
+                .setPayload(PayloadFactory.createPlaybackStatePayload(token,0, "IDLE"))
+                ;
+        list.add(playbackEventBuilder.build().event);
+
+        Builder speechSynthesizerEventBuilder = new Builder()
+                .setHeaderNamespace("SpeechSynthesizer")
+                .setHeaderName("SpeechState")
+                .setPayload(PayloadFactory.createSpeechStatePayload(token,0, "FINISHED"))
+               ;
+        list.add(speechSynthesizerEventBuilder.build().event);
+
+        Builder alertsEventBuilder = new Builder()
+                .setHeaderNamespace("Alerts")
+                .setHeaderName("AlertsState")
+                .setPayload(PayloadFactory.createAlertsStatePayload());
+        list.add(alertsEventBuilder.build().event);
+
+        Builder speakerEventBuilder = new Builder()
+                .setHeaderNamespace("Speaker")
+                .setHeaderName("VolumeState")
+                .setPayload(PayloadFactory.createVolumeStatePayload(50, false));
+        list.add(speakerEventBuilder.build().event);
+
+        Builder builder = new Builder();
+        builder.setHeaderNamespace("System")
+                .setHeaderName("SynchronizeState")
+                .setHeaderMessageId(getUuid())
+                .setContext(list)
+        ;
+
         return builder.toJson();
     }
 

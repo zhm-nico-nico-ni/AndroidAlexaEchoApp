@@ -1,5 +1,7 @@
 package com.willblaschko.android.alexa.interfaces.system;
 
+import android.util.Log;
+
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.connection.ClientUtil;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -51,7 +53,7 @@ public class OpenDownchannel extends SendEvent {
 
         final Request request = new Request.Builder()
                 .url(url)
-                .addHeader("Connection", "close")
+//                .addHeader("Connection", "close")
                 .addHeader("Authorization", "Bearer " + accessToken)
                 .build();
 
@@ -62,14 +64,16 @@ public class OpenDownchannel extends SendEvent {
             final String boundary = getBoundary(response);
             BufferedSource source = response.body().source();
             Buffer buffer = new Buffer();
+            Log.d(TAG, "on response 0 :"+boundary);
             while (!source.exhausted()) {
+                Log.d(TAG, "on response 1 ");
                 source.read(buffer, 8192);
                 AvsResponse val = new AvsResponse();
 
                 try {
                     val = ResponseParser.parseResponse(buffer.inputStream(), boundary, true);
                 } catch (Exception exp) {
-                    exp.printStackTrace();
+                    Log.e(TAG, "on response parseResponse error: " + exp.getMessage(), exp);
                 }
 
                 if (callback != null) {
@@ -82,6 +86,7 @@ public class OpenDownchannel extends SendEvent {
             if (response != null) {
                 response.close();
             }
+            Log.d(TAG, "on response 5");
         }
 
         return currentCall != null && currentCall.isCanceled();

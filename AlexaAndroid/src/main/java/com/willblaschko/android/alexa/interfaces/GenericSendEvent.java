@@ -32,7 +32,7 @@ public class GenericSendEvent extends SendEvent{
             } else {
                 completePost();
             }
-            Log.i(TAG, "Event sent");
+            Log.i(TAG, "Event sent:"+event);
         } catch (IOException | AvsException e) {
             onError(callback, e);
         }

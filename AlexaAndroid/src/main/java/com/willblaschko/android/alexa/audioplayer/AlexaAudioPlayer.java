@@ -178,7 +178,7 @@ public class AlexaAudioPlayer {
         if(!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")){
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
             try {
-                AssetFileDescriptor afd = mContext.getAssets().openFd("shhh.mp3");
+                AssetFileDescriptor afd = mContext.getAssets().openFd("shhh.mp3");//TODO
                 getMediaPlayer().setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
             } catch (IOException e) {
                 e.printStackTrace();

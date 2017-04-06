@@ -96,9 +96,12 @@ public abstract class SendEvent {
 
         try {
             Response response = currentCall.execute();
-            Log.i(TAG, "response:" +response.code() + "  "+ response.message());
+            int statusCode = response.code();
+            Log.i(TAG, "response:" + statusCode + "  "+ response.message());
+            Log.i(TAG, "Response headers: {}" + response.headers().toString());
+
             if(response.code() == HttpURLConnection.HTTP_NO_CONTENT){
-                Log.w(TAG, "Received a 204 response code from Amazon, is this expected?");
+                Log.w(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
             }
 
             final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? new AvsResponse() :
@@ -108,12 +111,14 @@ public abstract class SendEvent {
 
             return val;
         } catch (IOException exp) {
-            Log.w(TAG, "eee ", exp);
+            Log.w(TAG, "parseResponse fail ", exp);
             if (!currentCall.isCanceled()) {
                 return new AvsResponse();
+            } else {
+                throw exp;
             }
         }
-        return null;
+//        return null;
     }
 
     protected String getBoundary(Response response) throws IOException {
