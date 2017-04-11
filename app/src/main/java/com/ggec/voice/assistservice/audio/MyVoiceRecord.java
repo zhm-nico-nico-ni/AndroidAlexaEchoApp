@@ -107,7 +107,7 @@ public class MyVoiceRecord extends Thread {
                 if (numberOfReadFloat > 0) {
                     TarsosDSPAudioFloatConverter
                             .getConverter(tarsosDSPAudioFormat)
-                            .toFloatArray(audioBuffer, tempFloatBuffer, numberOfReadFloat / 2);
+                            .toFloatArray(audioBuffer, tempFloatBuffer, numberOfReadFloat / 4);
 
                     boolean isSilent = continuingSilenceDetector.isSilence(tempFloatBuffer);
                     long currentTime = SystemClock.elapsedRealtime();
