@@ -7,6 +7,8 @@ import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
+import java.util.UUID;
+
 /**
  * A collection of utility functions.
  *
@@ -41,5 +43,9 @@ public class Util {
             mPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         }
         return mPreferences;
+    }
+
+    public static String getUuid(){
+        return UUID.randomUUID().toString();
     }
 }

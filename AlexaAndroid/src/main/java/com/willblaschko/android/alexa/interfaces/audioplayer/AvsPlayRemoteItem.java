@@ -15,8 +15,8 @@ public class AvsPlayRemoteItem extends AvsItem {
     private String mStreamId;
     private long mStartOffset;
 
-    public AvsPlayRemoteItem(String token, String url, long startOffset) {
-        super(token);
+    public AvsPlayRemoteItem(String token, String url, long startOffset,String messageID) {
+        super(token,messageID);
         mUrl = url;
         mStartOffset = (startOffset < 0) ? 0 : startOffset;
     }

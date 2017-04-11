@@ -4,12 +4,17 @@ import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.PowerManager;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.willblaschko.android.alexa.BuildConfig;
+import com.willblaschko.android.alexa.R;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
@@ -103,6 +108,7 @@ public class AlexaAudioPlayer {
             mMediaPlayer.setOnPreparedListener(mPreparedListener);
             mMediaPlayer.setOnErrorListener(mErrorListener);
         }
+
         return mMediaPlayer;
     }
 
@@ -157,15 +163,20 @@ public class AlexaAudioPlayer {
         play(item);
     }
 
+    public void playItem(AvsAlertPlayItem item) {
+        play(item);
+    }
+
     /**
      * Request our MediaPlayer to play an item, if it's an AvsPlayRemoteItem (url, usually), we set that url as our data source for the MediaPlayer
      * if it's an AvsSpeakItem, then we write the raw audio to a file and then read it back using the MediaPlayer
      * @param item
      */
-    private void play(AvsItem item){
+    private void play(@NonNull AvsItem item){
         if(isPlaying()){
             Log.w(TAG, "Already playing an item, did you mean to play another?");
         }
+
         mItem = item;
         if(getMediaPlayer().isPlaying()){
             //if we're playing, stop playing before we continue
@@ -174,8 +185,10 @@ public class AlexaAudioPlayer {
 
         //reset our player
         getMediaPlayer().reset();
+        getMediaPlayer().setLooping(false);
 
         if(!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")){
+            Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
             try {
                 AssetFileDescriptor afd = mContext.getAssets().openFd("shhh.mp3");//TODO
@@ -232,7 +245,20 @@ public class AlexaAudioPlayer {
                 //bubble up our error
                 bubbleUpError(e);
             }
-
+        } else if(mItem instanceof AvsAlertPlayItem){
+//            AvsAlertPlayItem playItem = (AvsAlertPlayItem) item;
+            //write out our raw audio data to a file
+            try {
+                //play our newly-written file
+                Uri path = Uri.parse("android.resource://"+ BuildConfig.APP_PACKAGE_NAME+ "/"+R.raw.alarm);
+                MediaPlayer mp = getMediaPlayer();
+                mp.setLooping(true);
+                mp.setDataSource(mContext, path);
+            } catch (IOException e) {
+                e.printStackTrace();
+                //bubble up our error
+                bubbleUpError(e);
+            }
         }
         //prepare our player, this will start once prepared because of mPreparedListener
         try {
@@ -365,7 +391,7 @@ public class AlexaAudioPlayer {
                             final float percent = (float) pos / (float) mMediaPlayer.getDuration();
                             postProgress(percent);
                             try {
-                                Thread.sleep(10);
+                                Thread.sleep(50);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }

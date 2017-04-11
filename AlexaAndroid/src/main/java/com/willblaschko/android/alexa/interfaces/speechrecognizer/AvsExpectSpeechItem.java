@@ -13,12 +13,12 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
 public class AvsExpectSpeechItem extends AvsItem {
     long timeoutInMiliseconds;
 
-    public AvsExpectSpeechItem(){
-        this(null, 2000);
-    }
+//    public AvsExpectSpeechItem(){
+//        this(null, 2000,);
+//    }
 
-    public AvsExpectSpeechItem(String token, long timeoutInMiliseconds){
-        super(token);
+    public AvsExpectSpeechItem(String token, long timeoutInMiliseconds, String messageID){
+        super(token, messageID);
         this.timeoutInMiliseconds = timeoutInMiliseconds;
     }
 

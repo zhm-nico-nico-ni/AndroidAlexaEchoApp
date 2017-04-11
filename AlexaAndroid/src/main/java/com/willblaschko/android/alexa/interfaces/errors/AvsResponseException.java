@@ -10,7 +10,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
 public class AvsResponseException extends AvsItem {
     Directive directive;
     public AvsResponseException(Directive directive) {
-        super(null);
+        super(null, null);
         this.directive = directive;
     }
 

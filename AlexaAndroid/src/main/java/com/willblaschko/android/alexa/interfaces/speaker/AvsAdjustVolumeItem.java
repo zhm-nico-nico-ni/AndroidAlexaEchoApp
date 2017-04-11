@@ -17,8 +17,8 @@ public class AvsAdjustVolumeItem extends AvsItem{
      * Create a new AdjustVolume {@link com.willblaschko.android.alexa.data.Directive}
      * @param adjustment the direction and amount of adjustment (1, -1).
      */
-    public AvsAdjustVolumeItem(String token, long adjustment){
-        super(token);
+    public AvsAdjustVolumeItem(String token, long adjustment, String messageID){
+        super(token, messageID);
         this.adjustment = adjustment;
     }
 

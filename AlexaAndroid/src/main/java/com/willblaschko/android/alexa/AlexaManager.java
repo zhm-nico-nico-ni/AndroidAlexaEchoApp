@@ -5,14 +5,9 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.amazon.identity.auth.device.AuthError;
-import com.amazon.identity.auth.device.api.Listener;
-import com.amazon.identity.auth.device.api.authorization.AuthorizeResult;
-import com.amazon.identity.auth.device.api.authorization.ProfileScope;
-import com.amazon.identity.auth.device.api.authorization.Scope;
-import com.ggec.voice.auth.DefaultScope;
 import com.google.android.gms.security.ProviderInstaller;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
@@ -209,14 +204,16 @@ public class AlexaManager {
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private volatile boolean isSendingOpenDownchannelDirective;
     /**
      * Send a get {@link com.willblaschko.android.alexa.data.Directive} request to the Alexa server to open a persistent connection
      */
     public void sendOpenDownchannelDirective(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        if (openDownchannel != null) {
+        if (openDownchannel != null || isSendingOpenDownchannelDirective) {
             return;
         }
 
+        isSendingOpenDownchannelDirective = true;
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
@@ -225,6 +222,7 @@ public class AlexaManager {
                 if (result) {
                     //if the user is logged in
                     openDownchannel = new OpenDownchannel(getDirectivesUrl(), new AsyncEventHandler(AlexaManager.this, callback));
+                    isSendingOpenDownchannelDirective = false;
                     //get our access token
                     TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
                         @Override
@@ -247,6 +245,7 @@ public class AlexaManager {
                                 @Override
                                 protected void onPostExecute(Boolean canceled) {
                                     super.onPostExecute(canceled);
+                                    isSendingOpenDownchannelDirective = false;
                                     openDownchannel = null;
                                     Log.d(TAG, "sendOpenDownchannelDirective");
                                     if (!canceled) {
@@ -275,6 +274,7 @@ public class AlexaManager {
                     logIn(new ImplAuthorizationCallback<AvsResponse>(null) {
                         @Override
                         public void onSuccess() {
+                            isSendingOpenDownchannelDirective = false;
                             //call our function again
                             sendOpenDownchannelDirective(callback);
                         }
@@ -846,13 +846,14 @@ public class AlexaManager {
         if (item == null) {
             return;
         }
-        String event;
+        String event = null;
         if (isAudioPlayItem(item)) {
             event = Event.getPlaybackFinishedEvent(item.getToken());
-        } else {
+        } else if(item instanceof AvsSpeakItem) {
             event = Event.getSpeechFinishedEvent(item.getToken());
         }
-        sendEvent(event, callback);
+        if(event != null)
+            sendEvent(event, callback);
     }
 
     /**
@@ -861,7 +862,7 @@ public class AlexaManager {
      * @param event    the string JSON event
      * @param callback
      */
-    public void sendEvent(final String event, final AsyncCallback<AvsResponse, Exception> callback) {
+    public void sendEvent(@NonNull final String event, final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
@@ -954,7 +955,7 @@ public class AlexaManager {
     }
 
     private boolean isAudioPlayItem(AvsItem item) {
-        return item != null && (item instanceof AvsPlayAudioItem || !(item instanceof AvsSpeakItem));
+        return (item instanceof AvsPlayAudioItem);
     }
 
     private String getEventsUrl() {

@@ -12,6 +12,6 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  */
 public class AvsReplaceAllItem extends AvsItem {
     public AvsReplaceAllItem(String token) {
-        super(token);
+        super(token, null);
     }
 }

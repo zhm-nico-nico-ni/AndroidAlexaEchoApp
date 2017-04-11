@@ -17,8 +17,8 @@ public class AvsSetVolumeItem extends AvsItem{
      * Create a new AdjustVolume {@link com.willblaschko.android.alexa.data.Directive}
      * @param volume the requested volume, 0-100 scale (requested as 1-10 by the user)
      */
-    public AvsSetVolumeItem(String token, long volume){
-        super(token);
+    public AvsSetVolumeItem(String token, long volume, String messageID){
+        super(token, messageID);
         this.volume = volume;
     }
 

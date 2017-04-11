@@ -13,13 +13,13 @@ package com.willblaschko.android.alexa.interfaces.speechrecognizer;
  * @author will on 5/21/2016.
  */
 
-@Deprecated
-public class AvsListenItem extends AvsExpectSpeechItem {
-    public AvsListenItem(){
-        this(null, 2000);
-    }
-    public AvsListenItem(String token, long timeoutInMiliseconds) {
-        super(token, timeoutInMiliseconds);
-    }
-
-}
+//@Deprecated
+//public class AvsListenItem extends AvsExpectSpeechItem {
+//    public AvsListenItem(){
+//        this(null, 2000);
+//    }
+//    public AvsListenItem(String token, long timeoutInMiliseconds) {
+//        super(token, timeoutInMiliseconds);
+//    }
+//
+//}

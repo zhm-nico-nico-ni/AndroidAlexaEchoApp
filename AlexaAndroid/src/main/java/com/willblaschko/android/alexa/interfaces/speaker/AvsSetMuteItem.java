@@ -17,8 +17,8 @@ public class AvsSetMuteItem extends AvsItem{
      * Create a new AdjustVolume {@link com.willblaschko.android.alexa.data.Directive}
      * @param mute whether the device should be mute upon parsing the directive.
      */
-    public AvsSetMuteItem(String token, boolean mute){
-        super(token);
+    public AvsSetMuteItem(String token, boolean mute,String messageID){
+        super(token,messageID);
         this.mute = mute;
     }
 

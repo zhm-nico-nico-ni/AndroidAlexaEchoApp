@@ -12,6 +12,6 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  */
 public class AvsReplaceEnqueuedItem extends AvsItem {
     public AvsReplaceEnqueuedItem(String token) {
-        super(token);
+        super(token, null);
     }
 }

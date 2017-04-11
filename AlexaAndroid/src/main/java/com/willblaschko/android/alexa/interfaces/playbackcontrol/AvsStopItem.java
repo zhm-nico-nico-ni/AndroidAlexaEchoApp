@@ -11,7 +11,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  * @author will on 5/21/2016.
  */
 public class AvsStopItem extends AvsItem {
-    public AvsStopItem(String token) {
-        super(token);
+    public AvsStopItem(String token,String messageID) {
+        super(token,messageID);
     }
 }

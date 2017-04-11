@@ -20,8 +20,8 @@ public class AvsPlayContentItem extends AvsItem {
      * Create a new local play item
      * @param uri the local URI
      */
-    public AvsPlayContentItem(String token, Uri uri){
-        super(token);
+    public AvsPlayContentItem(String token, Uri uri,String messageID){
+        super(token,messageID);
         mUri = uri;
     }
     public Uri getUri(){

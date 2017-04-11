@@ -81,9 +81,9 @@ public class ClientUtil {
                 }
             });
             mClient = client
-                    .readTimeout(8000, TimeUnit.MILLISECONDS)
+                    .readTimeout(60, TimeUnit.MINUTES)
                     .writeTimeout(8000, TimeUnit.MILLISECONDS)
-                    .connectTimeout(12000, TimeUnit.MILLISECONDS)
+                    .connectTimeout(10000, TimeUnit.MILLISECONDS)
                     .retryOnConnectionFailure(true)
 
                     .addNetworkInterceptor(new StethoInterceptor())

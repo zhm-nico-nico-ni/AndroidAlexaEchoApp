@@ -1,16 +1,24 @@
 package com.willblaschko.android.alexa.interfaces.alerts;
 
+import com.google.gson.annotations.Expose;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * An AVS Item to handle setting alerts on the device
- *
+ * <p>
  * {@link com.willblaschko.android.alexa.data.Directive} response item type parsed so we can properly
  * deal with the incoming commands from the Alexa server.
  */
 public class AvsSetAlertItem extends AvsItem {
     private String type;
     private String scheduledTime;
+    @Expose
+    public String messageId;
+    @Expose
+    private int timeId;
 
     public static final String TIMER = "TIMER";
     public static final String ALARM = "ALARM";
@@ -18,14 +26,16 @@ public class AvsSetAlertItem extends AvsItem {
     /**
      * Create a new AVSItem directive for an alert
      *
-     * @param token the alert identifier
-     * @param type the alert type
+     * @param token         the alert identifier
+     * @param type          the alert type
      * @param scheduledTime the alert time
      */
-    public AvsSetAlertItem(String token, String type, String scheduledTime){
-        super(token);
+    public AvsSetAlertItem(String token, String type, String scheduledTime, String messageId) {
+        super(token, messageId);
         this.type = type;
         this.scheduledTime = scheduledTime;
+        this.messageId = messageId;
+        timeId = (int) (System.currentTimeMillis() & 0xFFFFFFFFL);
     }
 
     public String getScheduledTime() {
@@ -50,5 +60,45 @@ public class AvsSetAlertItem extends AvsItem {
 
     public boolean isAlarm() {
         return type.equals(ALARM);
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public int getTimeId(){
+        return timeId;
+    }
+
+    public String toJsonString(){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("type", type);
+            jsonObject.put("scheduledTime", scheduledTime);
+            jsonObject.put("token", getToken());
+            jsonObject.put("messageId", messageId);
+            jsonObject.put("timeId", timeId);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonObject.toString();
+    }
+
+    public static AvsSetAlertItem create(String json){
+        try {
+            JSONObject jsonObject = new JSONObject(json);
+            AvsSetAlertItem item = new AvsSetAlertItem(
+                    jsonObject.getString("token")
+                    ,jsonObject.getString("type")
+                    ,jsonObject.getString("scheduledTime")
+                    ,jsonObject.getString("messageId"));
+            item.timeId = jsonObject.getInt("timeId");
+
+            return item;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+
     }
 }

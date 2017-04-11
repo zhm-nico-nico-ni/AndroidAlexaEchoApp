@@ -11,7 +11,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  */
 
 public class AvsMediaPlayCommandItem extends AvsItem {
-    public AvsMediaPlayCommandItem(String token) {
-        super(token);
+    public AvsMediaPlayCommandItem(String token,String messageID) {
+        super(token,messageID);
     }
 }

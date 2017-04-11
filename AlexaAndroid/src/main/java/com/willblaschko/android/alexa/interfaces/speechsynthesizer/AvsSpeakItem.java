@@ -19,13 +19,13 @@ public class AvsSpeakItem extends AvsItem {
     private String mCid;
     private byte[] mAudio;
 
-    public AvsSpeakItem(String token, String cid, ByteArrayInputStream audio) throws IOException {
-        this(token, cid, IOUtils.toByteArray(audio));
+    public AvsSpeakItem(String token, String cid, ByteArrayInputStream audio,String messageID) throws IOException {
+        this(token, cid, IOUtils.toByteArray(audio),messageID);
         audio.close();
     }
 
-    public AvsSpeakItem(String token, String cid, byte[] audio){
-        super(token);
+    public AvsSpeakItem(String token, String cid, byte[] audio,String messageID){
+        super(token,messageID);
         mCid = cid;
         mAudio = audio;
     }

@@ -6,7 +6,8 @@ import com.willblaschko.android.alexa.data.message.PayloadFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
+import static com.willblaschko.android.alexa.utility.Util.getUuid;
 
 /**
  * A catch-all Event to classify return responses from the Amazon Alexa v20160207 API
@@ -40,44 +41,6 @@ public class Event {
 
     public void setPayload(Payload payload) {
         this.payload = payload;
-    }
-
-
-    public static class Header{
-
-        String namespace;
-        String name;
-        String messageId;
-        String dialogRequestId;
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public void setNamespace(String namespace) {
-            this.namespace = namespace;
-        }
-
-        public String getMessageId() {
-            return messageId;
-        }
-
-        public String getDialogRequestId() {
-            return dialogRequestId;
-        }
-
-        public void setDialogRequestId(String dialogRequestId) {
-            this.dialogRequestId = dialogRequestId;
-        }
     }
 
     public static class EventWrapper{
@@ -166,8 +129,9 @@ public class Event {
                 .setHeaderMessageId(getUuid())
                 .setHeaderDialogRequestId("dialogRequest-321")
                 .setPayload(PayloadFactory
-                        .createSpeechRecognizerPayload("AUDIO_L16_RATE_16000_CHANNELS_1"
-                                ,"NEAR_FIELD"))
+                        .createSpeechRecognizerPayload("NEAR_FIELD",
+                                "AUDIO_L16_RATE_16000_CHANNELS_1"))
+                .setContext(getContextList())
                 ;
         return builder.toJson();
     }
@@ -308,7 +272,7 @@ public class Event {
         return builder.toJson();
     }
 
-    public static String createSystemSynchronizeStateEvent(){
+    public static List<Event> getContextList(){// TODO need send actually context
         List<Event> list = new ArrayList<>();
         String token = "";
 
@@ -323,7 +287,7 @@ public class Event {
                 .setHeaderNamespace("SpeechSynthesizer")
                 .setHeaderName("SpeechState")
                 .setPayload(PayloadFactory.createSpeechStatePayload(token,0, "FINISHED"))
-               ;
+                ;
         list.add(speechSynthesizerEventBuilder.build().event);
 
         Builder alertsEventBuilder = new Builder()
@@ -338,20 +302,21 @@ public class Event {
                 .setPayload(PayloadFactory.createVolumeStatePayload(50, false));
         list.add(speakerEventBuilder.build().event);
 
+        return list;
+    }
+
+    public static String createSystemSynchronizeStateEvent(){
+
         Builder builder = new Builder();
         builder.setHeaderNamespace("System")
                 .setHeaderName("SynchronizeState")
                 .setHeaderMessageId(getUuid())
-                .setContext(list)
-        ;
+                .setContext(getContextList());
 
         return builder.toJson();
     }
 
-    private static String getUuid(){
-        String uuid = UUID.randomUUID().toString();
-        return uuid;
-    }
+
 }
 
 

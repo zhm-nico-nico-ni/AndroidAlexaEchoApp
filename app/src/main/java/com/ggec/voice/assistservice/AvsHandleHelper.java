@@ -1,12 +1,21 @@
 package com.ggec.voice.assistservice;
 
+import android.content.Intent;
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
+import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
+import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
@@ -24,8 +33,7 @@ import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 
 /**
  * Created by ggec on 2017/3/31.
@@ -34,8 +42,9 @@ import java.util.List;
 public class AvsHandleHelper {
     private static final String TAG = "com.ggec.voice.assistservice.AvsHandleHelper";
     private static AvsHandleHelper sAvsHandleHelper;
-    private List<AvsItem> avsQueue = new ArrayList<>();
+    private volatile LinkedHashMap<String, AvsItem> avsQueue = new LinkedHashMap<>();
     private AlexaAudioPlayer audioPlayer;
+    //TODO 這裏把microphone 的控制加上
 
     private AvsHandleHelper() {
         //instantiate our audio player
@@ -58,31 +67,68 @@ public class AvsHandleHelper {
      *
      * @param response a List<AvsItem> returned from the mAlexaManager.sendTextRequest() call in sendVoiceToAlexa()
      */
-    public void handleResponse(AvsResponse response) {
+    public synchronized void handleResponse(AvsResponse response) {
         boolean checkAfter = (avsQueue.size() == 0);
         if (response != null) {
             //if we have a clear queue item in the list, we need to clear the current queue before proceeding
             //iterate backwards to avoid changing our array positions and getting all the nasty errors that come
             //from doing that
             for (int i = response.size() - 1; i >= 0; i--) {
-                if (response.get(i) instanceof AvsReplaceAllItem || response.get(i) instanceof AvsReplaceEnqueuedItem) {
-                    //clear our queue
-                    avsQueue.clear();
-                    //remove item
-                    response.remove(i);
-                }
+                addAvsItemToQueue(response.get(i));
             }
-            Log.i(TAG, "Adding " + response.size() + " items to our queue");
             if (BuildConfig.DEBUG) {
+                Log.i(TAG, "Adding " + response.size() + " items to our queue, " + " old is: " + avsQueue.size());
                 for (int i = 0; i < response.size(); i++) {
                     Log.i(TAG, "\tAdding: " + response.get(i).getToken());
                 }
             }
-            avsQueue.addAll(response);
         }
         if (checkAfter) {
             checkQueue();
         }
+    }
+
+    public void handleAvsItem(AvsItem response) {
+        boolean checkAfter = (avsQueue.size() == 0);
+        addAvsItemToQueue(response);
+        if (checkAfter) {
+            checkQueue();
+        }
+    }
+
+    private void addAvsItemToQueue(AvsItem response){
+        if(response == null) return;
+
+        if(response instanceof AvsAlertStopItem){
+            Log.d(TAG, "stop alarm right now :"+response.messageID);
+            avsQueue.remove(response.messageID);
+            audioPlayer.release();
+            checkQueue();
+            return;
+        }
+        //if we have a clear queue item in the list, we need to clear the current queue before proceeding
+        //iterate backwards to avoid changing our array positions and getting all the nasty errors that come
+        //from doing that
+        if (response instanceof AvsReplaceAllItem || response instanceof AvsReplaceEnqueuedItem) {
+            //clear our queue
+            avsQueue.clear();
+            Log.w(TAG, " handle clear queue ! AvsReplaceAllItem or AvsReplaceEnqueuedItem");
+            return;
+        }
+
+        if(TextUtils.isEmpty(response.messageID)){
+            if (response instanceof AvsResponseException) {
+                AvsResponseException exception = (AvsResponseException) response;
+                Log.e(TAG, "AvsResponseException -> " + exception.getDirective().getPayload().getCode()
+                        + ": " + exception.getDirective().getPayload().getDescription());
+            } else if(BuildConfig.DEBUG)
+                Log.e(TAG, "handleAvsItem messageID is empty! " + response.getClass());
+            return;
+        }
+        if (BuildConfig.DEBUG) {
+            Log.i(TAG, "Adding " + response + " items to our queue, " + " old is: " + avsQueue.size());
+        }
+        avsQueue.put(response.messageID, response);
     }
 
     /**
@@ -92,7 +138,7 @@ public class AvsHandleHelper {
      * We're handling the AvsReplaceAllItem in handleResponse() because it needs to clear everything currently in the queue, before
      * the new items are added to the list, it should have no function here.
      */
-    private void checkQueue() {
+    private synchronized void checkQueue() {
 
         //if we're out of things, hang up the phone and move on
         if (avsQueue.size() == 0) {
@@ -100,9 +146,10 @@ public class AvsHandleHelper {
             return;
         }
 
-        final AvsItem current = avsQueue.get(0);
+        String key = getFirstKey();
+        final AvsItem current = avsQueue.get(key);
 
-        Log.i(TAG, "Item type " + current.getClass().getName());
+        Log.d(TAG, "Item type " + current.getClass().getName());
 
         if (current instanceof AvsPlayRemoteItem) {
             //play a URL
@@ -123,101 +170,141 @@ public class AvsHandleHelper {
         } else if (current instanceof AvsStopItem) {
             //stop our play
             audioPlayer.stop();
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsReplaceAllItem) {
             //clear all items
             //mAvsItemQueue.clear();
             audioPlayer.stop();
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsReplaceEnqueuedItem) {
             //clear all items
             //mAvsItemQueue.clear();
-            avsQueue.remove(current);
-        } else if (current instanceof AvsExpectSpeechItem) {
 
+            avsQueue.remove(key);
+        } else if (current instanceof AvsExpectSpeechItem) {
             //listen for user input
             audioPlayer.stop();
             avsQueue.clear();
-//            startListening();
+            startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
         } else if (current instanceof AvsSetVolumeItem) {
             //set our volume
 //            setVolume(((AvsSetVolumeItem) current).getVolume());
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsAdjustVolumeItem) {
             //adjust the volume
 //            adjustVolume(((AvsAdjustVolumeItem) current).getAdjustment());
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsSetMuteItem) {
             //mute/unmute the device
 //            setMute(((AvsSetMuteItem) current).isMute());
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsMediaPlayCommandItem) {
             //fake a hardware "play" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_PLAY);
             Log.i(TAG, "Media play command issued");
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsMediaPauseCommandItem) {
             //fake a hardware "pause" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_PAUSE);
             Log.i(TAG, "Media pause command issued");
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsMediaNextCommandItem) {
             //fake a hardware "next" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_NEXT);
             Log.i(TAG, "Media next command issued");
-            avsQueue.remove(current);
+            avsQueue.remove(key);
         } else if (current instanceof AvsMediaPreviousCommandItem) {
             //fake a hardware "previous" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_PREVIOUS);
             Log.i(TAG, "Media previous command issued");
-            avsQueue.remove(current);
-        } else if (current instanceof AvsResponseException) {
-            AvsResponseException exception = (AvsResponseException) current;
-            Log.e(TAG, "AvsResponseException -> " + exception.getDirective().getPayload().getCode()
-                    + ": " + exception.getDirective().getPayload().getDescription());
-
-            avsQueue.remove(current);
+            avsQueue.remove(key);
+        }  else if (current instanceof AvsSetAlertItem) {
+            AvsSetAlertItem setAlertItem = (AvsSetAlertItem) current;
+            Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
+            it.putExtra(BgProcessIntentService.EXTRA_CMD, new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.BEGIN_ALARM));
+            boolean setSuccess = SetAlertHelper.setAlert(MyApplication.getContext(), setAlertItem, it);
+            if (setSuccess) {
+                SetAlertHelper.putAlert(MyApplication.getContext(), setAlertItem);
+                SetAlertHelper.sendSetAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        , current.getToken(), new ImplAsyncCallback("SetAlertSucceeded"));
+            } else {
+                SetAlertHelper.sendSetAlertFailed(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        , current.getToken(), new ImplAsyncCallback("SetAlertFail"));
+            }
+            avsQueue.remove(key);
             checkQueue();
+        } else if (current instanceof AvsDeleteAlertItem) {
+            AvsDeleteAlertItem deleteAlertItem = (AvsDeleteAlertItem) current;
+            Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
+            it.putExtra(BgProcessIntentService.EXTRA_CMD, new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.STOP_ALARM));
+            SetAlertHelper.cancelOrDeleteAlert(MyApplication.getContext(), deleteAlertItem.getMessageID(), it);
+            SetAlertHelper.sendDeleteAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , deleteAlertItem.getToken()
+                    , new ImplAsyncCallback("DeleteAlertSucceeded"));
+            avsQueue.remove(key);
+            checkQueue();
+        } else if(current instanceof AvsAlertPlayItem){
+            if (!audioPlayer.isPlaying()) {
+                audioPlayer.playItem((AvsAlertPlayItem) current);
+            }
+        } else {
+            avsQueue.remove(key);
+            checkQueue();
+            Log.w(TAG, "pop a unhandle item !" + current.getClass());
         }
     }
 
+//    private synchronized void processAvsItemImmediately(){
+//        TODO
+//    }
+
     private void setState(final int state) {
 
+    }
+
+    private String getFirstKey() {
+        String out = null;
+        for (String key : avsQueue.keySet()) {
+            out = (key);
+            break;
+        }
+        return out;
     }
 
 
     //Our callback that deals with removing played items in our media player and then checking to see if more items exist
     private AlexaAudioPlayer.Callback alexaAudioPlayerCallback = new AlexaAudioPlayer.Callback() {
 
-        private boolean almostDoneFired = false;
+        private boolean almostDoneFired = false; // FIXME 这两个标志貌似会无法复位，需要检查
         private boolean playbackStartedFired = false;
 
         @Override
         public void playerPrepared(AvsItem pendingItem) {
-
+            almostDoneFired = false;
+            playbackStartedFired = false;
         }
 
         @Override
         public void playerProgress(AvsItem item, long offsetInMilliseconds, float percent) {
-            if(BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG) {
                 //Log.i(TAG, "Player percent: " + percent);
             }
-            if(item instanceof AvsPlayContentItem || item == null){
+            if (item instanceof AvsPlayContentItem || item == null) {
                 return;
             }
-            if(!playbackStartedFired){
-                if(BuildConfig.DEBUG) {
+            if (!playbackStartedFired) {
+                if (BuildConfig.DEBUG) {
                     Log.i(TAG, "PlaybackStarted " + item.getToken() + " fired: " + percent);
                 }
                 playbackStartedFired = true;
-                sendPlaybackStartedEvent(item);
+                if(!(item instanceof AvsAlertPlayItem)) sendPlaybackStartedEvent(item);
             }
-            if(!almostDoneFired && percent > .8f){
-                if(BuildConfig.DEBUG) {
+            if (!almostDoneFired && percent > .8f) {
+                if (BuildConfig.DEBUG) {
                     Log.i(TAG, "AlmostDone " + item.getToken() + " fired: " + percent);
                 }
                 almostDoneFired = true;
-                if(item instanceof AvsPlayAudioItem) {
+                if (item instanceof AvsPlayAudioItem) {
                     sendPlaybackNearlyFinishedEvent((AvsPlayAudioItem) item, offsetInMilliseconds);
                 }
             }
@@ -225,22 +312,25 @@ public class AvsHandleHelper {
 
         @Override
         public void itemComplete(AvsItem completedItem) {
-            almostDoneFired = false;
-            playbackStartedFired = false;
-            avsQueue.remove(completedItem);
-            checkQueue();
-            if(completedItem instanceof AvsPlayContentItem || completedItem == null){
-                return;
-            }
-            if(BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG) {
                 Log.i(TAG, "Complete " + completedItem.getToken() + " fired");
             }
-            sendPlaybackFinishedEvent(completedItem);
+
+            almostDoneFired = false;
+            playbackStartedFired = false;
+            avsQueue.remove(completedItem.messageID);
+            checkQueue();
+            if (completedItem instanceof AvsPlayContentItem) {
+                return;
+            }
+
+            if(!(completedItem instanceof AvsAlertPlayItem)) sendPlaybackFinishedEvent(completedItem);
         }
 
         @Override
         public boolean playerError(AvsItem item, int what, int extra) {
-            return false;
+            itemComplete(item);
+            return true;
         }
 
         @Override
@@ -255,7 +345,7 @@ public class AvsHandleHelper {
      * Send an event back to Alexa that we're nearly done with our current playback event, this should supply us with the next item
      * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
      */
-    private void sendPlaybackNearlyFinishedEvent(AvsPlayAudioItem item, long offsetInMilliseconds){
+    private void sendPlaybackNearlyFinishedEvent(AvsPlayAudioItem item, long offsetInMilliseconds) {
         if (item != null) {
             AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     .sendPlaybackNearlyFinishedEvent(item, offsetInMilliseconds, requestCallback);
@@ -267,7 +357,7 @@ public class AvsHandleHelper {
      * Send an event back to Alexa that we're starting a speech event
      * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
      */
-    private void sendPlaybackStartedEvent(AvsItem item){
+    private void sendPlaybackStartedEvent(AvsItem item) {
         AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendPlaybackStartedEvent(item, null);
         Log.i(TAG, "Sending SpeechStartedEvent");
     }
@@ -276,11 +366,19 @@ public class AvsHandleHelper {
      * Send an event back to Alexa that we're done with our current speech event, this should supply us with the next item
      * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
      */
-    private void sendPlaybackFinishedEvent(AvsItem item){
+    private void sendPlaybackFinishedEvent(AvsItem item) {
         if (item != null) {
             AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendPlaybackFinishedEvent(item, null);
             Log.i(TAG, "Sending PlaybackFinishedEvent");
         }
+    }
+
+    private void startListening(long waitMicMillseconds) {
+        Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
+        BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(1);
+        cmd.waitMicDelayMillSecond = waitMicMillseconds;
+        it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+        MyApplication.getContext().startService(it);
     }
 
     private AsyncCallback<AvsResponse, Exception> requestCallback = new AsyncCallback<AvsResponse, Exception>() {
@@ -296,7 +394,7 @@ public class AvsHandleHelper {
         @Override
         public void success(AvsResponse result) {
             com.ggec.voice.assistservice.log.Log.i(TAG, "Event Success " + result);
-                handleResponse(result);
+            handleResponse(result);
         }
 
         @Override
@@ -308,7 +406,7 @@ public class AvsHandleHelper {
         @Override
         public void complete() {
             long totalTime = System.currentTimeMillis() - startTime;
-            com.ggec.voice.assistservice.log.Log.i(TAG, "Event Complete, " +"Total request time: "+totalTime+" miliseconds");
+            Log.i(TAG, "Event Complete, " + "Total request time: " + totalTime + " miliseconds");
         }
     };
 }

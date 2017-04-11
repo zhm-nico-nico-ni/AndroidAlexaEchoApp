@@ -11,7 +11,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  */
 
 public class AvsMediaNextCommandItem extends AvsItem {
-    public AvsMediaNextCommandItem(String token) {
-        super(token);
+    public AvsMediaNextCommandItem(String token, String messageID) {
+        super(token, messageID);
     }
 }

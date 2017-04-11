@@ -2,6 +2,8 @@ package com.willblaschko.android.alexa.data;
 
 import android.text.TextUtils;
 
+import com.willblaschko.android.alexa.AVSAPIConstants;
+
 /**
  * A catch-all Directive to classify return responses from the Amazon Alexa v20160207 API
  * Will handle calls to:
@@ -20,7 +22,6 @@ public class Directive {
     private Header header;
     private Payload payload;
 
-    private static final String TYPE_SPEAK = "Speak";
     private static final String TYPE_PLAY = "Play";
     private static final String TYPE_SET_ALERT = "SetAlert";
     private static final String TYPE_DELETE_ALERT = "DeleteAlert";
@@ -33,6 +34,7 @@ public class Directive {
     private static final String TYPE_MEDIA_NEXT = "NextCommandIssued";
     private static final String TYPE_MEDIA_PREVIOUS = "PreviousCommandIssue";
     private static final String TYPE_EXCEPTION = "Exception";
+    private static final String TYPE_STOP_CAPTURE = "StopCapture";
 
     private static final String PLAY_BEHAVIOR_REPLACE_ALL = "REPLACE_ALL";
     private static final String PLAY_BEHAVIOR_ENQUEUE = "ENQUEUE";
@@ -41,7 +43,7 @@ public class Directive {
     //DIRECTIVE TYPES
 
     public boolean isTypeSpeak(){
-        return TextUtils.equals(header.getName(), TYPE_SPEAK);
+        return TextUtils.equals(header.getName(), AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME);
     }
 
     public boolean isTypePlay(){
@@ -92,6 +94,11 @@ public class Directive {
         return TextUtils.equals(header.getName(), TYPE_EXCEPTION);
     }
 
+    public boolean isTypeStopCapture(){
+        return TextUtils.equals(header.getName(), TYPE_STOP_CAPTURE);
+    }
+
+
     //PLAY BEHAVIORS
 
     public boolean isPlayBehaviorReplaceAll(){
@@ -104,37 +111,26 @@ public class Directive {
         return TextUtils.equals(payload.getPlayBehavior(), PLAY_BEHAVIOR_REPLACE_ENQUEUED);
     }
 
+    public String getHeaderName() {
+        return header.getName();
+    }
 
-    public Header getHeader() {
-        return header;
+    public String getHeaderNameSpace(){
+        return header.getNamespace();
+    }
+
+    public String getHeaderMessageId() {
+        return header.getMessageId();
+    }
+
+    public String getHeaderDialogRequestId() {
+        return header.getDialogRequestId();
     }
 
     public Payload getPayload() {
         return payload;
     }
 
-    public static class Header{
-        String namespace;
-        String name;
-        String messageId;
-        String dialogRequestId;
-
-        public String getNamespace() {
-            return namespace;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getMessageId() {
-            return messageId;
-        }
-
-        public String getDialogRequestId() {
-            return dialogRequestId;
-        }
-    }
     public static class Payload{
 
 

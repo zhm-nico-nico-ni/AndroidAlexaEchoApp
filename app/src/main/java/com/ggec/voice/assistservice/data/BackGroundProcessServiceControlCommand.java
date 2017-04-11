@@ -8,8 +8,12 @@ import android.os.Parcelable;
  */
 
 public class BackGroundProcessServiceControlCommand implements Parcelable {
+    public final static int BEGIN_ALARM = 4;
+    public final static int STOP_ALARM = 5;
+//    public final static int R
 
     public int type; // 控制类型， 1 启动 2 停止 3 取消
+    public long waitMicDelayMillSecond;
 
     public  BackGroundProcessServiceControlCommand(int type){
         this.type = type;
@@ -17,6 +21,18 @@ public class BackGroundProcessServiceControlCommand implements Parcelable {
 
     protected BackGroundProcessServiceControlCommand(Parcel in) {
         type = in.readInt();
+        waitMicDelayMillSecond = in.readLong();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(type);
+        dest.writeLong(waitMicDelayMillSecond);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
     public static final Creator<BackGroundProcessServiceControlCommand> CREATOR = new Creator<BackGroundProcessServiceControlCommand>() {
@@ -30,14 +46,4 @@ public class BackGroundProcessServiceControlCommand implements Parcelable {
             return new BackGroundProcessServiceControlCommand[size];
         }
     };
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(type);
-    }
 }

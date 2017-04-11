@@ -24,6 +24,12 @@ public class PayloadFactory {
         return payload;
     }
 
+    /**
+     *
+     * @param profile Accepted values: "CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
+     * @param format Accepted value: "AUDIO_L16_RATE_16000_CHANNELS_1"
+     * @return
+     */
     public static SpeechRecognizerPayload createSpeechRecognizerPayload(String profile, String format) {
         SpeechRecognizerPayload payload = new SpeechRecognizerPayload();
         payload.profile = profile;

@@ -8,8 +8,6 @@ import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
-import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
-import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
@@ -23,7 +21,6 @@ import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
-import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
 import org.apache.commons.fileupload.MultipartStream;
 import org.apache.commons.io.IOUtils;
@@ -149,7 +146,7 @@ public class ResponseParser {
 
         for (Directive directive: directives) {
 
-            Log.i(TAG, "Parsing directive type: "+directive.getHeader().getNamespace()+":"+directive.getHeader().getName());
+            Log.i(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName());
 
             if(directive.isPlayBehaviorReplaceAll()){
                 response.add(0, new AvsReplaceAllItem(directive.getPayload().getToken()));
@@ -158,44 +155,38 @@ public class ResponseParser {
                 response.add(new AvsReplaceEnqueuedItem(directive.getPayload().getToken()));
             }
 
-            AvsItem item = null;
+            AvsItem item = DirectiveParseHelper.parseDirective(directive, audio); //FIXME 根据namespace来区分
 
-            if(directive.isTypeSpeak()){
-                String cid = directive.getPayload().getUrl();
-                ByteArrayInputStream sound = audio.get(cid);
-                item = new AvsSpeakItem(directive.getPayload().getToken(), cid, sound);
-            }else if(directive.isTypePlay()){
-                String url = directive.getPayload().getAudioItem().getStream().getUrl();
-                if(url.contains("cid:")){
-                    ByteArrayInputStream sound = audio.get(url);
-                    item = new AvsPlayAudioItem(directive.getPayload().getToken(), url, sound);
-                }else{
-                    item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds());
+            if(item==null) {
+                if (directive.isTypePlay()) {
+                    String url = directive.getPayload().getAudioItem().getStream().getUrl();
+                    if (url.contains("cid:")) {
+                        ByteArrayInputStream sound = audio.get(url);
+                        item = new AvsPlayAudioItem(directive.getPayload().getToken(), url, sound, directive.getHeaderMessageId());
+                    } else {
+                        item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(), directive.getHeaderMessageId());
+                    }
+                }  else if (directive.isTypeSetMute()) {
+                    item = new AvsSetMuteItem(directive.getPayload().getToken(), directive.getPayload().isMute(), directive.getHeaderMessageId());
+                } else if (directive.isTypeSetVolume()) {
+                    item = new AvsSetVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
+                } else if (directive.isTypeAdjustVolume()) {
+                    item = new AvsAdjustVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
+                } else if (directive.isTypeExpectSpeech()) {
+                    item = new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaPlay()) {
+                    item = new AvsMediaPlayCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaPause()) {
+                    item = new AvsMediaPauseCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaNext()) {
+                    item = new AvsMediaNextCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaPrevious()) {
+                    item = new AvsMediaPreviousCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeException()) {
+                    item = new AvsResponseException(directive);
+                } else {
+                    Log.e(TAG, "Unknown type found -> " + directive.getHeaderNameSpace() + ":" + directive.getHeaderName());
                 }
-            }else if(directive.isTypeSetAlert()){
-                item = new AvsSetAlertItem(directive.getPayload().getToken(), directive.getPayload().getType(), directive.getPayload().getScheduledTime());
-            }else if (directive.isTypeDeleteAlert()) {
-                item = new AvsDeleteAlertItem(directive.getPayload().getToken());
-            }else if(directive.isTypeSetMute()){
-                item = new AvsSetMuteItem(directive.getPayload().getToken(), directive.getPayload().isMute());
-            }else if(directive.isTypeSetVolume()){
-                item = new AvsSetVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume());
-            }else if(directive.isTypeAdjustVolume()){
-                item = new AvsAdjustVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume());
-            }else if(directive.isTypeExpectSpeech()){
-                item = new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds());
-            }else if(directive.isTypeMediaPlay()){
-                item = new AvsMediaPlayCommandItem(directive.getPayload().getToken());
-            }else if(directive.isTypeMediaPause()){
-                item = new AvsMediaPauseCommandItem(directive.getPayload().getToken());
-            }else if(directive.isTypeMediaNext()){
-                item = new AvsMediaNextCommandItem(directive.getPayload().getToken());
-            }else if(directive.isTypeMediaPrevious()){
-                item = new AvsMediaPreviousCommandItem(directive.getPayload().getToken());
-            }else if(directive.isTypeException()){
-                item = new AvsResponseException(directive);
-            }else{
-                Log.e(TAG, "Unknown type found");
             }
 
             if(item != null){
@@ -211,11 +202,6 @@ public class ResponseParser {
 
         return response;
     }
-
-    private static final void parseDirective() {
-
-    }
-
 
     private static final String string(byte[] bytes) throws IOException {
         return new String(bytes, UTF_8);

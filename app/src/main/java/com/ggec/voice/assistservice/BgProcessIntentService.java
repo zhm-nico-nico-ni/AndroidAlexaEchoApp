@@ -2,19 +2,12 @@ package com.ggec.voice.assistservice;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.content.res.AssetFileDescriptor;
-import android.media.AsyncPlayer;
-import android.media.AudioAttributes;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.SoundPool;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
-import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
@@ -26,6 +19,9 @@ import com.ggec.voice.assistservice.test.RecordingStateListener;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
+import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
@@ -49,7 +45,7 @@ public class BgProcessIntentService extends IntentService {
     private RawAudioRecorder recorder;
 
     public BgProcessIntentService() {
-        super("test");
+        this("test");
     }
 
     /**
@@ -76,6 +72,11 @@ public class BgProcessIntentService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
+        AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
+        if (!alexaManager.hasOpenDownchannel()) {
+            alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
+            return;
+        }
 
         if (cmd.type == 1) {
             //start
@@ -87,24 +88,75 @@ public class BgProcessIntentService extends IntentService {
 //            } catch (Exception e) {
 //                e.printStackTrace();
 //            }
-            startRecord1();
+//            alexaManager.sendSynchronizeStateEvent2(getCallBack("{SynchronizeStateEvent}"));
+            startRecord1(cmd.waitMicDelayMillSecond);
         } else if (cmd.type == 2) {
             //stop
             Log.d(TAG, "stop " + currentRunId);
             currentRunId = 0;
+
             textTest();
         } else if (cmd.type == 3) {
-            search();
+            alexaManager.sendSynchronizeStateEvent2(getCallBack("{SynchronizeStateEvent}"));
+            alexaManager.sendPingEvent();
+//            search();
+        } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
+            final String token = intent.getStringExtra("token");
+            final String messageId = intent.getStringExtra("messageId");
+            Log.d(TAG, "BEGIN_ALARM: "+ messageId+ " ,token:"+token);
+            SetAlertHelper.sendAlertStarted(alexaManager, token, getCallBack("sendAlertStarted"));
+            SetAlertHelper.sendAlertEnteredForeground(alexaManager, token, getCallBack("sendAlertEnteredForeground"));
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertPlayItem(token, messageId));
+                }
+            });
+
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
+                    it.putExtra(EXTRA_CMD, new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.STOP_ALARM));
+                    it.putExtra("token", token);
+                    it.putExtra("messageId", messageId);
+                    startService(it);
+
+                }
+            }, 15000);
+        } else if (cmd.type == BackGroundProcessServiceControlCommand.STOP_ALARM) {
+            String token = intent.getStringExtra("token");
+            String messageId = intent.getStringExtra("messageId");
+            Log.d(TAG, "STOP_ALARM: "+ messageId+ " ,token:"+token);
+            SetAlertHelper.sendAlertStopped(alexaManager, token, getCallBack("sendAlertStopped"));
+            SetAlertHelper.deleteAlertSP(MyApplication.getContext(), messageId);
+            AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token, messageId));
         } else {
             //cancel
+            Log.d(TAG, "start cmd:" + cmd.type);
         }
     }
 
     MyVoiceRecord myVoiceRecord;
 
-    private void startRecord1() {
+    Runnable waitMicTimeoutRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (myVoiceRecord != null && (myVoiceRecord.isAlive() || !myVoiceRecord.isInterrupted())) {
+                myVoiceRecord.interrupt();
+            }
+        }
+    };
+
+    /**
+     * @param waitMicTimeOut 这个值禁止手工设置
+     */
+    private void startRecord1(final long waitMicTimeOut) {
 //        Uri path = Uri.parse("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.start);
 //        playSong(path);
+        if (waitMicTimeOut > 0) {
+            handler.postDelayed(waitMicTimeoutRunnable, waitMicTimeOut);
+        }
 
         playStart(new MediaPlayer.OnCompletionListener() {
             @Override
@@ -115,10 +167,16 @@ public class BgProcessIntentService extends IntentService {
                 myVoiceRecord = new MyVoiceRecord(MyVoiceRecord.DEFAULT_SILENT_THRESHOLD, new IMyVoiceRecordListener() {
                     @Override
                     public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
-                        if(recordSuccess){
+                        if (recordSuccess) {
+                            handler.removeCallbacks(waitMicTimeoutRunnable);
                             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack(path));
+                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack("record", path));
                         } else {
+                            if (waitMicTimeOut > 0) {
+                                handler.removeCallbacks(waitMicTimeoutRunnable);
+                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
+                            }
                             playError();
                         }
                     }
@@ -156,7 +214,7 @@ public class BgProcessIntentService extends IntentService {
             recorder.release();
             recorder = null;
         }
-        alexaManager.sendAudioRequest(getAudioSendRequestBody(), getCallBack());
+        alexaManager.sendAudioRequest(getAudioSendRequestBody(), getCallBack(""));
     }
 
     private DataRequestBody getAudioSendRequestBody() {
@@ -269,7 +327,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("tell me the time", getCallBack());//"Where i am"
+        alexaManager.sendTextRequest("Set a timer after 15 seconds from now", getCallBack("textTest"));//"Set a timer after one minutes from now"
     }
 
     private void search() {
@@ -279,59 +337,60 @@ public class BgProcessIntentService extends IntentService {
             is.read(fileBytes);
             is.close();
             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-            alexaManager.sendAudioRequest(fileBytes, getCallBack());
+            alexaManager.sendAudioRequest(fileBytes, getCallBack("search"));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
 
-    private AsyncCallback<AvsResponse, Exception> getCallBack() {
+    private AsyncCallback<AvsResponse, Exception> getCallBack(final String name) {
+
         return new AsyncCallback<AvsResponse, Exception>() {
             public long startTime;
 
             @Override
             public void start() {
                 startTime = System.currentTimeMillis();
-                Log.i(TAG, "Event Start");
+                Log.i(TAG, "Event " + name + " Start");
 //                setState(STATE_PROCESSING);
             }
 
             @Override
             public void success(AvsResponse result) {
-                Log.i(TAG, "Event Success " + result);
+                Log.i(TAG, "Event " + name + " Success " + result);
                 AvsHandleHelper.getAvsHandleHelper().handleResponse(result);
 //                handleResponse(result);
             }
 
             @Override
             public void failure(Exception error) {
-                Log.e(TAG, "Event Error", error);
+                Log.e(TAG, "Event " + name + " Error", error);
 //                setState(STATE_FINISHED);
             }
 
             @Override
             public void complete() {
                 long totalTime = System.currentTimeMillis() - startTime;
-                Log.i(TAG, "Event Complete, " + "Total request time: " + totalTime + " miliseconds");
+                Log.i(TAG, "Event " + name + " Complete, " + "Total request time: " + totalTime + " miliseconds");
             }
         };
     }
 
-    private AsyncCallback<AvsResponse, Exception> getFileCallBack(final String filePath) {
+    private AsyncCallback<AvsResponse, Exception> getFileCallBack(final String name, final String filePath) {
         return new AsyncCallback<AvsResponse, Exception>() {
             public long startTime;
 
             @Override
             public void start() {
                 startTime = System.currentTimeMillis();
-                Log.i(TAG, "Event Start");
+                Log.i(TAG, "Event " + name + " Start");
 //                setState(STATE_PROCESSING);
             }
 
             @Override
             public void success(AvsResponse result) {
-                Log.i(TAG, "Event Success " + result);
+                Log.i(TAG, "Event " + name + " Success " + result);
                 AvsHandleHelper.getAvsHandleHelper().handleResponse(result);
 //                handleResponse(result);
                 deleteFile(filePath);
@@ -339,7 +398,7 @@ public class BgProcessIntentService extends IntentService {
 
             @Override
             public void failure(Exception error) {
-                Log.e(TAG, "Event Error", error);
+                Log.e(TAG, "Event " + name + "  Error", error);
 //                setState(STATE_FINISHED);
                 playError();
                 deleteFile(filePath);
@@ -351,12 +410,12 @@ public class BgProcessIntentService extends IntentService {
                 Log.i(TAG, "Event Complete, " + "Total request time: " + totalTime + " miliseconds");
             }
 
-            private void deleteFile(String fp){
-                Log.d(TAG, "delete cache file p:"+fp);
-                if(false) {//TODO 清除文件
+            private void deleteFile(String fp) {
+                Log.d(TAG, "delete cache file p:" + fp);
+                if (false) {//TODO 清除文件
                     File file = new File(fp);
-                    if (file.exists()){
-                        Log.w(TAG, "delete cache file state:" + file.delete()+ " p:"+fp);
+                    if (file.exists()) {
+                        Log.w(TAG, "delete cache file state:" + file.delete() + " p:" + fp);
                     }
                 }
             }
@@ -390,13 +449,13 @@ public class BgProcessIntentService extends IntentService {
 //
 //    }
 
-    private void playStart(final MediaPlayer.OnCompletionListener listener){
+    private void playStart(final MediaPlayer.OnCompletionListener listener) {
 //        MyShortAudioPlayer.getInstance(this).playStart();
         handler.post(new Runnable() {
             @Override
             public void run() {
                 try {
-                    new MyShortAudioPlayer2("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.error, listener);
+                    new MyShortAudioPlayer2("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.error, listener);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -404,9 +463,10 @@ public class BgProcessIntentService extends IntentService {
         });
 
     }
-    private void playError(){
+
+    private void playError() {
         try {
-            new MyShortAudioPlayer2("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.start, null);
+            new MyShortAudioPlayer2("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start, null);
         } catch (IOException e) {
             e.printStackTrace();
         }
