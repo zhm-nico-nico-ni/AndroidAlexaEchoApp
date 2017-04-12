@@ -35,6 +35,12 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".sub.VolumeChangeBroadcastReceiver" >
+            <intent-filter>
+                <action android:name="android.media.VOLUME_CHANGED_ACTION" />
+            </intent-filter>
+        </receiver>
+
         <!--<activity android:name=".UITestActivity">-->
 
         <!--</activity>-->

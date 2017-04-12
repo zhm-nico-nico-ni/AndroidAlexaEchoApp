@@ -23,7 +23,7 @@ import be.tarsos.dsp.io.TarsosDSPAudioFormat;
  */
 
 public class MyVoiceRecord extends Thread {
-    public final static float DEFAULT_SILENT_THRESHOLD = -55f;
+    public final static float DEFAULT_SILENT_THRESHOLD = -60f;
 
     private final static String TAG = "MyVoiceRecord";
 
@@ -151,6 +151,26 @@ public class MyVoiceRecord extends Thread {
                         }
 
                     }
+                }
+            }
+
+            if(mState.beginSpeakTime > 0){
+                try {
+                    stream.close();
+//                    byte[] readbuff= new byte[1024];
+//                    FileOutputStream stream2 = new FileOutputStream(mFilePath+"_");
+//
+//                    File res = new File(mFilePath);
+//                    FileInputStream inputStream = new FileInputStream(res);
+//                    long pointer = 0;
+//                    while (inputStream.available() > 0 && pointer <= mState.lastSilentRecordIndex){
+//                        int readCount = inputStream.read(readbuff);
+//                        stream2.write(readbuff, 0, readCount);
+//                        pointer += readCount;
+//                    }
+//                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
 

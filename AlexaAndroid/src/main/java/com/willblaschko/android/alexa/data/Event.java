@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa.data;
 
 import com.google.gson.Gson;
+import com.willblaschko.android.alexa.AVSAPIConstants;
 import com.willblaschko.android.alexa.data.message.Payload;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
 
@@ -136,21 +137,41 @@ public class Event {
         return builder.toJson();
     }
 
+    /** https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/speaker#volumechanged
+     *   The VolumeChanged event must be sent to AVS when:
+     *  1) A SetVolume or AdjustVolume directive is received and processed to indicate that the speaker volume on your product has been adjusted/changed.
+     *  2) Volume is locally adjusted to indicate that the speaker volume on your product has been adjusted/changed.
+     * @param volume	The absolute volume level scaled from 0 (min) to 100 (max).
+     *                  Accepted values: Any long value between 0 and 100	long
+     * @param isMute A boolean value is used to mute/unmute a product's speaker. The value is TRUE when the speaker is muted,
+     *               and FALSE when unmuted.
+     *               Accepted values: TRUE or FALSE
+     * @return
+     */
     public static String getVolumeChangedEvent(long volume, boolean isMute){
+        if(volume<0 || volume>100) throw new IllegalArgumentException("Any long value must between 0 and 100 ,current:"+volume);
         Builder builder = new Builder();
         builder.setHeaderNamespace("Speaker")
-                .setHeaderName("VolumeChanged")
+                .setHeaderName(AVSAPIConstants.Speaker.Events.VolumeChanged.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createVolumeChangedPayload(isMute, volume))
                 ;
         return builder.toJson();
     }
-    public static String getMuteEvent(boolean isMute){
+
+    /** https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/speaker#mutechanged
+     * The MuteChanged event must be sent to AVS when:
+     * 1) A SetMute directive is received and processed to indicate that the mute status of the product’s speaker has changed.
+     * 2) Your product is muted/unmuted locally to indicate that the mute status of the product’s speaker has changed.
+     * @param isMute
+     * @return
+     */
+    public static String getMuteChangeEvent(boolean isMute, long volume){
         Builder builder = new Builder();
         builder.setHeaderNamespace("Speaker")
-                .setHeaderName("VolumeChanged")
+                .setHeaderName(AVSAPIConstants.Speaker.Events.MuteChanged.NAME)
                 .setHeaderMessageId(getUuid())
-                .setPayload(PayloadFactory.createSetMutePayload(isMute));
+                .setPayload(PayloadFactory.createSetMutePayload(isMute, volume));
         return builder.toJson();
     }
 

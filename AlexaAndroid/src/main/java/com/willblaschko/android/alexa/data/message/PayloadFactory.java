@@ -6,7 +6,7 @@ import com.willblaschko.android.alexa.data.message.request.context.AlertsStatePa
 import com.willblaschko.android.alexa.data.message.request.context.PlaybackStatePayload;
 import com.willblaschko.android.alexa.data.message.request.context.SpeechStatePayload;
 import com.willblaschko.android.alexa.data.message.request.context.VolumeStatePayload;
-import com.willblaschko.android.alexa.data.message.request.speaker.SetMute;
+import com.willblaschko.android.alexa.data.message.request.speaker.MuteChange;
 import com.willblaschko.android.alexa.data.message.request.speaker.VolumeChangedPayload;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.SpeechRecognizerPayload;
 
@@ -85,9 +85,10 @@ public class PayloadFactory {
         return payload;
     }
 
-    public static SetMute createSetMutePayload(boolean mute){
-        SetMute payload = new SetMute();
+    public static MuteChange createSetMutePayload(boolean mute, long volume){
+        MuteChange payload = new MuteChange();
         payload.mute = mute;
+        payload.volume = volume;
         return payload;
     }
 }

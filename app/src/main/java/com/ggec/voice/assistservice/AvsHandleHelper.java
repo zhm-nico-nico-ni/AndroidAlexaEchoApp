@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
+import com.ggec.voice.assistservice.speaker.VolumeUtil;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
@@ -99,11 +100,15 @@ public class AvsHandleHelper {
     private void addAvsItemToQueue(AvsItem response){
         if(response == null) return;
 
-        if(response instanceof AvsAlertStopItem){
+        if(response instanceof AvsAlertStopItem){ //FIXME 这个需要专门处理
             Log.d(TAG, "stop alarm right now :"+response.messageID);
             avsQueue.remove(response.messageID);
             audioPlayer.release();
             checkQueue();
+            return;
+        }
+
+        if(processAvsItemImmediately(response)){
             return;
         }
         //if we have a clear queue item in the list, we need to clear the current queue before proceeding
@@ -186,38 +191,30 @@ public class AvsHandleHelper {
             audioPlayer.stop();
             avsQueue.clear();
             startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
-        } else if (current instanceof AvsSetVolumeItem) {
-            //set our volume
-//            setVolume(((AvsSetVolumeItem) current).getVolume());
-            avsQueue.remove(key);
-        } else if (current instanceof AvsAdjustVolumeItem) {
-            //adjust the volume
-//            adjustVolume(((AvsAdjustVolumeItem) current).getAdjustment());
-            avsQueue.remove(key);
-        } else if (current instanceof AvsSetMuteItem) {
-            //mute/unmute the device
-//            setMute(((AvsSetMuteItem) current).isMute());
-            avsQueue.remove(key);
         } else if (current instanceof AvsMediaPlayCommandItem) {
             //fake a hardware "play" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_PLAY);
             Log.i(TAG, "Media play command issued");
             avsQueue.remove(key);
+            checkQueue();
         } else if (current instanceof AvsMediaPauseCommandItem) {
             //fake a hardware "pause" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_PAUSE);
             Log.i(TAG, "Media pause command issued");
             avsQueue.remove(key);
+            checkQueue();
         } else if (current instanceof AvsMediaNextCommandItem) {
             //fake a hardware "next" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_NEXT);
             Log.i(TAG, "Media next command issued");
             avsQueue.remove(key);
+            checkQueue();
         } else if (current instanceof AvsMediaPreviousCommandItem) {
             //fake a hardware "previous" press
 //            sendMediaButton(this, KeyEvent.KEYCODE_MEDIA_PREVIOUS);
             Log.i(TAG, "Media previous command issued");
             avsQueue.remove(key);
+            checkQueue();
         }  else if (current instanceof AvsSetAlertItem) {
             AvsSetAlertItem setAlertItem = (AvsSetAlertItem) current;
             Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
@@ -254,9 +251,36 @@ public class AvsHandleHelper {
         }
     }
 
-//    private synchronized void processAvsItemImmediately(){
-//        TODO
-//    }
+    private synchronized boolean processAvsItemImmediately(AvsItem current) {
+//        TODO 后续还要添加其他处理
+        if (current instanceof AvsSetVolumeItem) {
+            //set our volume
+            VolumeUtil.setVolume(MyApplication.getContext()
+                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , ((AvsSetVolumeItem) current).getVolume()
+                    , false
+                    , new ImplAsyncCallback("setVolume"));
+        } else if (current instanceof AvsAdjustVolumeItem) {
+            //adjust the volume
+            VolumeUtil.setVolume(MyApplication.getContext()
+                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , ((AvsAdjustVolumeItem) current).getAdjustment()
+                    , true
+                    , new ImplAsyncCallback("AdjustVolume")
+            );
+        } else if (current instanceof AvsSetMuteItem) {
+            //mute/unmute the device
+            VolumeUtil.setMute(MyApplication.getContext()
+                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , ((AvsSetMuteItem) current).isMute()
+                    , new ImplAsyncCallback("setMute")
+            );
+        } else {
+            return false;
+        }
+        Log.d(TAG, "processAvsItemImmediately type:" + current.getClass());
+        return true;
+    }
 
     private void setState(final int state) {
 

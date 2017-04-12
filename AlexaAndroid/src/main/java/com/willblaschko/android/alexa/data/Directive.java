@@ -2,8 +2,6 @@ package com.willblaschko.android.alexa.data;
 
 import android.text.TextUtils;
 
-import com.willblaschko.android.alexa.AVSAPIConstants;
-
 /**
  * A catch-all Directive to classify return responses from the Amazon Alexa v20160207 API
  * Will handle calls to:
@@ -23,11 +21,6 @@ public class Directive {
     private Payload payload;
 
     private static final String TYPE_PLAY = "Play";
-    private static final String TYPE_SET_ALERT = "SetAlert";
-    private static final String TYPE_DELETE_ALERT = "DeleteAlert";
-    private static final String TYPE_SET_VOLUME = "SetVolume";
-    private static final String TYPE_ADJUST_VOLUME = "AdjustVolume";
-    private static final String TYPE_SET_MUTE = "SetMute";
     private static final String TYPE_EXPECT_SPEECH = "ExpectSpeech";
     private static final String TYPE_MEDIA_PLAY = "PlayCommandIssued";
     private static final String TYPE_MEDIA_PAUSE = "PauseCommandIssued";
@@ -42,32 +35,8 @@ public class Directive {
 
     //DIRECTIVE TYPES
 
-    public boolean isTypeSpeak(){
-        return TextUtils.equals(header.getName(), AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME);
-    }
-
     public boolean isTypePlay(){
         return TextUtils.equals(header.getName(), TYPE_PLAY);
-    }
-
-    public boolean isTypeSetAlert(){
-        return TextUtils.equals(header.getName(), TYPE_SET_ALERT);
-    }
-
-    public boolean isTypeDeleteAlert() {
-        return TextUtils.equals(header.getName(), TYPE_DELETE_ALERT);
-    }
-
-    public boolean isTypeSetVolume(){
-        return TextUtils.equals(header.getName(), TYPE_SET_VOLUME);
-    }
-
-    public boolean isTypeAdjustVolume(){
-        return TextUtils.equals(header.getName(), TYPE_ADJUST_VOLUME);
-    }
-
-    public boolean isTypeSetMute(){
-        return TextUtils.equals(header.getName(), TYPE_SET_MUTE);
     }
 
     public boolean isTypeExpectSpeech(){

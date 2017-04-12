@@ -11,7 +11,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  * @author will on 5/21/2016.
  */
 public class AvsSetVolumeItem extends AvsItem{
-    long volume;
+    long volume; // 0 - 100
 
     /**
      * Create a new AdjustVolume {@link com.willblaschko.android.alexa.data.Directive}

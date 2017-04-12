@@ -11,7 +11,9 @@ import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
+import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.assistservice.speaker.VolumeUtil;
 import com.ggec.voice.assistservice.speechutil.RawAudioRecorder;
 import com.ggec.voice.assistservice.test.AudioCapture;
 import com.ggec.voice.assistservice.test.RecordingRMSListener;
@@ -70,7 +72,7 @@ public class BgProcessIntentService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
+    protected void onHandleIntent(@Nullable Intent intent) {// TODO 修改接入OpenDownChannel ，简化这段代码
         BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
         if (!alexaManager.hasOpenDownchannel()) {
@@ -131,9 +133,21 @@ public class BgProcessIntentService extends IntentService {
             SetAlertHelper.sendAlertStopped(alexaManager, token, getCallBack("sendAlertStopped"));
             SetAlertHelper.deleteAlertSP(MyApplication.getContext(), messageId);
             AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token, messageId));
-        } else {
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
+            VolumeUtil.setMute(MyApplication.getContext()
+                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , cmd.bundle.getBoolean("mute")
+                    , new ImplAsyncCallback("setMute")
+            );
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.VOLUME_CHANGE){
+            VolumeUtil.setVolume(MyApplication.getContext()
+                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , cmd.bundle.getLong("volume")
+                    , false
+                    , new ImplAsyncCallback("setVolume"));
+        }  else {
             //cancel
-            Log.d(TAG, "start cmd:" + cmd.type);
+            Log.d(TAG, "unknow cmd:" + cmd.type);
         }
     }
 
@@ -345,74 +359,28 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private AsyncCallback<AvsResponse, Exception> getCallBack(final String name) {
-
-        return new AsyncCallback<AvsResponse, Exception>() {
-            public long startTime;
-
-            @Override
-            public void start() {
-                startTime = System.currentTimeMillis();
-                Log.i(TAG, "Event " + name + " Start");
-//                setState(STATE_PROCESSING);
-            }
-
-            @Override
-            public void success(AvsResponse result) {
-                Log.i(TAG, "Event " + name + " Success " + result);
-                AvsHandleHelper.getAvsHandleHelper().handleResponse(result);
-//                handleResponse(result);
-            }
-
-            @Override
-            public void failure(Exception error) {
-                Log.e(TAG, "Event " + name + " Error", error);
-//                setState(STATE_FINISHED);
-            }
-
-            @Override
-            public void complete() {
-                long totalTime = System.currentTimeMillis() - startTime;
-                Log.i(TAG, "Event " + name + " Complete, " + "Total request time: " + totalTime + " miliseconds");
-            }
-        };
+        return new ImplAsyncCallback(name);
     }
 
     private AsyncCallback<AvsResponse, Exception> getFileCallBack(final String name, final String filePath) {
-        return new AsyncCallback<AvsResponse, Exception>() {
-            public long startTime;
-
-            @Override
-            public void start() {
-                startTime = System.currentTimeMillis();
-                Log.i(TAG, "Event " + name + " Start");
-//                setState(STATE_PROCESSING);
-            }
+        return new ImplAsyncCallback(name) {
 
             @Override
             public void success(AvsResponse result) {
-                Log.i(TAG, "Event " + name + " Success " + result);
-                AvsHandleHelper.getAvsHandleHelper().handleResponse(result);
-//                handleResponse(result);
+                super.success(result);
                 deleteFile(filePath);
             }
 
             @Override
             public void failure(Exception error) {
-                Log.e(TAG, "Event " + name + "  Error", error);
-//                setState(STATE_FINISHED);
+                super.failure(error);
                 playError();
                 deleteFile(filePath);
             }
 
-            @Override
-            public void complete() {
-                long totalTime = System.currentTimeMillis() - startTime;
-                Log.i(TAG, "Event Complete, " + "Total request time: " + totalTime + " miliseconds");
-            }
-
             private void deleteFile(String fp) {
                 Log.d(TAG, "delete cache file p:" + fp);
-                if (false) {//TODO 清除文件
+                if (true) {//TODO 清除文件
                     File file = new File(fp);
                     if (file.exists()) {
                         Log.w(TAG, "delete cache file state:" + file.delete() + " p:" + fp);

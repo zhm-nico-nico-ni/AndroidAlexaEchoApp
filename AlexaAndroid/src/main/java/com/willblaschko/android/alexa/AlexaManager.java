@@ -777,8 +777,8 @@ public class AlexaManager {
      * @param isMute   mute state as reported by the {@link com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem} Directive
      * @param callback
      */
-    public void sendMutedEvent(final boolean isMute, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.getMuteEvent(isMute), callback);
+    public void sendMutedEvent(final boolean isMute, long volume, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+        sendEvent(Event.getMuteChangeEvent(isMute, volume), callback);
     }
 
     /**

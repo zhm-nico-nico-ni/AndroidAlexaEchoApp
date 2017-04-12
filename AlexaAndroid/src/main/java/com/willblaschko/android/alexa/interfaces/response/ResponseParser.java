@@ -17,9 +17,6 @@ import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPlayCom
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPreviousCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceAllItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceEnqueuedItem;
-import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
-import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
-import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 
 import org.apache.commons.fileupload.MultipartStream;
@@ -166,12 +163,6 @@ public class ResponseParser {
                     } else {
                         item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(), directive.getHeaderMessageId());
                     }
-                }  else if (directive.isTypeSetMute()) {
-                    item = new AvsSetMuteItem(directive.getPayload().getToken(), directive.getPayload().isMute(), directive.getHeaderMessageId());
-                } else if (directive.isTypeSetVolume()) {
-                    item = new AvsSetVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
-                } else if (directive.isTypeAdjustVolume()) {
-                    item = new AvsAdjustVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
                 } else if (directive.isTypeExpectSpeech()) {
                     item = new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds(), directive.getHeaderMessageId());
                 } else if (directive.isTypeMediaPlay()) {
