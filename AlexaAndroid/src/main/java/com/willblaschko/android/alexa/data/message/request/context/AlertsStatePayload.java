@@ -1,12 +1,13 @@
 package com.willblaschko.android.alexa.data.message.request.context;
 
 import com.willblaschko.android.alexa.data.message.Payload;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 
 import java.util.List;
 
 public final class AlertsStatePayload extends Payload {
-    public List<String> allAlerts;
-    public List<String> activeAlerts;
+    public List<AvsSetAlertItem> allAlerts;
+    public List<AvsSetAlertItem> activeAlerts;
 //    private final List<Alert> allAlerts;
 //    private final List<Alert> activeAlerts;
 //

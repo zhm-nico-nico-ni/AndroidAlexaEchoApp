@@ -31,7 +31,7 @@ public class DirectiveParseHelper {
         if (AVSAPIConstants.SpeechRecognizer.NAMESPACE.equals(directive.getHeaderNameSpace())) {
             item = handleSpeechRecognizerDirective(directive);
         } else if (AVSAPIConstants.SpeechSynthesizer.NAMESPACE.equals(directive.getHeaderNameSpace())) {
-            if (AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME.equals(directive.getHeaderNameSpace())) {
+            if (AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME.equals(directive.getHeaderName())) {
                 String cid = directive.getPayload().getUrl();
                 ByteArrayInputStream sound = audio.get(cid);
                 item = new AvsSpeakItem(directive.getPayload().getToken(), cid, sound, directive.getHeaderMessageId());

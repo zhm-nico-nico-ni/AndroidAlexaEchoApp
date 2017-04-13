@@ -6,7 +6,6 @@ import android.util.Log;
 
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
-import com.ggec.voice.assistservice.speaker.VolumeUtil;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
@@ -31,6 +30,7 @@ import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsStopItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
+import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
@@ -74,7 +74,7 @@ public class AvsHandleHelper {
             //if we have a clear queue item in the list, we need to clear the current queue before proceeding
             //iterate backwards to avoid changing our array positions and getting all the nasty errors that come
             //from doing that
-            for (int i = response.size() - 1; i >= 0; i--) {
+            for (int i = 0; i < response.size(); i++) {
                 addAvsItemToQueue(response.get(i));
             }
             if (BuildConfig.DEBUG) {
@@ -255,14 +255,14 @@ public class AvsHandleHelper {
 //        TODO 后续还要添加其他处理
         if (current instanceof AvsSetVolumeItem) {
             //set our volume
-            VolumeUtil.setVolume(MyApplication.getContext()
+            SpeakerUtil.setVolume(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     , ((AvsSetVolumeItem) current).getVolume()
                     , false
                     , new ImplAsyncCallback("setVolume"));
         } else if (current instanceof AvsAdjustVolumeItem) {
             //adjust the volume
-            VolumeUtil.setVolume(MyApplication.getContext()
+            SpeakerUtil.setVolume(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     , ((AvsAdjustVolumeItem) current).getAdjustment()
                     , true
@@ -270,7 +270,7 @@ public class AvsHandleHelper {
             );
         } else if (current instanceof AvsSetMuteItem) {
             //mute/unmute the device
-            VolumeUtil.setMute(MyApplication.getContext()
+            SpeakerUtil.setMute(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     , ((AvsSetMuteItem) current).isMute()
                     , new ImplAsyncCallback("setMute")

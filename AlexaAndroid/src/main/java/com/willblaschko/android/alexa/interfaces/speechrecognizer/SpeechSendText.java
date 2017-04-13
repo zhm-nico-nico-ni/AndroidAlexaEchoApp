@@ -5,7 +5,6 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.willblaschko.android.alexa.VoiceHelper;
-import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -22,7 +21,7 @@ import okio.BufferedSink;
  * A subclass of {@link SpeechSendEvent} that allows an arbitrary text string to be sent to the AVS servers, translated through Google's text to speech engine
  * This speech is rendered using the VoiceHelper utility class, and is done on whatever thread this call is running
  */
-public class SpeechSendText extends SpeechSendEvent {
+public abstract class SpeechSendText extends SpeechSendEvent {
 
     private final static String TAG = "SpeechSendText";
 

@@ -7,9 +7,11 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -107,7 +109,7 @@ public class MyVoiceRecord extends Thread {
                 if (numberOfReadFloat > 0) {
                     TarsosDSPAudioFloatConverter
                             .getConverter(tarsosDSPAudioFormat)
-                            .toFloatArray(audioBuffer, tempFloatBuffer, numberOfReadFloat / 4);
+                            .toFloatArray(audioBuffer, tempFloatBuffer, numberOfReadFloat / 2);
 
                     boolean isSilent = continuingSilenceDetector.isSilence(tempFloatBuffer);
                     long currentTime = SystemClock.elapsedRealtime();
@@ -157,18 +159,20 @@ public class MyVoiceRecord extends Thread {
             if(mState.beginSpeakTime > 0){
                 try {
                     stream.close();
-//                    byte[] readbuff= new byte[1024];
-//                    FileOutputStream stream2 = new FileOutputStream(mFilePath+"_");
-//
-//                    File res = new File(mFilePath);
-//                    FileInputStream inputStream = new FileInputStream(res);
-//                    long pointer = 0;
-//                    while (inputStream.available() > 0 && pointer <= mState.lastSilentRecordIndex){
-//                        int readCount = inputStream.read(readbuff);
-//                        stream2.write(readbuff, 0, readCount);
-//                        pointer += readCount;
-//                    }
-//                    inputStream.close();
+                    if(BuildConfig.DEBUG) {
+                        byte[] readbuff = new byte[1024];
+                        FileOutputStream stream2 = new FileOutputStream(mFilePath + "-");
+
+                        File res = new File(mFilePath);
+                        FileInputStream inputStream = new FileInputStream(res);
+                        long pointer = 0;
+                        while (inputStream.available() > 0 && pointer <= mState.lastSilentRecordIndex) {
+                            int readCount = inputStream.read(readbuff);
+                            stream2.write(readbuff, 0, readCount);
+                            pointer += readCount;
+                        }
+                        inputStream.close();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

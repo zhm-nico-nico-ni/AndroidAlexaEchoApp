@@ -6,7 +6,6 @@ import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
-import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +19,7 @@ import okhttp3.RequestBody;
  *
  * @author will on 4/17/2016.
  */
-public class SpeechSendAudio extends SpeechSendEvent {
+public abstract class SpeechSendAudio extends SpeechSendEvent {
 
     private final static String TAG = "SpeechSendAudio";
 
@@ -64,8 +63,7 @@ public class SpeechSendAudio extends SpeechSendEvent {
                 callback.complete();
             }
 
-            Log.i(TAG, "Audio sent");
-            Log.i(TAG, "Audio sending process took: " + (System.currentTimeMillis() - start));
+            Log.i(TAG, "Audio sending finish, process took: " + (System.currentTimeMillis() - start));
         } catch (IOException|AvsException e) {
             onError(callback, e);
         }

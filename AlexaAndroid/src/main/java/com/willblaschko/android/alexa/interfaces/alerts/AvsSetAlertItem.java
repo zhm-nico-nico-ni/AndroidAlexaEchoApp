@@ -1,6 +1,5 @@
 package com.willblaschko.android.alexa.interfaces.alerts;
 
-import com.google.gson.annotations.Expose;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 
 import org.json.JSONException;
@@ -15,10 +14,7 @@ import org.json.JSONObject;
 public class AvsSetAlertItem extends AvsItem {
     private String type;
     private String scheduledTime;
-    @Expose
-    public String messageId;
-    @Expose
-    private int timeId;
+    private transient int timeId;
 
     public static final String TIMER = "TIMER";
     public static final String ALARM = "ALARM";
@@ -34,7 +30,6 @@ public class AvsSetAlertItem extends AvsItem {
         super(token, messageId);
         this.type = type;
         this.scheduledTime = scheduledTime;
-        this.messageId = messageId;
         timeId = (int) (System.currentTimeMillis() & 0xFFFFFFFFL);
     }
 
@@ -63,7 +58,7 @@ public class AvsSetAlertItem extends AvsItem {
     }
 
     public String getMessageId() {
-        return messageId;
+        return messageID;
     }
 
     public int getTimeId(){
@@ -76,7 +71,7 @@ public class AvsSetAlertItem extends AvsItem {
             jsonObject.put("type", type);
             jsonObject.put("scheduledTime", scheduledTime);
             jsonObject.put("token", getToken());
-            jsonObject.put("messageId", messageId);
+            jsonObject.put("messageId", messageID);
             jsonObject.put("timeId", timeId);
         } catch (JSONException e) {
             e.printStackTrace();

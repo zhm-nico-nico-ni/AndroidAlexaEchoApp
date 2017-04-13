@@ -123,16 +123,16 @@ public class Event {
 
     }
 
-    public static String getSpeechRecognizerEvent(){
+    public static String getSpeechRecognizerEvent(List<Event> events){
         Builder builder = new Builder();
         builder.setHeaderNamespace("SpeechRecognizer")
                 .setHeaderName("Recognize")
                 .setHeaderMessageId(getUuid())
                 .setHeaderDialogRequestId("dialogRequest-321")
                 .setPayload(PayloadFactory
-                        .createSpeechRecognizerPayload("NEAR_FIELD",
+                        .createSpeechRecognizerPayload("NEAR_FIELD", //"CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
                                 "AUDIO_L16_RATE_16000_CHANNELS_1"))
-                .setContext(getContextList())
+                .setContext(events)
                 ;
         return builder.toJson();
     }
@@ -293,50 +293,17 @@ public class Event {
         return builder.toJson();
     }
 
-    public static List<Event> getContextList(){// TODO need send actually context
-        List<Event> list = new ArrayList<>();
-        String token = "";
 
-        Builder playbackEventBuilder = new Builder()
-                .setHeaderNamespace("AudioPlayer")
-                .setHeaderName("PlaybackState")
-                .setPayload(PayloadFactory.createPlaybackStatePayload(token,0, "IDLE"))
-                ;
-        list.add(playbackEventBuilder.build().event);
+    public static String createSystemSynchronizeStateEvent(List<Event> contextList){
 
-        Builder speechSynthesizerEventBuilder = new Builder()
-                .setHeaderNamespace("SpeechSynthesizer")
-                .setHeaderName("SpeechState")
-                .setPayload(PayloadFactory.createSpeechStatePayload(token,0, "FINISHED"))
-                ;
-        list.add(speechSynthesizerEventBuilder.build().event);
-
-        Builder alertsEventBuilder = new Builder()
-                .setHeaderNamespace("Alerts")
-                .setHeaderName("AlertsState")
-                .setPayload(PayloadFactory.createAlertsStatePayload());
-        list.add(alertsEventBuilder.build().event);
-
-        Builder speakerEventBuilder = new Builder()
-                .setHeaderNamespace("Speaker")
-                .setHeaderName("VolumeState")
-                .setPayload(PayloadFactory.createVolumeStatePayload(50, false));
-        list.add(speakerEventBuilder.build().event);
-
-        return list;
-    }
-
-    public static String createSystemSynchronizeStateEvent(){
-
-        Builder builder = new Builder();
+        Event.Builder builder = new Event.Builder();
         builder.setHeaderNamespace("System")
                 .setHeaderName("SynchronizeState")
                 .setHeaderMessageId(getUuid())
-                .setContext(getContextList());
+                .setContext(contextList);
 
         return builder.toJson();
     }
-
 
 }
 

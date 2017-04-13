@@ -4,6 +4,7 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 
@@ -13,7 +14,6 @@ import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.log.Log;
-import com.ggec.voice.assistservice.speaker.VolumeUtil;
 import com.ggec.voice.assistservice.speechutil.RawAudioRecorder;
 import com.ggec.voice.assistservice.test.AudioCapture;
 import com.ggec.voice.assistservice.test.RecordingRMSListener;
@@ -24,6 +24,7 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
+import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
@@ -43,7 +44,7 @@ public class BgProcessIntentService extends IntentService {
 
     public static final String EXTRA_CMD = "Control-Command";
 
-    private Handler handler = new Handler();
+    private Handler handler = new Handler(Looper.getMainLooper());
     private RawAudioRecorder recorder;
 
     public BgProcessIntentService() {
@@ -75,10 +76,10 @@ public class BgProcessIntentService extends IntentService {
     protected void onHandleIntent(@Nullable Intent intent) {// TODO 修改接入OpenDownChannel ，简化这段代码
         BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
-        if (!alexaManager.hasOpenDownchannel()) {
-            alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
-            return;
-        }
+//        if (!alexaManager.hasOpenDownchannel()) {
+//            alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
+//            return;
+//        }
 
         if (cmd.type == 1) {
             //start
@@ -92,6 +93,7 @@ public class BgProcessIntentService extends IntentService {
 //            }
 //            alexaManager.sendSynchronizeStateEvent2(getCallBack("{SynchronizeStateEvent}"));
             startRecord1(cmd.waitMicDelayMillSecond);
+//            search();
         } else if (cmd.type == 2) {
             //stop
             Log.d(TAG, "stop " + currentRunId);
@@ -134,13 +136,13 @@ public class BgProcessIntentService extends IntentService {
             SetAlertHelper.deleteAlertSP(MyApplication.getContext(), messageId);
             AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token, messageId));
         } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
-            VolumeUtil.setMute(MyApplication.getContext()
+            SpeakerUtil.setMute(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     , cmd.bundle.getBoolean("mute")
                     , new ImplAsyncCallback("setMute")
             );
         } else if(cmd.type == BackGroundProcessServiceControlCommand.VOLUME_CHANGE){
-            VolumeUtil.setVolume(MyApplication.getContext()
+            SpeakerUtil.setVolume(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     , cmd.bundle.getLong("volume")
                     , false
@@ -341,7 +343,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Set a timer after 15 seconds from now", getCallBack("textTest"));//"Set a timer after one minutes from now"
+        alexaManager.sendTextRequest("Hello", getCallBack("textTest"));//Set a timer after 15 seconds from now"Set a timer after one minutes from now"
     }
 
     private void search() {
@@ -418,26 +420,23 @@ public class BgProcessIntentService extends IntentService {
 //    }
 
     private void playStart(final MediaPlayer.OnCompletionListener listener) {
-//        MyShortAudioPlayer.getInstance(this).playStart();
         handler.post(new Runnable() {
             @Override
             public void run() {
-                try {
-                    new MyShortAudioPlayer2("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.error, listener);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
+                new MyShortAudioPlayer2("asset:///start.mp3", listener);
             }
         });
 
     }
 
     private void playError() {
-        try {
-            new MyShortAudioPlayer2("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start, null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-//        MyShortAudioPlayer.getInstance(this).playError();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
+                new MyShortAudioPlayer2("asset:///error.mp3", null);
+            }
+        });
     }
 }

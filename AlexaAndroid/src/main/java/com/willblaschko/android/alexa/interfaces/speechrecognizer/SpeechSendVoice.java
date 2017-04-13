@@ -7,6 +7,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 import okhttp3.RequestBody;
 import okio.BufferedSink;
@@ -31,7 +33,7 @@ import okio.BufferedSink;
  * @deprecated Use {@link SpeechSendAudio} instead, either with a byte[] or using the streamed RequestBody
  */
 @Deprecated
-public class SpeechSendVoice extends SpeechSendEvent {
+public  class SpeechSendVoice extends SpeechSendEvent {
     private final static String TAG = "SpeechSendVoice";
 
     private AudioRecord mAudioRecord;
@@ -175,6 +177,11 @@ public class SpeechSendVoice extends SpeechSendEvent {
                 sink.write(mOutputStream.toByteArray());
             }
         };
+    }
+
+    @Override
+    protected List<Event> getContextStateEvents() {
+        return null;
     }
 
 }

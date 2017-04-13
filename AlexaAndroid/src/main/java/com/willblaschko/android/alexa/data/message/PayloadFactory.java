@@ -1,6 +1,8 @@
 package com.willblaschko.android.alexa.data.message;
 
 
+import android.content.Context;
+
 import com.willblaschko.android.alexa.data.message.request.audioplayer.AudioPlayerPayload;
 import com.willblaschko.android.alexa.data.message.request.context.AlertsStatePayload;
 import com.willblaschko.android.alexa.data.message.request.context.PlaybackStatePayload;
@@ -9,8 +11,11 @@ import com.willblaschko.android.alexa.data.message.request.context.VolumeStatePa
 import com.willblaschko.android.alexa.data.message.request.speaker.MuteChange;
 import com.willblaschko.android.alexa.data.message.request.speaker.VolumeChangedPayload;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.SpeechRecognizerPayload;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
+import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by ggec on 2017/4/6.
@@ -71,10 +76,13 @@ public class PayloadFactory {
         return payload;
     }
 
-    public static AlertsStatePayload createAlertsStatePayload() {
+    public static AlertsStatePayload createAlertsStatePayload(Context context) {
         AlertsStatePayload payload = new AlertsStatePayload();
         payload.allAlerts = new ArrayList<>();
+        List<AvsSetAlertItem> list =  SetAlertHelper.getAllAlerts(context);
+        payload.allAlerts.addAll(list);
         payload.activeAlerts = new ArrayList<>();
+        payload.activeAlerts.addAll(list); //TODO what means active
         return payload;
     }
 

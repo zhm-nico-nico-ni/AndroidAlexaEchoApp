@@ -1,8 +1,9 @@
-package com.ggec.voice.assistservice.speaker;
+package com.willblaschko.android.alexa.interfaces.speaker;
 
 import android.content.Context;
 import android.media.AudioManager;
 import android.util.Log;
+import android.util.Pair;
 
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
@@ -12,8 +13,8 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
  * Created by ggec on 2017/4/12.
  */
 
-public class VolumeUtil {
-    private static final String TAG = "VolumeUtil";
+public class SpeakerUtil {
+    private static final String TAG = "SpeakerUtil";
 
     public static void setVolume(Context context, AlexaManager alexaManager, final long volume, final boolean adjust, AsyncCallback<AvsResponse, Exception> callback) {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -49,5 +50,15 @@ public class VolumeUtil {
         final int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         long vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         return vol* 100 / max ;
+    }
+
+    public static Pair<Long, Boolean> getConvertVolumeState(Context context){
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        final int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        long vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+        long av = vol* 100 / max;
+        boolean ismute = am.isStreamMute(AudioManager.STREAM_MUSIC);
+        Log.d(TAG, "getConvertVolumeState v:"+av +" mute:"+ismute);
+        return new Pair<>(av, ismute) ;
     }
 }
