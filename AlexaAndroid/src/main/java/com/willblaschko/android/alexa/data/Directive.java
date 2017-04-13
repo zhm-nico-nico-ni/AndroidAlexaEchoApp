@@ -116,6 +116,7 @@ public class Directive {
         long timeoutInMilliseconds;
         String description;
         String code;
+        String endpoint;
 
         public String getUrl() {
             return url;
@@ -167,6 +168,10 @@ public class Directive {
 
         public String getCode() {
             return code;
+        }
+
+        public String getEndpoint(){
+            return endpoint;
         }
     }
 

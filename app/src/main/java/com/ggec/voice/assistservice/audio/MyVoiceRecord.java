@@ -7,14 +7,12 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 import be.tarsos.dsp.SilenceDetector;
 import be.tarsos.dsp.io.TarsosDSPAudioFloatConverter;
@@ -49,7 +47,7 @@ public class MyVoiceRecord extends Thread {
     private IMyVoiceRecordListener mListener;
 
     private volatile RecordState recordState = RecordState.empty;
-    private final String mFilePath;
+    private String mFilePath;
 
     public MyVoiceRecord(float silenceThreshold, @NonNull IMyVoiceRecordListener listener) throws IllegalStateException {
         bufferSizeInBytes = AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,
@@ -80,7 +78,7 @@ public class MyVoiceRecord extends Thread {
             file.mkdirs();
         }
 
-        mFilePath = file.getAbsolutePath() + "/" + System.currentTimeMillis() + ".pcm";
+        mFilePath = file.getAbsolutePath() + "/" + System.currentTimeMillis();
 
         recordState = RecordState.init;
         // Start Recording.
@@ -157,30 +155,50 @@ public class MyVoiceRecord extends Thread {
             }
 
             if(mState.beginSpeakTime > 0){
-                try {
-                    stream.close();
-                    if(BuildConfig.DEBUG) {
-                        byte[] readbuff = new byte[1024];
-                        FileOutputStream stream2 = new FileOutputStream(mFilePath + "-");
+                stream.close();
+////////////part 1  Record pcm
+//                    if(BuildConfig.DEBUG) {
+//                        byte[] readbuff = new byte[1024];
+//                        FileOutputStream stream2 = new FileOutputStream(mFilePath + "-");
+//
+//                        File res = new File(mFilePath);
+//                        FileInputStream inputStream = new FileInputStream(res);
+//                        long pointer = 0;
+//                        while (inputStream.available() > 0 && pointer <= mState.lastSilentRecordIndex) {
+//                            int readCount = inputStream.read(readbuff);
+//                            stream2.write(readbuff, 0, readCount);
+//                            pointer += readCount;
+//                        }
+//                        inputStream.close();
+//                    }
+////////////// end part 1
 
-                        File res = new File(mFilePath);
-                        FileInputStream inputStream = new FileInputStream(res);
-                        long pointer = 0;
-                        while (inputStream.available() > 0 && pointer <= mState.lastSilentRecordIndex) {
-                            int readCount = inputStream.read(readbuff);
-                            stream2.write(readbuff, 0, readCount);
-                            pointer += readCount;
-                        }
-                        inputStream.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+
+                ////////////part 2 Record wav
+//                    if(BuildConfig.DEBUG) { // Record wav
+//                        byte[] readbuff = new byte[1024];
+//                        RandomAccessFile stream2 = fopen(mFilePath+".wav");
+//
+//                        File res = new File(mFilePath);
+//                        FileInputStream inputStream = new FileInputStream(res);
+//                        long pointer = 0;
+//                        while (inputStream.available() > 0 && pointer <= mState.lastSilentRecordIndex) {
+//                            int readCount = inputStream.read(readbuff);
+//                            fwrite(stream2,readbuff, 0, readCount);
+//                            pointer += readCount;
+//                        }
+//                        fclose(stream2);
+//                        inputStream.close();
+//                        res.delete();
+//                        mFilePath=mFilePath+".wav";
+//                mState.lastSilentRecordIndex = 0;
+//                    }
+                ////////////end part 2 Record wav
             }
 
             Log.d("zhm", " important !!!!!!!!!!!!!!!! size:" + currentDataPointer +" act:"+mState.lastSilentRecordIndex);
 
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             interrupt();
         }
@@ -250,6 +268,63 @@ public class MyVoiceRecord extends Thread {
                 stringBuilder.append(" , speak duration:").append(now - beginSpeakTime);
             }
             return stringBuilder.toString();
+        }
+    }
+
+    private RandomAccessFile fopen(String path) throws IOException {
+        File f = new File(path);
+
+        if (f.exists()) {
+            f.delete();
+        } else {
+            File parentDir = f.getParentFile();
+            if (!parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+        }
+
+        RandomAccessFile file = new RandomAccessFile(f, "rw");
+        // 16K、16bit、单声道
+    /* RIFF header */
+        file.writeBytes("RIFF"); // riff id
+        file.writeInt(0); // riff chunk size *PLACEHOLDER*
+        file.writeBytes("WAVE"); // wave type
+
+    /* fmt chunk */
+        file.writeBytes("fmt "); // fmt id
+        file.writeInt(Integer.reverseBytes(16)); // fmt chunk size
+        file.writeShort(Short.reverseBytes((short) 1)); // format: 1(PCM)
+        file.writeShort(Short.reverseBytes((short) 1)); // channels: 1
+        file.writeInt(Integer.reverseBytes(16000)); // samples per second
+        file.writeInt(Integer.reverseBytes((int) (1 * 16000 * 16 / 8))); // BPSecond
+        file.writeShort(Short.reverseBytes((short) (1 * 16 / 8))); // BPSample
+        file.writeShort(Short.reverseBytes((short) (1 * 16))); // bPSample
+
+    /* data chunk */
+        file.writeBytes("data"); // data id
+        file.writeInt(0); // data chunk size *PLACEHOLDER*
+
+        Log.d(TAG, "wav path: " + path);
+        return file;
+    }
+
+    private void fwrite(RandomAccessFile file, byte[] data, int offset, int size) throws IOException {
+        file.write(data, offset, size);
+//        Log.d(TAG, "fwrite: " + size);
+    }
+
+    private void fclose(RandomAccessFile file) throws IOException {
+        try {
+            file.seek(4); // riff chunk size
+            file.writeInt(Integer.reverseBytes((int) (file.length() - 8)));
+
+            file.seek(40); // data chunk size
+            file.writeInt(Integer.reverseBytes((int) (file.length() - 44)));
+
+            Log.d(TAG, "wav size: " + file.length());
+
+        } finally {
+            file.close();
         }
     }
 }

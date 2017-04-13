@@ -20,10 +20,13 @@ import com.ggec.voice.assistservice.test.RecordingRMSListener;
 import com.ggec.voice.assistservice.test.RecordingStateListener;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
+import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
@@ -76,10 +79,10 @@ public class BgProcessIntentService extends IntentService {
     protected void onHandleIntent(@Nullable Intent intent) {// TODO 修改接入OpenDownChannel ，简化这段代码
         BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
-//        if (!alexaManager.hasOpenDownchannel()) {
-//            alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
-//            return;
-//        }
+        if (!alexaManager.hasOpenDownchannel()) {
+            alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
+            return;
+        }
 
         if (cmd.type == 1) {
             //start
@@ -378,6 +381,13 @@ public class BgProcessIntentService extends IntentService {
                 super.failure(error);
                 playError();
                 deleteFile(filePath);
+                if(error instanceof AvsAudioException) {
+                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                    alexaManager.sendEvent(Event
+                            .createExceptionEncounteredEvent(ContextUtil.getContextList(MyApplication.getContext())
+                            ,"", "UNEXPECTED_INFORMATION_RECEIVED", "Speech Recognize event send, but receive nothing, http response code = 204")
+                            , null);
+                }
             }
 
             private void deleteFile(String fp) {

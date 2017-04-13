@@ -18,6 +18,7 @@ import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPreviou
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceAllItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceEnqueuedItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
+import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
 import org.apache.commons.fileupload.MultipartStream;
 import org.apache.commons.io.IOUtils;
@@ -123,7 +124,7 @@ public class ResponseParser {
                 } else {
                     // get the json directive
                     String directive = data.toString(Charset.defaultCharset().displayName());
-                    
+
                     directives.add(getDirective(directive));
                 }
                 count++;
@@ -132,7 +133,14 @@ public class ResponseParser {
         } else {
             Log.i(TAG, "Response Body: \n" + string(bytes));
             try {
-                directives.add(getDirective(responseString));
+                Directive directive = getDirective(responseString);
+                if(directive.isTypeException()){
+                    AvsResponseException exception = new AvsResponseException(directive);
+                    Log.e(TAG, "AvsResponseException -> " + exception.getMessage());
+                    throw exception;
+                }else {
+                    directives.add(directive);
+                }
             }catch (JsonParseException e) {
                 e.printStackTrace();
                 throw new AvsException("Response from Alexa server malformed. ");
@@ -173,10 +181,11 @@ public class ResponseParser {
                     item = new AvsMediaNextCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
                 } else if (directive.isTypeMediaPrevious()) {
                     item = new AvsMediaPreviousCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
-                } else if (directive.isTypeException()) {
-                    item = new AvsResponseException(directive);
                 } else {
-                    Log.e(TAG, "Unknown type found -> " + directive.getHeaderNameSpace() + ":" + directive.getHeaderName());
+                    String directiveString = new Gson().toJson(directive);
+                    String msg = "Unknown type found -> " + directive.getHeaderNameSpace() + ":" + directive.getHeaderName();
+                    Log.e(TAG, msg+ "\n directive:"+directiveString);
+                    item = new AvsUnableExecuteItem(directiveString, "UNSUPPORTED_OPERATION", msg);
                 }
             }
 
@@ -203,7 +212,7 @@ public class ResponseParser {
      * @param directive the string representation of our JSON object
      * @return the reflected directive
      */
-    private static Directive getDirective(String directive) throws AvsException {
+    private static Directive getDirective(String directive){
         Gson gson = new Gson();
         Directive.DirectiveWrapper wrapper = gson.fromJson(directive, Directive.DirectiveWrapper.class);
         if (wrapper.getDirective() == null) {

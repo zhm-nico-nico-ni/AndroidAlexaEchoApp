@@ -92,7 +92,7 @@ public abstract class SendEvent {
         Request request = mRequestBuilder.build();
 
 
-        currentCall = ClientUtil.getTLS12OkHttpClient().newCall(request);
+        currentCall = ClientUtil.getHttp2Client().newCall(request);
 
         try {
             Response response = currentCall.execute();
@@ -104,7 +104,7 @@ public abstract class SendEvent {
                 Log.w(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
             }
 
-            final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? new AvsResponse() :
+            final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
                     ResponseParser.parseResponse(response.body().byteStream(), getBoundary(response));
 
             response.body().close();
@@ -154,4 +154,7 @@ public abstract class SendEvent {
     @NotNull
     protected abstract String getEvent();
 
+    protected AvsResponse getResponseWhenHttpNoContent(){
+        return new AvsResponse();
+    }
 }

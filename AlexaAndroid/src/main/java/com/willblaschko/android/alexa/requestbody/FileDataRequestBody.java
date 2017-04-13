@@ -38,7 +38,11 @@ public class FileDataRequestBody extends RequestBody {
         Source source = null;
         try {
             source = Okio.source(mFile);
-            sink.write(source, mActuallyLong);
+            if(mActuallyLong > 0){
+                sink.write(source, mActuallyLong);
+            } else {
+                sink.writeAll(source);
+            }
         } finally {
             Util.closeQuietly(source);
         }

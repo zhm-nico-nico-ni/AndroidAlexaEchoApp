@@ -12,6 +12,8 @@ import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
+import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityItem;
+import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,6 +53,12 @@ public class DirectiveParseHelper {
                 item = new AvsAdjustVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
             } else if (AVSAPIConstants.Speaker.Directives.SetMute.NAME.equals(directive.getHeaderName())) {
                 item = new AvsSetMuteItem(directive.getPayload().getToken(), directive.getPayload().isMute(), directive.getHeaderMessageId());
+            }
+        } else if(AVSAPIConstants.System.Directives.SetEndpoint.NAME.equals(directive.getHeaderNameSpace())){
+            if (AVSAPIConstants.System.Directives.SetEndpoint.NAME.equals(directive.getHeaderName())) {
+                item = new AvsSetEndPointItem(directive.getHeaderMessageId(), directive.getPayload().getEndpoint());
+            } else if(AVSAPIConstants.System.Directives.ResetUserInactivity.NAME.equals(directive.getHeaderName())){
+                item = new AvsResetUserInactivityItem(directive.getHeaderMessageId());
             }
         }
 

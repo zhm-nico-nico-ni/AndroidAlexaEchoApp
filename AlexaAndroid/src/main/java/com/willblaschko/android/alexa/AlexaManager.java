@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -19,6 +20,7 @@ import com.willblaschko.android.alexa.interfaces.GenericSendEvent;
 import com.willblaschko.android.alexa.interfaces.PingSendEvent;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
+import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendText;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendVoice;
@@ -61,11 +63,15 @@ public class AlexaManager {
     private VoiceHelper mVoiceHelper;
     private Context mContext;
     private boolean mIsRecording = false;
+    private long mLastUserActivityElapsedTime;
+    private String mEndPoint;
 
     private AlexaManager(Context context, String productId) {
+        resetUserInactivityTime();
         mContext = context.getApplicationContext();
         mAuthorizationManager = new AuthorizationManager(mContext, productId);
         mVoiceHelper = VoiceHelper.getInstance(mContext);
+        mEndPoint = SharedPreferenceUtil.getEndPointUrl(mContext);
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
@@ -303,10 +309,6 @@ public class AlexaManager {
      *
      * @param callback state callback
      */
-    public void sendSynchronizeStateEvent(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.getSynchronizeStateEvent(), callback);
-    }
-
     public void sendSynchronizeStateEvent2(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
         sendEvent(Event.createSystemSynchronizeStateEvent(ContextUtil.getContextList(mContext)), callback);
     }
@@ -716,11 +718,19 @@ public class AlexaManager {
                             new AsyncTask<Void, Void, AvsResponse>() {
                                 @Override
                                 protected AvsResponse doInBackground(Void... params) {
+                                    mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
                                     try {
                                         getSpeechSendAudio().sendAudio(url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
+                                    } catch (AvsResponseException e){
+                                        if(e.isUnAuthorized()){
+//TODO handle UnAuthorized
+                                        }
+                                        if (callback != null) {
+                                            callback.failure(e);
+                                        }
+                                    } catch (AvsException e) {
                                         //bubble up the error
+                                        // report to avs
                                         if (callback != null) {
                                             callback.failure(e);
                                         }
@@ -972,7 +982,7 @@ public class AlexaManager {
 
     private String getEventsUrl() {
         return new StringBuilder()
-                .append(mContext.getString(R.string.alexa_api))
+                .append(mEndPoint)
                 .append("/")
                 .append(mContext.getString(R.string.alexa_api_version))
                 .append("/")
@@ -982,7 +992,7 @@ public class AlexaManager {
 
     private String getDirectivesUrl() {
         return new StringBuilder()
-                .append(mContext.getString(R.string.alexa_api))
+                .append(mEndPoint)
                 .append("/")
                 .append(mContext.getString(R.string.alexa_api_version))
                 .append("/")
@@ -992,10 +1002,23 @@ public class AlexaManager {
 
     private String getPingUrl() {
         return new StringBuilder()
-                .append(mContext.getString(R.string.alexa_api))
+                .append(mEndPoint)
                 .append("/")
                 .append("ping")
                 .toString();
+    }
+
+    public void resetUserInactivityTime (){
+        mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
+    }
+
+    public void setEndPoint(String endPoint){
+        if(SharedPreferenceUtil.putEndPoint(mContext, endPoint)){
+            mEndPoint = endPoint;
+            Log.w(TAG, "Set end point success: " + endPoint);
+        } else{
+            Log.e(TAG, "Set end point fail: " + endPoint);
+        }
     }
 
     private static class AsyncEventHandler implements AsyncCallback<AvsResponse, Exception> {

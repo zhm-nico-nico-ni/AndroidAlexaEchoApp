@@ -36,7 +36,7 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
      * @throws IOException
      */
     public void sendAudio(final String url, final String accessToken, @NotNull RequestBody requestBody,
-                          final AsyncCallback<AvsResponse, Exception> callback) throws IOException {
+                          final AsyncCallback<AvsResponse, Exception> callback) throws AvsException {
         this.requestBody = requestBody;
         if(callback != null){
             callback.start();
@@ -49,7 +49,7 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
             prepareConnection(url, accessToken);
             final AvsResponse response = completePost();
 
-            if (response != null && response.isEmpty()) {
+            if (response == null || response.isEmpty()) {
                 if (callback != null) {
                     callback.failure(new AvsAudioException("Nothing came back"));
                 }
@@ -64,7 +64,7 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
             }
 
             Log.i(TAG, "Audio sending finish, process took: " + (System.currentTimeMillis() - start));
-        } catch (IOException|AvsException e) {
+        } catch (IOException e) {
             onError(callback, e);
         }
     }
@@ -84,5 +84,10 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
     @Override
     protected RequestBody getRequestBody() {
         return requestBody;
+    }
+
+    @Override
+    protected AvsResponse getResponseWhenHttpNoContent() {
+        return null;
     }
 }

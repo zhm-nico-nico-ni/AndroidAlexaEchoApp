@@ -11,6 +11,8 @@ import com.willblaschko.android.alexa.data.message.request.context.VolumeStatePa
 import com.willblaschko.android.alexa.data.message.request.speaker.MuteChange;
 import com.willblaschko.android.alexa.data.message.request.speaker.VolumeChangedPayload;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.SpeechRecognizerPayload;
+import com.willblaschko.android.alexa.data.message.request.system.ExceptionEncounteredPayload;
+import com.willblaschko.android.alexa.data.message.request.system.UserInactivityReportPayload;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 
@@ -97,6 +99,16 @@ public class PayloadFactory {
         MuteChange payload = new MuteChange();
         payload.mute = mute;
         payload.volume = volume;
+        return payload;
+    }
+
+    public static ExceptionEncounteredPayload createExceptionEncounteredPayload(String unparsedDirective, String type, String msg){
+        return new ExceptionEncounteredPayload(unparsedDirective, type, msg);
+    }
+
+    public static UserInactivityReportPayload createUserInactivityReportPayload(long inactiveTimeInSeconds){
+        UserInactivityReportPayload payload = new UserInactivityReportPayload();
+        payload.inactiveTimeInSeconds = inactiveTimeInSeconds;
         return payload;
     }
 }

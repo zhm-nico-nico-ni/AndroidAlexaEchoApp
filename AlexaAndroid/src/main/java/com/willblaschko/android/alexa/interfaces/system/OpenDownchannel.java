@@ -37,7 +37,7 @@ public class OpenDownchannel extends SendEvent {
     public OpenDownchannel(final String url, final AsyncCallback<AvsResponse, Exception> callback) {
         this.callback = callback;
         this.url = url;
-        this.client = ClientUtil.getTLS12OkHttpClient();
+        this.client = ClientUtil.getHttp2Client();
     }
 
     /**

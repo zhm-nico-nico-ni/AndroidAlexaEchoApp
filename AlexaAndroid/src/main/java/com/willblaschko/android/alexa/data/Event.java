@@ -128,9 +128,9 @@ public class Event {
         builder.setHeaderNamespace("SpeechRecognizer")
                 .setHeaderName("Recognize")
                 .setHeaderMessageId(getUuid())
-                .setHeaderDialogRequestId("dialogRequest-321")
+                .setHeaderDialogRequestId(getUuid())
                 .setPayload(PayloadFactory
-                        .createSpeechRecognizerPayload("NEAR_FIELD", //"CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
+                        .createSpeechRecognizerPayload("CLOSE_TALK", //"CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
                                 "AUDIO_L16_RATE_16000_CHANNELS_1"))
                 .setContext(events)
                 ;
@@ -284,16 +284,6 @@ public class Event {
         return builder.toJson();
     }
 
-
-    public static String getSynchronizeStateEvent(){
-        Builder builder = new Builder();
-        builder.setHeaderNamespace("System")
-                .setHeaderName("SynchronizeState")
-                .setHeaderMessageId(getUuid());
-        return builder.toJson();
-    }
-
-
     public static String createSystemSynchronizeStateEvent(List<Event> contextList){
 
         Event.Builder builder = new Event.Builder();
@@ -305,6 +295,28 @@ public class Event {
         return builder.toJson();
     }
 
+    public static String createExceptionEncounteredEvent(List<Event> contextList, String unparsedDirective, String type, String msg){
+
+        Event.Builder builder = new Event.Builder();
+        builder.setHeaderNamespace("System")
+                .setHeaderName(AVSAPIConstants.System.Events.ExceptionEncountered.NAME)
+                .setHeaderMessageId(getUuid())
+                .setContext(contextList)
+                .setPayload(PayloadFactory.createExceptionEncounteredPayload(unparsedDirective, type, msg));
+
+        return builder.toJson();
+    }
+
+    public static String createUserInactivityReportEvent(List<Event> contextList, long inactiveTimeInSeconds){ // TODO send this per hour
+        Event.Builder builder = new Event.Builder();
+        builder.setHeaderNamespace("System")
+                .setHeaderName(AVSAPIConstants.System.Events.UserInactivityReport.NAME)
+                .setHeaderMessageId(getUuid())
+                .setContext(contextList)
+                .setPayload(PayloadFactory.createUserInactivityReportPayload(inactiveTimeInSeconds));
+
+        return builder.toJson();
+    }
 }
 
 

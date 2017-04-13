@@ -9,6 +9,7 @@ import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
@@ -19,7 +20,7 @@ import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
-import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
+import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaNextCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPauseCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPlayCommandItem;
@@ -33,6 +34,9 @@ import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
+import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityItem;
+import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
+import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
 import java.util.LinkedHashMap;
 
@@ -122,12 +126,10 @@ public class AvsHandleHelper {
         }
 
         if(TextUtils.isEmpty(response.messageID)){
-            if (response instanceof AvsResponseException) {
-                AvsResponseException exception = (AvsResponseException) response;
-                Log.e(TAG, "AvsResponseException -> " + exception.getDirective().getPayload().getCode()
-                        + ": " + exception.getDirective().getPayload().getDescription());
-            } else if(BuildConfig.DEBUG)
-                Log.e(TAG, "handleAvsItem messageID is empty! " + response.getClass());
+            //AvsResponseException， 已经在parseResponse 中throw，AvsUnableExecuteItem 已在processAvsItemImmediately处理
+            if(BuildConfig.DEBUG) {
+                Log.e(TAG, "[important]handleAvsItem messageID is empty! " + response.getClass());
+            }
             return;
         }
         if (BuildConfig.DEBUG) {
@@ -275,6 +277,23 @@ public class AvsHandleHelper {
                     , ((AvsSetMuteItem) current).isMute()
                     , new ImplAsyncCallback("setMute")
             );
+        } else if(current instanceof AvsUnableExecuteItem){
+            AvsUnableExecuteItem item = (AvsUnableExecuteItem) current;
+            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+            alexaManager.sendEvent(Event
+                            .createExceptionEncounteredEvent(ContextUtil.getContextList(MyApplication.getContext())
+                                    , item.unparsedDirective
+                                    , item.type
+                                    , item.message)
+                    , null);
+        } else if(current instanceof AvsResetUserInactivityItem){
+            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+            alexaManager.resetUserInactivityTime();
+        } else if(current instanceof AvsSetEndPointItem){
+            avsQueue.clear();
+            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+            alexaManager.setEndPoint(((AvsSetEndPointItem) current).endPoint);
+            Log.w(TAG, " handle clear queue ! AvsSetEndPointItem");
         } else {
             return false;
         }

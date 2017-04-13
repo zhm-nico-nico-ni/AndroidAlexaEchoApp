@@ -72,7 +72,7 @@ public class TokenManager {
         }
         builder.add(ARG_CODE_VERIFIER, codeVerifier);
 
-        OkHttpClient client = ClientUtil.getTLS12OkHttpClient();
+        OkHttpClient client = ClientUtil.getHttp1Client();
 
         Request request = new Request.Builder()
                 .url(url)
@@ -169,7 +169,7 @@ public class TokenManager {
             builder.add(ARG_CLIENT_ID, authorizationManager.getClientId());
 
 
-        OkHttpClient client = ClientUtil.getTLS12OkHttpClient();
+        OkHttpClient client = ClientUtil.getHttp1Client();
 
         Request request = new Request.Builder()
                 .url(url)
