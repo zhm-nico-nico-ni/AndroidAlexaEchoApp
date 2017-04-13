@@ -18,6 +18,7 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.GenericSendEvent;
 import com.willblaschko.android.alexa.interfaces.PingSendEvent;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
+import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendText;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendVoice;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
+import java.util.List;
 
 import okhttp3.RequestBody;
 import okio.BufferedSink;
@@ -100,14 +102,24 @@ public class AlexaManager {
 
     public SpeechSendText getSpeechSendText() {
         if (mSpeechSendText == null) {
-            mSpeechSendText = new SpeechSendText();
+            mSpeechSendText = new SpeechSendText(){
+                @Override
+                protected List<Event> getContextStateEvents() {
+                    return ContextUtil.getContextList(mContext);
+                }
+            };
         }
         return mSpeechSendText;
     }
 
     public SpeechSendAudio getSpeechSendAudio() {
         if (mSpeechSendAudio == null) {
-            mSpeechSendAudio = new SpeechSendAudio();
+            mSpeechSendAudio = new SpeechSendAudio(){
+                @Override
+                protected List<Event> getContextStateEvents() {
+                    return ContextUtil.getContextList(mContext);
+                }
+            };
         }
         return mSpeechSendAudio;
     }
@@ -296,7 +308,7 @@ public class AlexaManager {
     }
 
     public void sendSynchronizeStateEvent2(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.createSystemSynchronizeStateEvent(), callback);
+        sendEvent(Event.createSystemSynchronizeStateEvent(ContextUtil.getContextList(mContext)), callback);
     }
 
     public boolean hasOpenDownchannel() { //FIXME 这个不需要检查连接是否close的吗？
