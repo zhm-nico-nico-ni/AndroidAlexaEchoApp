@@ -210,6 +210,7 @@ public class AlexaManager {
             @Override
             protected Void doInBackground(Void... params) {
                 if (openDownchannel != null) {
+                    Log.i(TAG, "closeOpenDownchannel");
                     openDownchannel.closeConnection(stop);
                     openDownchannel = null;
                 }
@@ -280,7 +281,7 @@ public class AlexaManager {
                             openDownchannel = null;
                             Log.d(TAG, "onPostExecute sendOpenDownchannel Directive :"+canceled);
                             if(!Util.isNetworkAvailable(mContext)){
-                                canceled = false;
+                                canceled = true;
                             }
                             if (!canceled) {
                                 try {

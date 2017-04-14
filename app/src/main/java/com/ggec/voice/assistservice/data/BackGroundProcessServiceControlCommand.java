@@ -62,7 +62,7 @@ public class BackGroundProcessServiceControlCommand implements Parcelable {
     protected BackGroundProcessServiceControlCommand(Parcel in) {
         type = in.readInt();
         waitMicDelayMillSecond = in.readLong();
-        bundle = in.readBundle();
+        bundle = in.readBundle(getClass().getClassLoader());
     }
 
     @Override

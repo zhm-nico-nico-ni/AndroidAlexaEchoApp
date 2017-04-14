@@ -11,6 +11,7 @@ import com.willblaschko.android.alexa.interfaces.response.ResponseParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -38,7 +39,7 @@ public class OpenDownchannel extends SendEvent {
     public OpenDownchannel(final String url, final AsyncCallback<AvsResponse, Exception> callback) {
         this.callback = callback;
         this.url = url;
-        this.client = ClientUtil.getHttp2Client();
+        this.client = ClientUtil.getHttp2Client().newBuilder().readTimeout(60, TimeUnit.MINUTES).build();
     }
 
     /**

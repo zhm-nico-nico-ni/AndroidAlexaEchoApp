@@ -112,13 +112,13 @@ public abstract class SendEvent {
             return val;
         } catch (IOException exp) {
             Log.w(TAG, "parseResponse fail ", exp);
-            if (!currentCall.isCanceled()) {
+            if (currentCall.isCanceled()) {
                 return new AvsResponse();
             } else {
                 throw exp;
             }
         }
-//        return null;
+
     }
 
     protected String getBoundary(Response response) throws IOException {

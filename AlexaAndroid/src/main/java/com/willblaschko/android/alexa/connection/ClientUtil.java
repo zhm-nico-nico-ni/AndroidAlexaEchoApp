@@ -91,7 +91,7 @@ public class ClientUtil {
 //            });
 
             mHttp2Client = client
-                    .readTimeout(60, TimeUnit.MINUTES)
+                    .readTimeout(8000, TimeUnit.MILLISECONDS)
                     .writeTimeout(8000, TimeUnit.MILLISECONDS)
                     .connectTimeout(10000, TimeUnit.MILLISECONDS)
                     .retryOnConnectionFailure(true)
