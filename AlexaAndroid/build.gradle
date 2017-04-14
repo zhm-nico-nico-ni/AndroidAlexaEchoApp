@@ -8,7 +8,7 @@ dependencies {
     compile 'com.intellij:annotations:+@jar'
     compile 'com.google.code.gson:gson:2.7'
     compile 'commons-io:commons-io:2.5'
-//    compile 'com.squareup.okhttp3:okhttp:3.6.0'
+    //    compile 'com.squareup.okhttp3:okhttp:3.6.0'
     compile 'com.facebook.stetho:stetho:1.4.2'
     compile 'com.facebook.stetho:stetho-okhttp3:1.4.2'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
@@ -18,10 +18,11 @@ dependencies {
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.google.android.gms:play-services-base:9.6.1'
-    compile "io.reactivex.rxjava2:rxjava:2.0.8"
+    compile 'io.reactivex.rxjava2:rxjava:2.0.8'
     compile 'com.google.android.exoplayer:exoplayer:r2.3.1'
     testCompile 'junit:junit:4.12'
     compile project(':auth')
+    compile project(':toollibrary')
 }
 
 android {

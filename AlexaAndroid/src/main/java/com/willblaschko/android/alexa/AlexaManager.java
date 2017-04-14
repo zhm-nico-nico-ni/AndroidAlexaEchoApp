@@ -9,6 +9,7 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.ggec.voice.toollibrary.Util;
 import com.google.android.gms.security.ProviderInstaller;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
@@ -204,12 +205,12 @@ public class AlexaManager {
 
     }
 
-    public void closeOpenDownchannel() {
+    public void closeOpenDownchannel(final boolean stop) {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
                 if (openDownchannel != null) {
-                    openDownchannel.closeConnection();
+                    openDownchannel.closeConnection(stop);
                     openDownchannel = null;
                 }
                 return null;
@@ -232,6 +233,7 @@ public class AlexaManager {
         }
 
         isSendingOpenDownchannelDirective = true;
+        Log.d(TAG, "sendOpenDownchannelDirective begin");
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
@@ -239,7 +241,7 @@ public class AlexaManager {
             public void success(Boolean result) {
                 if (result) {
                     //if the user is logged in
-                    openDownchannel = new OpenDownchannel(getDirectivesUrl(), new AsyncEventHandler(AlexaManager.this, callback));
+                    openDownchannel = new OpenDownchannel(getDirectivesUrl(), callback);
                     isSendingOpenDownchannelDirective = false;
                     //get our access token
                     TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
@@ -263,28 +265,35 @@ public class AlexaManager {
                                 @Override
                                 protected void onPostExecute(Boolean canceled) {
                                     super.onPostExecute(canceled);
-                                    isSendingOpenDownchannelDirective = false;
-                                    openDownchannel = null;
-                                    Log.d(TAG, "sendOpenDownchannelDirective");
-                                    if (!canceled) {
-                                        try {
-                                            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    sendOpenDownchannelDirective(callback);
-                                                }
-                                            }, 5000);
-                                        } catch (RuntimeException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
+                                    reconnect(canceled);
                                 }
                             }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                         }
 
                         @Override
                         public void onFailure(Throwable e) {
+                            reconnect(false);
+                        }
 
+                        private void reconnect(boolean canceled){
+                            isSendingOpenDownchannelDirective = false;
+                            openDownchannel = null;
+                            Log.d(TAG, "onPostExecute sendOpenDownchannel Directive :"+canceled);
+                            if(!Util.isNetworkAvailable(mContext)){
+                                canceled = false;
+                            }
+                            if (!canceled) {
+                                try {
+                                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            sendOpenDownchannelDirective(callback);
+                                        }
+                                    }, 5000);
+                                } catch (RuntimeException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     });
                 } else {
@@ -295,6 +304,11 @@ public class AlexaManager {
                             isSendingOpenDownchannelDirective = false;
                             //call our function again
                             sendOpenDownchannelDirective(callback);
+                        }
+
+                        @Override
+                        public void onError(Exception error) {
+                            isSendingOpenDownchannelDirective = false;
                         }
                     });
                 }
@@ -569,51 +583,6 @@ public class AlexaManager {
      */
     public void sendTextRequest(final String text, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
-//        Scope[] scopes = {DefaultScope.alexaScope(mContext)};
-//        com.amazon.identity.auth.device.api.authorization.AuthorizationManager.getToken(mContext, scopes, new Listener<AuthorizeResult, AuthError>() {
-//            @Override
-//            public void onSuccess(AuthorizeResult result) {
-//                Log.i(TAG, "on getToken : "+ result.getAccessToken());
-//                if (result.getAccessToken() != null) {
-//                    /* The user is signed in */
-//                    final String url = getEventsUrl();
-//                    //do this off the main thread
-//                    final String token = result.getAccessToken();
-//
-//                    new AsyncTask<Void, Void, AvsResponse>() {
-//                        @Override
-//                        protected AvsResponse doInBackground(Void... params) {
-//                            //get our access token
-//
-//                            try {
-//                                getSpeechSendText().sendText(mContext, url, token, text, new AsyncEventHandler(AlexaManager.this, callback));
-//                            } catch (Exception e) {
-//                                e.printStackTrace();
-//                                //bubble up the error
-//                                if (callback != null) {
-//                                    callback.failure(e);
-//                                }
-//                            }
-//                            return null;
-//                        }
-//
-//
-//                        @Override
-//                        protected void onPostExecute(AvsResponse avsResponse) {
-//                            super.onPostExecute(avsResponse);
-//                        }
-//                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-//                } else {
-//                    /* The user is not signed in */
-//                }
-//            }
-//
-//            @Override
-//            public void onError(AuthError ae) {
-//                /* The user is not signed in */
-//                Log.i(TAG, "on getToken error",ae);
-//            }
-//        });
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
             @Override
             public void success(Boolean result) {
@@ -630,7 +599,7 @@ public class AlexaManager {
                             TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
                                 @Override
                                 public void onSuccess(String token) {
-
+                                    mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
                                     try {
                                         getSpeechSendText().sendText(mContext, url, token, text, new AsyncEventHandler(AlexaManager.this, callback));
                                     } catch (Exception e) {
@@ -650,11 +619,6 @@ public class AlexaManager {
                             return null;
                         }
 
-
-                        @Override
-                        protected void onPostExecute(AvsResponse avsResponse) {
-                            super.onPostExecute(avsResponse);
-                        }
                     }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                 } else {
                     //if the user is not logged in, log them in and then call the function again
@@ -738,10 +702,6 @@ public class AlexaManager {
                                     return null;
                                 }
 
-                                @Override
-                                protected void onPostExecute(AvsResponse avsResponse) {
-                                    super.onPostExecute(avsResponse);
-                                }
                             }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                         }
 
@@ -766,17 +726,9 @@ public class AlexaManager {
     }
 
     public void cancelAudioRequest() {
-        //check if the user is already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
-            @Override
-            public void success(Boolean result) {
-                if (result) {
-                    //if the user is logged in
-                    getSpeechSendAudio().cancelRequest();
-                }
-            }
-
-        });
+        if(mSpeechSendAudio != null){
+            mSpeechSendAudio.cancelRequest();
+        }
     }
 
     /**
@@ -907,10 +859,6 @@ public class AlexaManager {
                                     return null;
                                 }
 
-                                @Override
-                                protected void onPostExecute(AvsResponse avsResponse) {
-                                    super.onPostExecute(avsResponse);
-                                }
                             }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                         }
 
@@ -934,7 +882,7 @@ public class AlexaManager {
         });
     }
 
-    public void sendPingEvent() {
+    public void sendPingEvent(final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
@@ -953,14 +901,7 @@ public class AlexaManager {
                             new AsyncTask<Void, Void, AvsResponse>() {
                                 @Override
                                 protected AvsResponse doInBackground(Void... params) {
-                                    return new PingSendEvent(url, token
-                                            , new AsyncEventHandler(AlexaManager.this, null))
-                                                .doWork();
-                                }
-
-                                @Override
-                                protected void onPostExecute(AvsResponse avsResponse) {
-                                    super.onPostExecute(avsResponse);
+                                    return new PingSendEvent(url, token, callback).doWork();
                                 }
                             }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                         }
@@ -1019,6 +960,45 @@ public class AlexaManager {
         } else{
             Log.e(TAG, "Set end point fail: " + endPoint);
         }
+    }
+
+    public void sendUserInactivityReport(){
+        final long second = SystemClock.elapsedRealtime() - mLastUserActivityElapsedTime / 1000;
+        if(second<3) return;
+        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+            @Override
+            public void success(Boolean result) {
+                if (result) {
+                    //set our URL
+                    final String url = getEventsUrl();
+                    //get our access token
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                        @Override
+                        public void onSuccess(final String token) {
+                            //do this off the main thread
+                            new AsyncTask<Void, Void, AvsResponse>() {
+                                @Override
+                                protected AvsResponse doInBackground(Void... params) {
+                                    Log.d(TAG, "sendUserInactivityReport");
+                                    new GenericSendEvent(url, token
+                                            , Event.createUserInactivityReportEvent(
+                                                    ContextUtil.getContextList(mContext), second)
+                                            , null);
+                                    return null;
+                                }
+
+                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                        }
+
+                        @Override
+                        public void onFailure(Throwable e) {
+
+                        }
+                    });
+                }
+            }
+
+        });
     }
 
     private static class AsyncEventHandler implements AsyncCallback<AvsResponse, Exception> {

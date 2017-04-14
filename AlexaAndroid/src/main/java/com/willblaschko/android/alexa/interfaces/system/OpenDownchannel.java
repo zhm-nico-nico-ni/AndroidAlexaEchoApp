@@ -33,6 +33,7 @@ public class OpenDownchannel extends SendEvent {
     private OkHttpClient client;
     private String url;
     private AsyncCallback<AvsResponse, Exception> callback;
+    private boolean isStop;
 
     public OpenDownchannel(final String url, final AsyncCallback<AvsResponse, Exception> callback) {
         this.callback = callback;
@@ -47,13 +48,13 @@ public class OpenDownchannel extends SendEvent {
      * @throws IOException
      */
     public boolean connect(String accessToken) throws IOException {
+        isStop = false;
         if (callback != null) {
             callback.start();
         }
 
         final Request request = new Request.Builder()
                 .url(url)
-//                .addHeader("Connection", "close")
                 .addHeader("Authorization", "Bearer " + accessToken)
                 .build();
 
@@ -65,6 +66,9 @@ public class OpenDownchannel extends SendEvent {
             BufferedSource source = response.body().source();
             Buffer buffer = new Buffer();
             Log.d(TAG, "on response 0 :"+boundary);
+            if (callback != null) {
+                callback.success(null);
+            }
             while (!source.exhausted()) {
                 Log.d(TAG, "on response 1 ");
                 source.read(buffer, 8192);
@@ -89,10 +93,11 @@ public class OpenDownchannel extends SendEvent {
             Log.d(TAG, "on response 5");
         }
 
-        return currentCall != null && currentCall.isCanceled();
+        return isStop;
     }
 
-    public void closeConnection() {
+    public void closeConnection(boolean stop) {
+        isStop = stop;
         if (currentCall != null && !currentCall.isCanceled()) {
             currentCall.cancel();
         }

@@ -1,6 +1,9 @@
 package com.ggec.voice.assistservice;
 
+import android.app.AlarmManager;
 import android.app.IntentService;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -18,6 +21,7 @@ import com.ggec.voice.assistservice.speechutil.RawAudioRecorder;
 import com.ggec.voice.assistservice.test.AudioCapture;
 import com.ggec.voice.assistservice.test.RecordingRMSListener;
 import com.ggec.voice.assistservice.test.RecordingStateListener;
+import com.ggec.voice.toollibrary.Util;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.data.Event;
@@ -46,6 +50,9 @@ public class BgProcessIntentService extends IntentService {
     private static String TAG = "BgProcessIntentService";
 
     public static final String EXTRA_CMD = "Control-Command";
+    private final static int PING_JOB_ID = 3001;
+    private final static int USER_INACTIVITY_REPORT_JOB_ID = 3002;
+    private final static int SEND_PING_INTERVAL = 300 * 1000;
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private RawAudioRecorder recorder;
@@ -79,33 +86,16 @@ public class BgProcessIntentService extends IntentService {
     protected void onHandleIntent(@Nullable Intent intent) {// TODO 修改接入OpenDownChannel ，简化这段代码
         BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
-        if (!alexaManager.hasOpenDownchannel()) {
-            alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
-            return;
-        }
 
         if (cmd.type == 1) {
             //start
-//            TestRun run = new TestRun();
-//            currentRunId = run.time;
-            Log.d(TAG, "start " + currentRunId);
-//            try {
-//                startRecord();
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//            alexaManager.sendSynchronizeStateEvent2(getCallBack("{SynchronizeStateEvent}"));
             startRecord1(cmd.waitMicDelayMillSecond);
 //            search();
         } else if (cmd.type == 2) {
             //stop
-            Log.d(TAG, "stop " + currentRunId);
-            currentRunId = 0;
-
             textTest();
         } else if (cmd.type == 3) {
-            alexaManager.sendSynchronizeStateEvent2(getCallBack("{SynchronizeStateEvent}"));
-            alexaManager.sendPingEvent();
+            alexaManager.closeOpenDownchannel(false);
 //            search();
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
@@ -150,7 +140,24 @@ public class BgProcessIntentService extends IntentService {
                     , cmd.bundle.getLong("volume")
                     , false
                     , new ImplAsyncCallback("setVolume"));
-        }  else {
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.SEND_PING){
+            sendPingEvent(alexaManager);
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.NETWORK_CONNECT){
+            boolean hasNetWork = Util.isNetworkAvailable(this);
+            Log.i(TAG, "on NETWORK_CONNECT, hasWifi:"+hasNetWork +" hasChannel:"+alexaManager.hasOpenDownchannel());
+            if(hasNetWork) {
+                if (!alexaManager.hasOpenDownchannel()) {
+                    openDownChannel(alexaManager);
+                }
+            } else {
+                alexaManager.closeOpenDownchannel(true);
+            }
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT){
+            if(Util.isNetworkAvailable(this)) {
+                alexaManager.sendUserInactivityReport();
+            }
+            setTimerEvent(this, USER_INACTIVITY_REPORT_JOB_ID, BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT, 60 * 60 * 1000);
+        } else {
             //cancel
             Log.d(TAG, "unknow cmd:" + cmd.type);
         }
@@ -172,7 +179,7 @@ public class BgProcessIntentService extends IntentService {
      */
     private void startRecord1(final long waitMicTimeOut) {
 //        Uri path = Uri.parse("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.start);
-//        playSong(path);
+
         if (waitMicTimeOut > 0) {
             handler.postDelayed(waitMicTimeoutRunnable, waitMicTimeOut);
         }
@@ -320,30 +327,6 @@ public class BgProcessIntentService extends IntentService {
         return requestBody;
     }
 
-    public void finishProcessing() {
-        Log.d(TAG, "finishProcessing");
-//       TODO
-// controller.processingFinished();
-    }
-
-    private volatile long currentRunId;
-
-    class TestRun implements Runnable {
-        public final long time;
-
-        public TestRun() {
-            time = SystemClock.elapsedRealtime();
-        }
-
-        @Override
-        public void run() {
-            if (currentRunId != time) {
-
-            }
-            Log.d(TAG, "TestRun is cancel = " + (currentRunId != time));
-        }
-    }
-
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
         alexaManager.sendTextRequest("Hello", getCallBack("textTest"));//Set a timer after 15 seconds from now"Set a timer after one minutes from now"
@@ -402,33 +385,6 @@ public class BgProcessIntentService extends IntentService {
         };
     }
 
-    ;
-//    private void playSong(Uri rawFile){
-//        Log.d(TAG, "playSong "+rawFile);
-//        AsyncPlayer player = new AsyncPlayer("state sound");
-//        player.play(MyApplication.getContext(), rawFile, false,
-//                new AudioAttributes.Builder()
-////                        .setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN)
-//                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
-////                        .setFlags()
-//                        .setLegacyStreamType(AudioManager.STREAM_NOTIFICATION)
-//                        .build());
-//
-//    }
-
-//    private void playSong(Uri rawFile){
-//        Log.d(TAG, "playSong "+rawFile);
-//        MyShortAudioPlayer player = new MyShortAudioPlayer(MyApplication.getContext(), rawFile, false,
-//                new AudioAttributes.Builder()
-////                        .setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN)
-//                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
-////                        .setFlags()
-//                        .setLegacyStreamType(AudioManager.STREAM_NOTIFICATION)
-//                        .build());
-//        player.play();
-//
-//    }
-
     private void playStart(final MediaPlayer.OnCompletionListener listener) {
         handler.post(new Runnable() {
             @Override
@@ -448,5 +404,65 @@ public class BgProcessIntentService extends IntentService {
                 new MyShortAudioPlayer2("asset:///error.mp3", null);
             }
         });
+    }
+
+    private void sendPingEvent(AlexaManager alexaManager){
+        alexaManager.sendPingEvent(new ImplAsyncCallback("sendPing"){
+            @Override
+            public void success(AvsResponse result) {
+                super.success(result);
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                if (!alexaManager.hasOpenDownchannel()) {
+                    alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
+                    return;
+                } else {
+                    setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
+                }
+            }
+
+            @Override
+            public void failure(Exception error) {
+                super.failure(error);
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                alexaManager.closeOpenDownchannel(false);
+            }
+        });
+    }
+
+    private void openDownChannel(AlexaManager alexaManager){
+        if (!alexaManager.hasOpenDownchannel()) {
+            alexaManager.sendOpenDownchannelDirective(new ImplAsyncCallback("{opendownchannel}"){
+                @Override
+                public void success(AvsResponse result) {
+                    super.success(result);
+                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                    alexaManager.sendSynchronizeStateEvent2(getCallBack("SynchronizeState"));
+                    setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
+                }
+
+                @Override
+                public void failure(Exception error) {
+                    super.failure(error);
+                    cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
+                }
+            });
+            return;
+        }
+    }
+
+    private void setTimerEvent(Context context, int requestCode, int type, int delay) {
+        Log.d(TAG, "setTimerEvent " + type + " req:" + requestCode + " delay:" + delay);
+        Intent it = BackGroundProcessServiceControlCommand.createIntentByType(context, type);
+        PendingIntent intent = PendingIntent.getService(context, requestCode, it, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + delay, intent);
+    }
+
+    private void cancelTimerEvent(Context context, int requestCode, int type) {
+        Log.d(TAG, "cancelTimerEvent " + type + " req:" + requestCode);
+        Intent it = BackGroundProcessServiceControlCommand.createIntentByType(context, type);
+        PendingIntent intent = PendingIntent.getService(context, requestCode, it, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.cancel(intent);
     }
 }

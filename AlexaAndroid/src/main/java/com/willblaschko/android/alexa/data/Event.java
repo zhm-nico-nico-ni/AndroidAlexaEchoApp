@@ -307,6 +307,12 @@ public class Event {
         return builder.toJson();
     }
 
+    /**
+     *
+     * @param contextList
+     * @param inactiveTimeInSeconds 单位是秒 ！！！
+     * @return
+     */
     public static String createUserInactivityReportEvent(List<Event> contextList, long inactiveTimeInSeconds){ // TODO send this per hour
         Event.Builder builder = new Event.Builder();
         builder.setHeaderNamespace("System")

@@ -8,7 +8,6 @@ import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
-import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -33,6 +32,7 @@ import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
+import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsStopCaptureItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
@@ -294,6 +294,11 @@ public class AvsHandleHelper {
             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
             alexaManager.setEndPoint(((AvsSetEndPointItem) current).endPoint);
             Log.w(TAG, " handle clear queue ! AvsSetEndPointItem");
+        } else if(current instanceof AvsStopCaptureItem){
+//            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//            alexaManager.cancelAudioRequest(); //FIXME 不应该是cancel request，应该是停止录音，但是现在用的都是close talk，在client这边判断语音是否结束，因此不需要。
+            avsQueue.remove(current.messageID);
+            Log.w(TAG, "handle AvsStopCaptureItem");
         } else {
             return false;
         }
@@ -391,7 +396,7 @@ public class AvsHandleHelper {
     private void sendPlaybackNearlyFinishedEvent(AvsPlayAudioItem item, long offsetInMilliseconds) {
         if (item != null) {
             AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                    .sendPlaybackNearlyFinishedEvent(item, offsetInMilliseconds, requestCallback);
+                    .sendPlaybackNearlyFinishedEvent(item, offsetInMilliseconds, new ImplAsyncCallback("PlaybackNearlyFinished"));
             Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
         }
     }
@@ -424,32 +429,4 @@ public class AvsHandleHelper {
         MyApplication.getContext().startService(it);
     }
 
-    private AsyncCallback<AvsResponse, Exception> requestCallback = new AsyncCallback<AvsResponse, Exception>() {
-        public long startTime;
-
-        @Override
-        public void start() {
-            startTime = System.currentTimeMillis();
-            com.ggec.voice.assistservice.log.Log.i(TAG, "Event Start");
-//                setState(STATE_PROCESSING);
-        }
-
-        @Override
-        public void success(AvsResponse result) {
-            com.ggec.voice.assistservice.log.Log.i(TAG, "Event Success " + result);
-            handleResponse(result);
-        }
-
-        @Override
-        public void failure(Exception error) {
-            com.ggec.voice.assistservice.log.Log.e(TAG, "Event Error", error);
-//                setState(STATE_FINISHED);
-        }
-
-        @Override
-        public void complete() {
-            long totalTime = System.currentTimeMillis() - startTime;
-            Log.i(TAG, "Event Complete, " + "Total request time: " + totalTime + " miliseconds");
-        }
-    };
 }

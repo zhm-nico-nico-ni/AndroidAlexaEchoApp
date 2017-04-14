@@ -38,6 +38,6 @@ public class ImplAsyncCallback implements AsyncCallback<AvsResponse, Exception> 
     @Override
     public void complete() {
         long totalTime = System.currentTimeMillis() - startTime;
-        Log.i(TAG, "Event Complete, " + "Total request time: " + totalTime + " miliseconds");
+        Log.i(TAG, "Event " + name + " Complete, " + "Total request time: " + totalTime + " miliseconds");
     }
 }
