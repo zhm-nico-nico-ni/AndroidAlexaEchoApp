@@ -1,5 +1,6 @@
 package com.willblaschko.android.alexa.interfaces.errors;
 
+import com.google.gson.Gson;
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 
@@ -35,6 +36,8 @@ public class AvsResponseException extends AvsException {
             description = "The Alexa Voice Service is unavailable.";
         }
 
-        return " code:" + code + " code desc:" + description + "\n desc:" + directive.getPayload().getDescription();
+        return " code:" + code + " code desc:" + description
+                + "\n desc:" + directive.getPayload().getDescription()
+                + "\n directive:" + new Gson().toJson(directive);
     }
 }
