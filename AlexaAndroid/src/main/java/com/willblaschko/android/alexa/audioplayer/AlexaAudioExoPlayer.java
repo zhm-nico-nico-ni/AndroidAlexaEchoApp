@@ -1,15 +1,25 @@
 package com.willblaschko.android.alexa.audioplayer;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.AsyncTask;
-import android.os.PowerManager;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
+import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
+import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer.Callback;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
@@ -28,24 +38,22 @@ import java.util.List;
  * A class that abstracts the Android MediaPlayer and adds additional functionality to handle AvsItems
  * as well as properly handle multiple callbacks--be care not to leak Activities by not removing the callback
  */
-public class AlexaAudioPlayer {
+public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
-    public static final String TAG = "AlexaAudioPlayer";
+    public static final String TAG = "AlexaAudioExoPlayer";
 
-    private static final int SHOW_PROGRESS = 6;
+    private static AlexaAudioExoPlayer mInstance;
 
-    private static AlexaAudioPlayer mInstance;
-
-    private MediaPlayer mMediaPlayer;
+    private MyExoPlayer mMediaPlayer;
     private Context mContext;
     private AvsItem mItem;
-    private final List<Callback> mCallbacks = new ArrayList<>();
+    private final List<AlexaAudioPlayer.Callback> mCallbacks = new ArrayList<>();
 
     /**
      * Create our new AlexaAudioPlayer
      * @param context any context, we will get the application level to store locally
      */
-    private AlexaAudioPlayer(Context context){
+    private AlexaAudioExoPlayer(Context context){
        mContext = context.getApplicationContext();
     }
 
@@ -55,10 +63,10 @@ public class AlexaAudioPlayer {
      * @param context any context, we will get the application level to store locally
      * @return our instance of the AlexaAudioPlayer
      */
-    public static AlexaAudioPlayer getInstance(Context context){
+    public static AlexaAudioExoPlayer getInstance(Context context){
         if(mInstance == null){
-            mInstance = new AlexaAudioPlayer(context);
-            trimCache(context);
+            mInstance = new AlexaAudioExoPlayer(context);
+            trimCache(context); // FIXME 这里建议使用lrudishcache
         }
         return mInstance;
     }
@@ -96,14 +104,15 @@ public class AlexaAudioPlayer {
      * then create it and configure it to our needs
      * @return Android native MediaPlayer
      */
-    private MediaPlayer getMediaPlayer(){
+    private MyExoPlayer getMediaPlayer(){
         if(mMediaPlayer == null){
-            mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
-            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mMediaPlayer.setOnCompletionListener(mCompletionListener);
-            mMediaPlayer.setOnPreparedListener(mPreparedListener);
-            mMediaPlayer.setOnErrorListener(mErrorListener);
+            mMediaPlayer = new MyExoPlayer(mContext, this);
+
+//            mMediaPlayer.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
+//            mMediaPlayer.setPlayWhenReady(true);
+//            mMediaPlayer.setOnCompletionListener(mCompletionListener);
+//            mMediaPlayer.setOnPreparedListener(mPreparedListener);
+//            mMediaPlayer.setOnErrorListener(mErrorListener);
         }
 
         return mMediaPlayer;
@@ -113,7 +122,7 @@ public class AlexaAudioPlayer {
      * Add a callback to our AlexaAudioPlayer, this is added to our list of callbacks
      * @param callback Callback that listens to changes of player state
      */
-    public void addCallback(Callback callback){
+    public void addCallback(AlexaAudioPlayer.Callback callback){
         synchronized (mCallbacks) {
             if (!mCallbacks.contains(callback)) {
                 mCallbacks.add(callback);
@@ -126,15 +135,15 @@ public class AlexaAudioPlayer {
         return mItem;
     }
 
-    /**
-     * Remove a callback from our AlexaAudioPlayer, this is removed from our list of callbacks
-     * @param callback Callback that listens to changes of player state
-     */
-    public void removeCallback(Callback callback){
-        synchronized (mCallbacks) {
-            mCallbacks.remove(callback);
-        }
-    }
+//    /**
+//     * Remove a callback from our AlexaAudioPlayer, this is removed from our list of callbacks
+//     * @param callback Callback that listens to changes of player state
+//     */
+//    public void removeCallback(Callback callback){
+//        synchronized (mCallbacks) {
+//            mCallbacks.remove(callback);
+//        }
+//    }
 
     /**
      * A helper function to play an AvsPlayContentItem, this is passed to play() and handled accordingly,
@@ -175,56 +184,29 @@ public class AlexaAudioPlayer {
         }
 
         mItem = item;
-        if(getMediaPlayer().isPlaying()){
+//        if(getMediaPlayer().getPlaybackState().isPlaying()){
             //if we're playing, stop playing before we continue
             getMediaPlayer().stop();
-        }
+//        }
 
         //reset our player
-        getMediaPlayer().reset();
-        getMediaPlayer().setLooping(false);
+//        getMediaPlayer().setLooping(false);
+
+
 
         if(!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")){
             Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
-            try {
-                AssetFileDescriptor afd = mContext.getAssets().openFd("shhh.mp3");//TODO
-                getMediaPlayer().setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
-            } catch (IOException e) {
-                e.printStackTrace();
-                //bubble up our error
-                bubbleUpError(e);
-            }
+            getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///start.mp3"), "mp3"));
         }else if(mItem instanceof AvsPlayRemoteItem){
             //cast our item for easy access
             AvsPlayRemoteItem playItem = (AvsPlayRemoteItem) item;
-            try {
-                //set stream
-                getMediaPlayer().setAudioStreamType(AudioManager.STREAM_MUSIC);
-                //play new url
-                getMediaPlayer().setDataSource(playItem.getUrl());
-            } catch (IOException e) {
-                e.printStackTrace();
-                //bubble up our error
-                bubbleUpError(e);
-            }
+            //play new url
+            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getUrl()), null));
         }else if(mItem instanceof AvsPlayContentItem){
             //cast our item for easy access
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
-            try {
-                //set stream
-                getMediaPlayer().setAudioStreamType(AudioManager.STREAM_MUSIC);
-                //play new url
-                getMediaPlayer().setDataSource(mContext, playItem.getUri());
-            } catch (IOException e) {
-                e.printStackTrace();
-                //bubble up our error
-                bubbleUpError(e);
-            } catch (IllegalStateException e){
-                e.printStackTrace();
-                //bubble up our error
-                bubbleUpError(e);
-            }
+            getMediaPlayer().prepare(buildMediaSource(playItem.getUri(), null));
         }else if(mItem instanceof AvsSpeakItem){
             //cast our item for easy access
             AvsSpeakItem playItem = (AvsSpeakItem) item;
@@ -236,7 +218,7 @@ public class AlexaAudioPlayer {
                 fos.write(playItem.getAudio());
                 fos.close();
                 //play our newly-written file
-                getMediaPlayer().setDataSource(path.getPath());
+                getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null));
             } catch (IOException e) {
                 e.printStackTrace();
                 //bubble up our error
@@ -244,25 +226,34 @@ public class AlexaAudioPlayer {
             }
         } else if(mItem instanceof AvsAlertPlayItem){
 //            AvsAlertPlayItem playItem = (AvsAlertPlayItem) item;
-            //write out our raw audio data to a file
-            try {
-                //play our newly-written file
-                AssetFileDescriptor afd = mContext.getAssets().openFd("alarm.mp3");
-//                Uri path = Uri.parse("android.resource://"+ BuildConfig.APP_PACKAGE_NAME+ "/"+R.raw.alarm);
-                MediaPlayer mp = getMediaPlayer();
-                mp.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
-                mp.setLooping(true);
-            } catch (IOException e) {
-                e.printStackTrace();
-                //bubble up our error
-                bubbleUpError(e);
-            }
+            Uri path = Uri.parse("asset:///alarm.mp3");
+            getMediaPlayer().prepare(buildMediaSource(path,"mp3"));
+        } else {
+
+            bubbleUpError(new Exception("not suitable process"));
+
         }
-        //prepare our player, this will start once prepared because of mPreparedListener
-        try {
-            getMediaPlayer().prepareAsync();
-        }catch (IllegalStateException e){
-            bubbleUpError(e);
+    }
+
+    private MediaSource buildMediaSource(Uri uri, String overrideExtension) {
+        int type = TextUtils.isEmpty(overrideExtension) ? Util.inferContentType(uri)
+                : Util.inferContentType("." + overrideExtension);
+        DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(mContext, "ExoPlayerExtVp9Test");
+        switch (type) {
+            case C.TYPE_SS:
+                return new SsMediaSource(uri, dataSourceFactory,
+                        new DefaultSsChunkSource.Factory(dataSourceFactory), null, null);
+            case C.TYPE_DASH:
+                return new DashMediaSource(uri, dataSourceFactory,
+                        new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+            case C.TYPE_HLS:
+                return new HlsMediaSource(uri, dataSourceFactory, null, null);
+            case C.TYPE_OTHER:
+                return new ExtractorMediaSource(uri, dataSourceFactory, new DefaultExtractorsFactory(),
+                        null, null);
+            default: {
+                throw new IllegalStateException("Unsupported type: " + type);
+            }
         }
     }
 
@@ -278,14 +269,14 @@ public class AlexaAudioPlayer {
      * A helper function to pause the MediaPlayer
      */
     public void pause(){
-        getMediaPlayer().pause();
+        getMediaPlayer().setPlayWhenReady(false);
     }
 
     /**
      * A helper function to play the MediaPlayer
      */
     public void play(){
-        getMediaPlayer().start();
+        getMediaPlayer().setPlayWhenReady(true);
     }
 
     /**
@@ -300,24 +291,25 @@ public class AlexaAudioPlayer {
      */
     public void release(){
         if(mMediaPlayer != null){
-            if(mMediaPlayer.isPlaying()){
+//            if(mMediaPlayer.isPlaying()){
                 mMediaPlayer.stop();
-            }
-            mMediaPlayer.reset();
+//            }
+//            mMediaPlayer.reset();
             mMediaPlayer.release();
         }
         mMediaPlayer = null;
     }
 
+    //Sets the audio volume, with 0 being silence and 1 being unity gain.
     public void duck(float value) {
         if (mMediaPlayer != null) {
-            mMediaPlayer.setVolume(value, value);
+            mMediaPlayer.setVolume(value);
         }
     }
 
     public void unDuck() {
         if (mMediaPlayer != null) {
-            mMediaPlayer.setVolume(1F, 1F);
+            mMediaPlayer.setVolume(1F);
         }
     }
 
@@ -327,7 +319,7 @@ public class AlexaAudioPlayer {
      */
     private void postProgress(final float percent){
         synchronized (mCallbacks) {
-            for (Callback callback : mCallbacks) {
+            for (AlexaAudioPlayer.Callback callback : mCallbacks) {
                 if(mMediaPlayer != null && callback != null) {
                     callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), percent);
                 }
@@ -335,16 +327,17 @@ public class AlexaAudioPlayer {
         }
     }
 
-    /**
-     * A callback to keep track of the state of the MediaPlayer and various AvsItem states
-     */
-    public interface Callback{
-        void playerPrepared(AvsItem pendingItem);
-        void playerProgress(AvsItem currentItem, long offsetInMilliseconds, float percent);
-        void itemComplete(AvsItem completedItem);
-        boolean playerError(AvsItem item, int what, int extra);
-        void dataError(AvsItem item, Exception e);
-    }
+
+//    /**
+//     * A callback to keep track of the state of the MediaPlayer and various AvsItem states
+//     */
+//    public interface Callback{
+//        void playerPrepared(AvsItem pendingItem);
+//        void playerProgress(AvsItem currentItem, long offsetInMilliseconds, float percent);
+//        void itemComplete(AvsItem completedItem);
+//        boolean playerError(AvsItem item, int what, int extra);
+//        void dataError(AvsItem item, Exception e);
+//    }
 
     /**
      * Pass our Exception to all the Callbacks, handle it at the top level
@@ -369,6 +362,7 @@ public class AlexaAudioPlayer {
         }
     };
 
+
     /**
      * Pass our MediaPlayer prepared state to all the Callbacks, handle it at the top level
      */
@@ -379,43 +373,44 @@ public class AlexaAudioPlayer {
                 callback.playerPrepared(mItem);
                 callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0);
             }
-            mMediaPlayer.start();
-            new AsyncTask<Void, Void, Void>(){
-                @Override
-                protected Void doInBackground(Void... params) {
-                    try {
-                        while (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-                            int pos = mMediaPlayer.getCurrentPosition();
-                            final float percent = (float) pos / (float) mMediaPlayer.getDuration();
-                            postProgress(percent);
-                            try {
-                                Thread.sleep(50);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }catch (NullPointerException|IllegalStateException e){
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            mMediaPlayer.setPlayWhenReady(true);
         }
     };
 
     /**
      * Pass our MediaPlayer error state to all the Callbacks, handle it at the top level
      */
-    private MediaPlayer.OnErrorListener mErrorListener = new MediaPlayer.OnErrorListener() {
-        @Override
-        public boolean onError(MediaPlayer mp, int what, int extra) {
-            for(Callback callback: mCallbacks){
-                boolean response = callback.playerError(mItem, what, extra);
-                if(response){
-                    return response;
-                }
-            }
-            return false;
-        }
-    };
+//    private MediaPlayer.OnErrorListener mErrorListener = new MediaPlayer.OnErrorListener() {
+//        @Override
+//        public boolean onError(MediaPlayer mp, int what, int extra) {
+//            for(Callback callback: mCallbacks){
+//                boolean response = callback.playerError(mItem, what, extra);
+//                if(response){
+//                    return response;
+//                }
+//            }
+//            return false;
+//        }
+//    };
+
+    @Override
+    public void onComplete() {
+        mCompletionListener.onCompletion(null);
+    }
+
+    @Override
+    public void onError(ExoPlaybackException exception) {
+        release();
+        bubbleUpError(exception);
+    }
+
+    @Override
+    public void onPrepare() {
+        mPreparedListener.onPrepared(null);
+    }
+
+    @Override
+    public void onProgress(float percent) {
+        postProgress(percent);
+    }
 }

@@ -1,12 +1,15 @@
 package com.ggec.voice.assistservice;
 
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.willblaschko.android.alexa.AlexaManager;
+import com.willblaschko.android.alexa.audioplayer.AlexaAudioExoPlayer;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
@@ -48,12 +51,14 @@ public class AvsHandleHelper {
     private static final String TAG = "com.ggec.voice.assistservice.AvsHandleHelper";
     private static AvsHandleHelper sAvsHandleHelper;
     private volatile LinkedHashMap<String, AvsItem> avsQueue = new LinkedHashMap<>();
-    private AlexaAudioPlayer audioPlayer;
+    private AlexaAudioExoPlayer audioPlayer;
+    private static Handler sMainHandler = new Handler(Looper.getMainLooper());
+//    private AlexaAudioExoPlayer exoPlayer;
     //TODO 這裏把microphone 的控制加上
 
     private AvsHandleHelper() {
         //instantiate our audio player
-        audioPlayer = AlexaAudioPlayer.getInstance(MyApplication.getContext());
+        audioPlayer = AlexaAudioExoPlayer.getInstance(MyApplication.getContext());
 
         //Remove the current item and check for more items once we've finished playing
         audioPlayer.addCallback(alexaAudioPlayerCallback);
@@ -138,6 +143,15 @@ public class AvsHandleHelper {
         avsQueue.put(response.messageID, response);
     }
 
+    private void checkQueue() {
+        sMainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                checkQueueImpl();
+            }
+        });
+    }
+
     /**
      * Check our current queue of items, and if we have more to parse (once we've reached a play or listen callback) then proceed to the
      * next item in our list.
@@ -145,7 +159,7 @@ public class AvsHandleHelper {
      * We're handling the AvsReplaceAllItem in handleResponse() because it needs to clear everything currently in the queue, before
      * the new items are added to the list, it should have no function here.
      */
-    private synchronized void checkQueue() {
+    private void checkQueueImpl() {
 
         //if we're out of things, hang up the phone and move on
         if (avsQueue.size() == 0) {
@@ -383,6 +397,7 @@ public class AvsHandleHelper {
 
         @Override
         public void dataError(AvsItem item, Exception e) {
+            itemComplete(item);
             e.printStackTrace();
         }
 
