@@ -23,7 +23,7 @@ import be.tarsos.dsp.io.TarsosDSPAudioFormat;
  */
 
 public class MyVoiceRecord extends Thread {
-    public final static float DEFAULT_SILENT_THRESHOLD = -60f;
+    public final static float DEFAULT_SILENT_THRESHOLD = -70f;
 
     private final static String TAG = "MyVoiceRecord";
 
@@ -55,7 +55,7 @@ public class MyVoiceRecord extends Thread {
                 RECORDER_AUDIO_ENCODING
         );
         // Initialize Audio Recorder.
-        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
+        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
                 RECORDER_SAMPLERATE,
                 RECORDER_CHANNELS,
                 RECORDER_AUDIO_ENCODING,
@@ -113,7 +113,7 @@ public class MyVoiceRecord extends Thread {
                     long currentTime = SystemClock.elapsedRealtime();
 
                     if (!isSilent && mState.beginSpeakTime == 0) {
-                        Log.d(TAG, "begin ");
+                        Log.d(TAG, "begin "+continuingSilenceDetector.currentSPL());
                         mState.beginSpeakTime = currentTime;
                     } else {
                         if (isSilent != mIsSilent) {
@@ -121,9 +121,9 @@ public class MyVoiceRecord extends Thread {
                             if (!mIsSilent) {
                                 mState.lastSilentTime = currentTime;
                                 mState.lastSilentRecordIndex = currentDataPointer;
-                                Log.d(TAG, "record silent time :" + currentTime);
+                                Log.d(TAG, "record silent time :" + currentTime+ " spl:"+continuingSilenceDetector.currentSPL());
                             } else {
-                                Log.d(TAG, "current is " + isSilent);
+                                Log.d(TAG, "current is slient:" + continuingSilenceDetector.currentSPL());
                             }
                             mIsSilent = isSilent;
                         }
@@ -191,7 +191,7 @@ public class MyVoiceRecord extends Thread {
 //                        inputStream.close();
 //                        res.delete();
 //                        mFilePath=mFilePath+".wav";
-//                mState.lastSilentRecordIndex = 0;
+//                        mState.lastSilentRecordIndex = 0;
 //                    }
                 ////////////end part 2 Record wav
             }
