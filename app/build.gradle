@@ -78,4 +78,6 @@ dependencies {
     //    compile 'com.intellij:annotations:+@jar'
     //    compile 'com.google.code.gson:gson:2.7'
     compile project(':AlexaAndroid1')
+    compile project(':wakewordassest')
+    compile project(':wakeworddetectmodule')
 }

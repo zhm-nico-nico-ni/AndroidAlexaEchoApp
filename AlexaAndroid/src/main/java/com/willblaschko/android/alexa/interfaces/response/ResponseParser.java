@@ -161,6 +161,9 @@ public class ResponseParser {
             }
 
             AvsItem item = DirectiveParseHelper.parseDirective(directive, audio); //FIXME 根据namespace来区分
+            if(item instanceof AvsExpectSpeechItem){
+                response.continueWakeWordDetect = false;
+            }
 
             if(item==null) {
                 if (directive.isTypePlay()) {

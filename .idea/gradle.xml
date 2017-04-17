@@ -11,7 +11,9 @@
             <option value="$PROJECT_DIR$/AlexaAndroid" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/auth" />
-            <option value="$PROJECT_DIR$/avs" />
+            <option value="$PROJECT_DIR$/toollibrary" />
+            <option value="$PROJECT_DIR$/wakewordassest" />
+            <option value="$PROJECT_DIR$/wakeworddetectmodule" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

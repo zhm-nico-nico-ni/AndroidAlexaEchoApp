@@ -23,6 +23,7 @@ import com.ggec.voice.assistservice.test.RecordingRMSListener;
 import com.ggec.voice.assistservice.test.RecordingStateListener;
 import com.ggec.voice.toollibrary.Util;
 import com.willblaschko.android.alexa.AlexaManager;
+import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
@@ -87,7 +88,7 @@ public class BgProcessIntentService extends IntentService {
         BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
 
-        if (cmd.type == 1) {
+        if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
             //start
             startRecord1(cmd.waitMicDelayMillSecond);
 //            search();
@@ -357,6 +358,9 @@ public class BgProcessIntentService extends IntentService {
             public void success(AvsResponse result) {
                 super.success(result);
                 deleteFile(filePath);
+                if(result.continueWakeWordDetect) {
+                    continueWakeWordDetect();
+                }
             }
 
             @Override
@@ -364,6 +368,7 @@ public class BgProcessIntentService extends IntentService {
                 super.failure(error);
                 playError();
                 deleteFile(filePath);
+                continueWakeWordDetect();
                 if(error instanceof AvsAudioException) {
                     AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
                     alexaManager.sendEvent(Event
@@ -374,13 +379,17 @@ public class BgProcessIntentService extends IntentService {
             }
 
             private void deleteFile(String fp) {
-                Log.d(TAG, "delete cache file p:" + fp);
                 if (true) {//TODO 清除文件
                     File file = new File(fp);
                     if (file.exists()) {
                         Log.w(TAG, "delete cache file state:" + file.delete() + " p:" + fp);
                     }
+                } else {
+                    Log.w(TAG, "Not delete cache file p:" + fp);
                 }
+            }
+            private void continueWakeWordDetect(){
+                sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
             }
         };
     }

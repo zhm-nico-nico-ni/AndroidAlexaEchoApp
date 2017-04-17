@@ -14,6 +14,7 @@ import com.ggec.voice.assistservice.MyApplication;
  */
 
 public class BackGroundProcessServiceControlCommand implements Parcelable {
+    public final static int START_VOICE_RECORD = 1;
     public final static int BEGIN_ALARM = 4;
     public final static int STOP_ALARM = 5;
     public final static int MUTE_CHANGE = 6; // mute

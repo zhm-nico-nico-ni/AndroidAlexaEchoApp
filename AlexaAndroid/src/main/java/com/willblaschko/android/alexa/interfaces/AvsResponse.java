@@ -7,7 +7,7 @@ import java.util.ArrayList;
  * Alexa server. In the future this will contain other metadata associated with the returned response.
  */
 public class AvsResponse extends ArrayList<AvsItem> {
-
+    public boolean continueWakeWordDetect = true;
     public AvsResponse() {
 
     }
