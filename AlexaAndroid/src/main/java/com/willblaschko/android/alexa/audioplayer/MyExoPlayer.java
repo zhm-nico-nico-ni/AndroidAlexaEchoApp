@@ -2,7 +2,7 @@ package com.willblaschko.android.alexa.audioplayer;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.os.AsyncTask;
+import android.os.Handler;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -23,7 +23,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private SimpleExoPlayer mMediaPlayer;
     private IMyExoPlayerListener mListener;
     private boolean mFiredPrepareEvent;
-    private MyAsyncTask mAsyncTask;
+    private TaskRunnar mAsyncTask;
 
     public MyExoPlayer(Context context, IMyExoPlayerListener listener) {
         mListener = listener;
@@ -58,12 +58,12 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         } else if (ExoPlayer.STATE_READY == playbackState && !mFiredPrepareEvent) {
             mFiredPrepareEvent = true;
             if(mAsyncTask!=null){
-                mAsyncTask.cancel(true);
+                mAsyncTask.cancel();
                 mAsyncTask = null;
             }
             if (mListener != null) mListener.onPrepare();
-            mAsyncTask = new MyAsyncTask();
-            mAsyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            mAsyncTask = new TaskRunnar();
+            handler.postDelayed(mAsyncTask, 100);
         }
     }
 
@@ -117,38 +117,26 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         return ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state;
     }
 
+    private Handler handler = new Handler();
 
-    private class MyAsyncTask extends AsyncTask<Void, Void, Void>{
+    private class TaskRunnar implements Runnable {
         private volatile boolean isTaskFinish;
-
         @Override
-        protected void onCancelled() {
-            super.onCancelled();
-            isTaskFinish = true;
-        }
+        public void run() {
+            if(!isTaskFinish && mMediaPlayer != null && isPlaying()){
+                long pos = mMediaPlayer.getCurrentPosition();
+                final float percent = (float) pos / (float) mMediaPlayer.getDuration();
+                if(mListener != null) mListener.onProgress(percent);
 
-        @Override
-        protected Void doInBackground(Void... params) {
-            isTaskFinish = false;
-
-            try {
-                while (!isTaskFinish && mMediaPlayer != null && isPlaying()) {
-                    long pos = mMediaPlayer.getCurrentPosition();
-                    final float percent = (float) pos / (float) mMediaPlayer.getDuration();
-                    if(mListener != null) mListener.onProgress(percent);
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }catch (NullPointerException|IllegalStateException e){
-                e.printStackTrace();
+                handler.postDelayed(this, 100);
             }
-
-            return null;
         }
-    }
+
+        public void cancel(){
+            isTaskFinish = true;
+            handler.removeCallbacks(this);
+        }
+    };
 
     public interface IMyExoPlayerListener {
         void onComplete();

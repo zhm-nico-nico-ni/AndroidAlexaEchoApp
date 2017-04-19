@@ -13,6 +13,7 @@ import com.ggec.voice.toollibrary.Util;
 import com.google.android.gms.security.ProviderInstaller;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
+import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
@@ -245,7 +246,7 @@ public class AlexaManager {
                     openDownchannel = new OpenDownchannel(getDirectivesUrl(), callback);
                     isSendingOpenDownchannelDirective = false;
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -444,7 +445,7 @@ public class AlexaManager {
                         @Override
                         protected Void doInBackground(Void... params) {
                             //get our user's access token
-                            TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                            TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                                 @Override
                                 public void onSuccess(String token) {
                                     //we are authenticated, let's record some audio!
@@ -597,7 +598,7 @@ public class AlexaManager {
                         @Override
                         protected AvsResponse doInBackground(Void... params) {
                             //get our access token
-                            TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                            TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                                 @Override
                                 public void onSuccess(String token) {
                                     mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
@@ -676,7 +677,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getEventsUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -849,7 +850,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getEventsUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -895,7 +896,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getPingUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -973,7 +974,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getEventsUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new TokenManager.TokenCallback() {
+                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -1000,6 +1001,10 @@ public class AlexaManager {
             }
 
         });
+    }
+
+    public void tryRefreshToken(TokenManager.TokenCallback callback){
+        TokenManager.tryRefreshToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, callback);
     }
 
     private static class AsyncEventHandler implements AsyncCallback<AvsResponse, Exception> {

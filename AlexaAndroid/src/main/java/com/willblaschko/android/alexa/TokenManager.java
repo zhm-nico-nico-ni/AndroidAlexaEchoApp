@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.amazon.identity.auth.device.AuthError;
@@ -150,6 +151,14 @@ public class TokenManager {
         callback.onFailure(new IllegalStateException("User is not logged in and no refresh token found."));
     }
 
+    public static void tryRefreshToken(@NotNull AmazonAuthorizationManager authorizationManager, @NotNull Context context, @NotNull TokenCallback callback){
+        SharedPreferences preferences = Util.getPreferences(context.getApplicationContext());
+        String refreshToken = preferences.getString(PREF_REFRESH_TOKEN, "");
+        if (!TextUtils.isEmpty(refreshToken)){
+            getRefreshToken(authorizationManager, context, callback, refreshToken);
+        }
+    }
+
     /**
      * Get a new refresh token from the Amazon server to replace the expired access token that we currently have
      * @param authorizationManager
@@ -209,6 +218,7 @@ public class TokenManager {
                     @Override
                     public void run() {
                         callback.onSuccess(tokenResponse.access_token);
+                        callback.beginRefreshTokenEvent(context, tokenResponse.expires_in - 60000 );
                     }
                 });
             }
@@ -248,6 +258,7 @@ public class TokenManager {
 
     public interface TokenCallback{
         void onSuccess(String token);
+        void beginRefreshTokenEvent(Context context, long expires_in);
         void onFailure(Throwable e);
     }
 }

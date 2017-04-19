@@ -23,6 +23,7 @@ public class BackGroundProcessServiceControlCommand implements Parcelable {
 //    public final static int SYSTEM_SYNCHRONIZE_STATE = 9; // no needed
     public final static int NETWORK_CONNECT = 10; // 处理网络恢复,连接open down channel
     public final static int USER_INACTIVITY_REPORT = 11; // inactiveTimeInSeconds
+    public final static int REFRESH_TOKEN = 12;
 
     public int type; // 控制类型， 1 启动 2 停止 3 取消
     public long waitMicDelayMillSecond;
@@ -47,10 +48,6 @@ public class BackGroundProcessServiceControlCommand implements Parcelable {
         intent.putExtra(BgProcessIntentService.EXTRA_CMD, controlCommand);
         return intent;
     }
-
-//    public static Intent createUserInactivityReportIntent(){
-//        return createIntentByType(MyApplication.getContext(), USER_INACTIVITY_REPORT);
-//    }
 
     public static Intent createIntentByType(Context context, int type){
         Intent intent = new Intent(context, BgProcessIntentService.class);

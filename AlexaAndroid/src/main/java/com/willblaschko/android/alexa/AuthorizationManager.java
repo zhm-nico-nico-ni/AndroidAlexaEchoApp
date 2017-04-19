@@ -7,16 +7,13 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.amazon.identity.auth.device.AuthError;
-import com.amazon.identity.auth.device.api.Listener;
-import com.amazon.identity.auth.device.api.authorization.AuthorizeResult;
-import com.amazon.identity.auth.device.api.authorization.ProfileScope;
-import com.amazon.identity.auth.device.api.authorization.Scope;
 import com.amazon.identity.auth.device.authorization.BuildConfig;
 import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationManager;
 import com.amazon.identity.auth.device.authorization.api.AuthorizationListener;
 import com.amazon.identity.auth.device.authorization.api.AuthzConstants;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
+import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.utility.Util;
 
 import org.jetbrains.annotations.NotNull;
@@ -89,7 +86,7 @@ public class AuthorizationManager {
 //            }
 //        });
 
-        TokenManager.getAccessToken(mAuthManager, context, new TokenManager.TokenCallback() {
+        TokenManager.getAccessToken(mAuthManager, context, new ImplTokenCallback() {
             @Override
             public void onSuccess(String token) {
                 callback.success(true);

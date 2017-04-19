@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.ggec.voice.assistservice.MyApplication;
+import com.ggec.voice.assistservice.log.Log;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -31,6 +32,7 @@ public class MyShortAudioPlayer2 implements MediaPlayer.OnCompletionListener, Ex
 
     //        path = "asset:///start.mp3";  use this
     public MyShortAudioPlayer2(String path, MediaPlayer.OnCompletionListener listener){
+//        long begin = SystemClock.elapsedRealtime();
         mOnCompleteListener = listener;
         exoPlayer = ExoPlayerFactory.newSimpleInstance(MyApplication.getContext()
                 , new DefaultTrackSelector(), new DefaultLoadControl(),
@@ -48,6 +50,7 @@ public class MyShortAudioPlayer2 implements MediaPlayer.OnCompletionListener, Ex
                 null);
         exoPlayer.prepare(mediaSource);
 
+//        Log.d("zhm", "MyShortAudioPlayer2 prepared, cost:" + (SystemClock.elapsedRealtime() - begin));
 //        MediaPlayer mediaPlayer = new MediaPlayer();
 //        mediaPlayer.setDataSource(MyApplication.getContext(), Uri.parse(path));
 //        mediaPlayer.prepare();
@@ -116,6 +119,7 @@ public class MyShortAudioPlayer2 implements MediaPlayer.OnCompletionListener, Ex
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (playbackState == ExoPlayer.STATE_ENDED){
+            Log.i("zhm", "duration " + exoPlayer.getDuration());
             if(exoPlayer != null){
                 exoPlayer.release();
             }
@@ -123,7 +127,6 @@ public class MyShortAudioPlayer2 implements MediaPlayer.OnCompletionListener, Ex
             if (mOnCompleteListener != null) {
                 mOnCompleteListener.onCompletion(null);
             }
-
         }
     }
 

@@ -25,6 +25,7 @@ import com.ggec.voice.toollibrary.Util;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -53,7 +54,9 @@ public class BgProcessIntentService extends IntentService {
     public static final String EXTRA_CMD = "Control-Command";
     private final static int PING_JOB_ID = 3001;
     private final static int USER_INACTIVITY_REPORT_JOB_ID = 3002;
+    private final static int REFRESH_TOKEN_DELAY_JOB_ID = 3003;
     private final static int SEND_PING_INTERVAL = 300 * 1000;
+    private final static int REFRESH_TOKEN_MIN_INTERVAL = 300 * 1000;
 
     private Handler handler = new Handler(Looper.getMainLooper());
     private RawAudioRecorder recorder;
@@ -158,7 +161,21 @@ public class BgProcessIntentService extends IntentService {
                 alexaManager.sendUserInactivityReport();
             }
             setTimerEvent(this, USER_INACTIVITY_REPORT_JOB_ID, BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT, 60 * 60 * 1000);
-        } else {
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.REFRESH_TOKEN){
+            Log.i(TAG, "REFRESH_TOKEN");
+            alexaManager.tryRefreshToken(new ImplTokenCallback(){
+                @Override
+                public void beginRefreshTokenEvent(Context context, long expires_in) {
+                    setTimerEvent(context, REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN
+                            , expires_in > REFRESH_TOKEN_MIN_INTERVAL? expires_in: REFRESH_TOKEN_MIN_INTERVAL);
+                }
+
+                @Override
+                public void onFailure(Throwable e) {
+                    setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
+                }
+            });
+        }else {
             //cancel
             Log.d(TAG, "unknow cmd:" + cmd.type);
         }
@@ -447,19 +464,21 @@ public class BgProcessIntentService extends IntentService {
                     AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
                     alexaManager.sendSynchronizeStateEvent2(getCallBack("SynchronizeState"));
                     setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
+                    setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
                 }
 
                 @Override
                 public void failure(Exception error) {
                     super.failure(error);
                     cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
+                    cancelTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN);
                 }
             });
             return;
         }
     }
 
-    private void setTimerEvent(Context context, int requestCode, int type, int delay) {
+    private void setTimerEvent(Context context, int requestCode, int type, long delay) {
         Log.d(TAG, "setTimerEvent " + type + " req:" + requestCode + " delay:" + delay);
         Intent it = BackGroundProcessServiceControlCommand.createIntentByType(context, type);
         PendingIntent intent = PendingIntent.getService(context, requestCode, it, PendingIntent.FLAG_CANCEL_CURRENT);
