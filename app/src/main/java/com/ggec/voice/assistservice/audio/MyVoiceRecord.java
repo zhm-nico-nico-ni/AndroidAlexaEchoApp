@@ -36,6 +36,7 @@ public class MyVoiceRecord extends Thread {
     private static int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
     private final int MAX_WAIT_TIME = 10 * 1000;
+    private final int MAX_RECORD_TIME = 10 * 1000;
     private final int MAX_WAIT_END_TIME = 1500; // TODO 这个多余的时间要截掉
 
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
@@ -102,7 +103,8 @@ public class MyVoiceRecord extends Thread {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
             while (!isInterrupted()) {
-                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
+//                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
+                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes);
 
                 if (numberOfReadFloat > 0) {
                     TarsosDSPAudioFloatConverter
@@ -146,6 +148,8 @@ public class MyVoiceRecord extends Thread {
                             //write file
                             stream.write(audioBuffer, 0, numberOfReadFloat);
                             currentDataPointer += numberOfReadFloat;
+
+                            if(currentTime - mState.beginSpeakTime > MAX_RECORD_TIME) break;
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
