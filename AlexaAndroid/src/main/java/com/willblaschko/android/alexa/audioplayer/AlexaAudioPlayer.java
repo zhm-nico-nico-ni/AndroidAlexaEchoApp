@@ -341,7 +341,7 @@ public class AlexaAudioPlayer {
     public interface Callback{
         void playerPrepared(AvsItem pendingItem);
         void playerProgress(AvsItem currentItem, long offsetInMilliseconds, float percent);
-        void itemComplete(AvsItem completedItem);
+        void itemComplete(AvsItem completedItem, long offsetInMilliseconds);
         boolean playerError(AvsItem item, int what, int extra);
         void dataError(AvsItem item, Exception e);
     }
@@ -362,9 +362,10 @@ public class AlexaAudioPlayer {
     private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
+            long offset = mp.getDuration();
             for(Callback callback: mCallbacks){
                 callback.playerProgress(mItem, 1, 1);
-                callback.itemComplete(mItem);
+                callback.itemComplete(mItem, offset);
             }
         }
     };

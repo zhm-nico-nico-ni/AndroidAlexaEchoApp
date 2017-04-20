@@ -373,7 +373,7 @@ public class AvsHandleHelper {
         }
 
         @Override
-        public void itemComplete(AvsItem completedItem) {
+        public void itemComplete(AvsItem completedItem, long offsetInMilliseconds) {
             if (BuildConfig.DEBUG) {
                 Log.i(TAG, "Complete " + completedItem.getToken() + " fired");
             }
@@ -386,18 +386,18 @@ public class AvsHandleHelper {
                 return;
             }
 
-            if(!(completedItem instanceof AvsAlertPlayItem)) sendPlaybackFinishedEvent(completedItem);
+            if(!(completedItem instanceof AvsAlertPlayItem)) sendPlaybackCompleteEvent(completedItem, offsetInMilliseconds, offsetInMilliseconds >0);
         }
 
         @Override
         public boolean playerError(AvsItem item, int what, int extra) {
-            itemComplete(item);
+            itemComplete(item, 0);
             return true;
         }
 
         @Override
         public void dataError(AvsItem item, Exception e) {
-            itemComplete(item);
+            itemComplete(item, 0);
             e.printStackTrace();
         }
 
@@ -429,10 +429,20 @@ public class AvsHandleHelper {
      * Send an event back to Alexa that we're done with our current speech event, this should supply us with the next item
      * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
      */
-    private void sendPlaybackFinishedEvent(AvsItem item) {
+    private void sendPlaybackCompleteEvent(AvsItem item, long offset, boolean success) {
         if (item != null) {
-            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendPlaybackFinishedEvent(item, null);
-            Log.i(TAG, "Sending PlaybackFinishedEvent");
+                    String event = null;
+        if (item instanceof AvsPlayAudioItem) {
+            if(success) {
+                event = Event.getPlaybackFinishedEvent(item.getToken(), offset);
+            } else {
+                //TODO
+            }
+        } else if(item instanceof AvsSpeakItem) {
+            event = Event.getSpeechFinishedEvent(item.getToken());
+        }
+        if(event != null)
+            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
         }
     }
 

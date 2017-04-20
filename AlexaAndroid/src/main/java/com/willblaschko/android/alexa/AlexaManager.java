@@ -777,7 +777,7 @@ public class AlexaManager {
 
 
     public void sendPlaybackNearlyFinishedEvent(AvsItem item, final long offsetMilliseconds, final AsyncCallback<AvsResponse, Exception> callback) {
-        if (item == null || !isAudioPlayItem(item)) {
+        if (!isAudioPlayItem(item)) {
             return;
         }
 
@@ -809,27 +809,6 @@ public class AlexaManager {
             return;
         }
         sendEvent(event, callback);
-    }
-
-    /**
-     * Send an event to indicate that playback of a speech item has finished
-     * See: {@link #sendEvent(String, AsyncCallback)}
-     *
-     * @param item     our speak item
-     * @param callback
-     */
-    public void sendPlaybackFinishedEvent(AvsItem item, final AsyncCallback<AvsResponse, Exception> callback) {
-        if (item == null) {
-            return;
-        }
-        String event = null;
-        if (isAudioPlayItem(item)) {
-            event = Event.getPlaybackFinishedEvent(item.getToken());
-        } else if(item instanceof AvsSpeakItem) {
-            event = Event.getSpeechFinishedEvent(item.getToken());
-        }
-        if(event != null)
-            sendEvent(event, callback);
     }
 
     /**

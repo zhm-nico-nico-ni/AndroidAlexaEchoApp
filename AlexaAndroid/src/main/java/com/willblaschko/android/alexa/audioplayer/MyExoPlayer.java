@@ -58,8 +58,9 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (ExoPlayer.STATE_ENDED == playbackState) {
+            long duration = mMediaPlayer.getDuration();
             deletePlayFile();
-            if (mListener != null) mListener.onComplete();
+            if (mListener != null) mListener.onComplete(duration);
         } else if (ExoPlayer.STATE_READY == playbackState && !mFiredPrepareEvent) {
             mFiredPrepareEvent = true;
             if (mAsyncTask != null) {
@@ -74,6 +75,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
+        deletePlayFile();
         if (mListener != null) mListener.onError(error);
     }
 
@@ -162,7 +164,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     ;
 
     public interface IMyExoPlayerListener {
-        void onComplete();
+        void onComplete(long duration);
 
         void onError(ExoPlaybackException exception);
 

@@ -275,14 +275,23 @@ public class Event {
         return builder.toJson();
     }
 
-    public static String getPlaybackFinishedEvent(String token){
+    public static String getPlaybackFinishedEvent(String token, long offset){
         Builder builder = new Builder();
         builder.setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackFinished")
                 .setHeaderMessageId(getUuid())
-                .setPayload(PayloadFactory.createPayload(token));
+                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offset));
         return builder.toJson();
     }
+
+//    public static String getPlaybackFailEvent(String token){
+//        Builder builder = new Builder();
+//        builder.setHeaderNamespace("AudioPlayer")
+//                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackFailed.NAME)
+//                .setHeaderMessageId(getUuid())
+//                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offset));
+//        return builder.toJson();
+//    }
 
     public static String createSystemSynchronizeStateEvent(List<Event> contextList){
 

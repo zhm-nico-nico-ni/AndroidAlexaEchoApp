@@ -1,7 +1,6 @@
 package com.willblaschko.android.alexa.audioplayer;
 
 import android.content.Context;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
@@ -294,10 +293,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     public void release(){
         if(mMediaPlayer != null){
-//            if(mMediaPlayer.isPlaying()){
-                mMediaPlayer.stop();
-//            }
-//            mMediaPlayer.reset();
+            mMediaPlayer.stop();
             mMediaPlayer.release();
         }
         mMediaPlayer = null;
@@ -352,53 +348,13 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
         }
     }
 
-    /**
-     * Pass our MediaPlayer completion state to all the Callbacks, handle it at the top level
-     */
-    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
-        @Override
-        public void onCompletion(MediaPlayer mp) {
-            for(Callback callback: mCallbacks){
-                callback.playerProgress(mItem, 1, 1);
-                callback.itemComplete(mItem);
-            }
-        }
-    };
-
-
-    /**
-     * Pass our MediaPlayer prepared state to all the Callbacks, handle it at the top level
-     */
-    private MediaPlayer.OnPreparedListener mPreparedListener = new MediaPlayer.OnPreparedListener() {
-        @Override
-        public void onPrepared(MediaPlayer mp) {
-            for(Callback callback: mCallbacks){
-                callback.playerPrepared(mItem);
-                callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0);
-            }
-            mMediaPlayer.setPlayWhenReady(true);
-        }
-    };
-
-    /**
-     * Pass our MediaPlayer error state to all the Callbacks, handle it at the top level
-     */
-//    private MediaPlayer.OnErrorListener mErrorListener = new MediaPlayer.OnErrorListener() {
-//        @Override
-//        public boolean onError(MediaPlayer mp, int what, int extra) {
-//            for(Callback callback: mCallbacks){
-//                boolean response = callback.playerError(mItem, what, extra);
-//                if(response){
-//                    return response;
-//                }
-//            }
-//            return false;
-//        }
-//    };
 
     @Override
-    public void onComplete() {
-        mCompletionListener.onCompletion(null);
+    public void onComplete(long duration) {
+        for(Callback callback: mCallbacks){
+            callback.playerProgress(mItem, 1, 1);
+            callback.itemComplete(mItem, duration);
+        }
     }
 
     @Override
@@ -409,7 +365,11 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     @Override
     public void onPrepare() {
-        mPreparedListener.onPrepared(null);
+        for(Callback callback: mCallbacks){
+            callback.playerPrepared(mItem);
+            callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0);
+        }
+        mMediaPlayer.setPlayWhenReady(true);
     }
 
     @Override
