@@ -965,7 +965,7 @@ public class AlexaManager {
     }
 
     public void sendUserInactivityReport(){
-        final long second = SystemClock.elapsedRealtime() - mLastUserActivityElapsedTime / 1000;
+        final long second = (SystemClock.elapsedRealtime() - mLastUserActivityElapsedTime )/ 1000;
         if(second<3) return;
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
             @Override

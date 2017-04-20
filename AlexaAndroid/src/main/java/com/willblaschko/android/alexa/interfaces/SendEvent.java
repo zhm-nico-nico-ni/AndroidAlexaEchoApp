@@ -93,9 +93,9 @@ public abstract class SendEvent {
 
 
         currentCall = ClientUtil.getHttp2Client().newCall(request);
-
+        Response response = null;
         try {
-            Response response = currentCall.execute();
+            response = currentCall.execute();
             int statusCode = response.code();
             Log.i(TAG, "response:" + statusCode + "  "+ response.message());
             Log.i(TAG, "Response headers: {}" + response.headers().toString());
@@ -116,6 +116,10 @@ public abstract class SendEvent {
                 return new AvsResponse();
             } else {
                 throw exp;
+            }
+        } finally {
+            if(response != null){
+                response.close();
             }
         }
 

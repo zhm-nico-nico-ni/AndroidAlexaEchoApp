@@ -9,6 +9,8 @@ import android.util.Log;
 
 import com.ggec.voice.assistservice.MyApplication;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -97,8 +99,9 @@ public class MyVoiceRecord extends Thread {
         mIsSilent = true;
 
         long currentDataPointer = 0;
+        FileOutputStream stream = null;
         try {
-            FileOutputStream stream = new FileOutputStream(mFilePath);
+            stream = new FileOutputStream(mFilePath);
 
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
@@ -205,6 +208,10 @@ public class MyVoiceRecord extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
             interrupt();
+        } finally {
+            if(stream != null){
+                IOUtils.closeQuietly(stream);
+            }
         }
         stopRecord(mState.lastSilentRecordIndex);
     }

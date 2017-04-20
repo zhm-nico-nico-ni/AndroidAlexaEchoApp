@@ -12,7 +12,6 @@ import android.support.annotation.Nullable;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.log.Log;
 import com.ggec.voice.assistservice.wakeword.IWakeWordAgentEvent;
-import com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent;
 import com.ggec.voice.assistservice.wakeword.WakeWordAgent;
 import com.willblaschko.android.alexa.BroadCast;
 
@@ -28,7 +27,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.w(TAG, "onReceive RECEIVE_START_WAKE_WORD_LISTENER");
-            mWakeWordAgent.continueSearch();
+//            mWakeWordAgent.continueSearch();
         }
     };
 
@@ -46,8 +45,8 @@ public class AssistService extends Service implements IWakeWordAgentEvent {
                 .setContentText("GGEC Assist Service")
                 .build());
 
-        mWakeWordAgent = new SnowboyWakeWordAgent(this, this);
-        mWakeWordAgent.continueSearch();
+//        mWakeWordAgent = new CumSphinxWakeWordAgent(this, this);
+//        mWakeWordAgent.continueSearch();
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
     }
 
