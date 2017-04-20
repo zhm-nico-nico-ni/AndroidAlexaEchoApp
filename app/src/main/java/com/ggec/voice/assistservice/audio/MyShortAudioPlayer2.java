@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.ggec.voice.assistservice.MyApplication;
-import com.ggec.voice.assistservice.log.Log;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -119,7 +118,6 @@ public class MyShortAudioPlayer2 implements MediaPlayer.OnCompletionListener, Ex
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (playbackState == ExoPlayer.STATE_ENDED){
-            Log.i("zhm", "duration " + exoPlayer.getDuration());
             if(exoPlayer != null){
                 exoPlayer.release();
             }

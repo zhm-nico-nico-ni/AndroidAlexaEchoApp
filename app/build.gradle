@@ -35,6 +35,27 @@ android {
             exclude 'META-INF/NOTICE.txt'
             exclude 'META-INF/ASL2.0'
         }
+
+        sourceSets {
+            main {
+                manifest {
+                    srcFile 'src/main/AndroidManifest.xml'
+                }
+                java {
+                    srcDir 'src/main/java'
+                }
+
+                res {
+                    srcDir 'src/main/res'
+                }
+                resources {
+                    srcDir 'src/main/src'
+                }
+                jniLibs {
+                    srcDirs 'libs'
+                }
+            }
+        }
     }
 
     signingConfigs {

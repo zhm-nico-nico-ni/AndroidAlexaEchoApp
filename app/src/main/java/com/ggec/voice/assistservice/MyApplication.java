@@ -7,6 +7,8 @@ import android.support.multidex.MultiDex;
 import com.facebook.stetho.Stetho;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 
+import ai.kitt.snowboy.AppResCopy;
+
 /**
  * Created by ggec on 2017/3/29.
  */
@@ -18,7 +20,7 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         sContext = this;
-
+        AppResCopy.copyResFromAssetsToSD(this);
         Stetho.initializeWithDefaults(this);
         MultiDex.install(this);
         startService(BackGroundProcessServiceControlCommand.createIntentByType(this, BackGroundProcessServiceControlCommand.NETWORK_CONNECT));
