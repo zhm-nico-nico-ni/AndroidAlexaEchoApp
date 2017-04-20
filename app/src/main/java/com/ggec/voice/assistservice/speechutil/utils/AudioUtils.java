@@ -10,8 +10,8 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.text.TextUtils;
 
-import com.ggec.voice.assistservice.log.Log;
 import com.ggec.voice.assistservice.speechutil.MediaFormatFactory;
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;

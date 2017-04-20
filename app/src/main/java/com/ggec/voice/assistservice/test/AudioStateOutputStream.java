@@ -12,7 +12,7 @@
  */
 package com.ggec.voice.assistservice.test;
 
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.IOException;
 import java.io.PipedInputStream;

@@ -2,10 +2,10 @@ package com.ggec.voice.assistservice.speechutil;
 
 import android.media.AudioFormat;
 
-import com.ggec.voice.assistservice.log.Log;
 import com.ggec.voice.assistservice.speechutil.utils.AudioUtils;
+import com.ggec.voice.toollibrary.log.Log;
 
-import static com.ggec.voice.assistservice.log.Log.TAG_APP;
+import static com.ggec.voice.toollibrary.log.Log.TAG_APP;
 
 public abstract class AbstractAudioRecorder implements AudioRecorder {
     protected String TAG = "AbstractAudioRecorder";

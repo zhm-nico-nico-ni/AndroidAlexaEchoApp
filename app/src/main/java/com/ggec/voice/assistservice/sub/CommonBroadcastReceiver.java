@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 /**
  * Created by ggec on 2017/4/14.

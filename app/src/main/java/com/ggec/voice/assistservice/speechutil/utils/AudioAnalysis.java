@@ -2,7 +2,7 @@ package com.ggec.voice.assistservice.speechutil.utils;
 
 import android.content.Context;
 
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 public class AudioAnalysis {
 

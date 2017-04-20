@@ -1,13 +1,12 @@
 package com.ggec.voice.assistservice.test;
 
 import android.content.Context;
-import android.media.AudioFormat;
 import android.media.AudioRecord;
 
-import com.ggec.voice.assistservice.log.Log;
 import com.ggec.voice.assistservice.speechutil.AbstractAudioRecorder;
 import com.ggec.voice.assistservice.speechutil.SpeechRecord;
 import com.ggec.voice.assistservice.speechutil.utils.AudioUtils;
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.IOException;
 import java.io.InputStream;

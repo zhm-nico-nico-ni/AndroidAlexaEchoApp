@@ -4,7 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 import ai.kitt.snowboy.MsgEnum;
 import ai.kitt.snowboy.audio.RecordingThread;

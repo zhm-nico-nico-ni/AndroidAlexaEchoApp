@@ -26,6 +26,7 @@ import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
+import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -211,18 +212,20 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             //cast our item for easy access
             AvsSpeakItem playItem = (AvsSpeakItem) item;
             //write out our raw audio data to a file
-            File path=new File(mContext.getCacheDir(), System.currentTimeMillis()+".mp3");
+            File path=new File(mContext.getCacheDir(), System.currentTimeMillis()+".pcm");
             FileOutputStream fos = null;
             try {
                 fos = new FileOutputStream(path);
                 fos.write(playItem.getAudio());
                 fos.close();
                 //play our newly-written file
-                getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null));
+                getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), ".pcm"), path);
             } catch (IOException e) {
                 e.printStackTrace();
                 //bubble up our error
                 bubbleUpError(e);
+            } finally {
+                if(fos!=null) IOUtils.closeQuietly(fos);
             }
         } else if(mItem instanceof AvsAlertPlayItem){
 //            AvsAlertPlayItem playItem = (AvsAlertPlayItem) item;

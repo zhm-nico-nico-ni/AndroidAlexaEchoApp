@@ -2,7 +2,7 @@ package com.ggec.voice.assistservice.wakeword;
 
 import android.content.Context;
 
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.File;
 import java.io.IOException;

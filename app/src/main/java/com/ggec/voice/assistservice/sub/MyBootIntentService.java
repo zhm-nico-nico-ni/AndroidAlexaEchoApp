@@ -6,7 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.WakefulBroadcastReceiver;
 
 import com.ggec.voice.assistservice.AssistService;
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 /**
  * Created by ggec on 2017/3/29.

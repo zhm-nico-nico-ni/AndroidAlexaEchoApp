@@ -9,7 +9,7 @@ import android.os.Looper;
 
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 
 /**

@@ -34,7 +34,7 @@ import com.amazon.alexa.avs.message.response.speaker.SetMute;
 import com.amazon.alexa.avs.message.response.speaker.VolumePayload;
 import com.amazon.alexa.avs.message.response.speechsynthesizer.Speak;
 import com.ggec.voice.assistservice.MyApplication;
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;

@@ -39,7 +39,7 @@ import com.amazon.alexa.avs.message.response.system.SetEndpoint;
 import com.amazon.alexa.avs.wakeword.WakeWordDetectedHandler;
 import com.amazon.alexa.avs.exception.DirectiveHandlingException.ExceptionType;
 import com.ggec.voice.assistservice.MyApplication;
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

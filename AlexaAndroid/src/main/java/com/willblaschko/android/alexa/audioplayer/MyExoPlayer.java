@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.os.Handler;
 
+import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -15,6 +16,8 @@ import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 
+import java.io.File;
+
 /**
  * Created by ggec on 2017/4/17.
  */
@@ -24,6 +27,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private IMyExoPlayerListener mListener;
     private boolean mFiredPrepareEvent;
     private TaskRunnar mAsyncTask;
+    private File mDeleteWhenFinishPath;
 
     public MyExoPlayer(Context context, IMyExoPlayerListener listener) {
         mListener = listener;
@@ -54,10 +58,11 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (ExoPlayer.STATE_ENDED == playbackState) {
+            deletePlayFile();
             if (mListener != null) mListener.onComplete();
         } else if (ExoPlayer.STATE_READY == playbackState && !mFiredPrepareEvent) {
             mFiredPrepareEvent = true;
-            if(mAsyncTask!=null){
+            if (mAsyncTask != null) {
                 mAsyncTask.cancel();
                 mAsyncTask = null;
             }
@@ -82,8 +87,23 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     public void prepare(MediaSource mediaSource) {
+        prepare(mediaSource, null);
+    }
+
+    public void prepare(MediaSource mediaSource, File deleteWhenFinishPath) {
         mFiredPrepareEvent = false;
+        deletePlayFile();
+        mDeleteWhenFinishPath = deleteWhenFinishPath;
         mMediaPlayer.prepare(mediaSource);
+
+    }
+
+    private void deletePlayFile() {
+        if (mDeleteWhenFinishPath != null && mDeleteWhenFinishPath.exists()) {
+            boolean del = mDeleteWhenFinishPath.delete();
+            if(del) mDeleteWhenFinishPath = null;
+            Log.d("zhm", "delete file:" + del);
+        }
     }
 
     public int getPlaybackState() {
@@ -112,7 +132,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         return mMediaPlayer.getDuration();
     }
 
-    public boolean isPlaying(){
+    public boolean isPlaying() {
         int state = mMediaPlayer.getPlaybackState();
         return ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state;
     }
@@ -121,22 +141,25 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     private class TaskRunnar implements Runnable {
         private volatile boolean isTaskFinish;
+
         @Override
         public void run() {
-            if(!isTaskFinish && mMediaPlayer != null && isPlaying()){
+            if (!isTaskFinish && mMediaPlayer != null && isPlaying()) {
                 long pos = mMediaPlayer.getCurrentPosition();
                 final float percent = (float) pos / (float) mMediaPlayer.getDuration();
-                if(mListener != null) mListener.onProgress(percent);
+                if (mListener != null) mListener.onProgress(percent);
 
                 handler.postDelayed(this, 100);
             }
         }
 
-        public void cancel(){
+        public void cancel() {
             isTaskFinish = true;
             handler.removeCallbacks(this);
         }
-    };
+    }
+
+    ;
 
     public interface IMyExoPlayerListener {
         void onComplete();

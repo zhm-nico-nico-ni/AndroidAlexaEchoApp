@@ -10,9 +10,9 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
-import com.ggec.voice.assistservice.log.Log;
 import com.ggec.voice.assistservice.wakeword.IWakeWordAgentEvent;
 import com.ggec.voice.assistservice.wakeword.WakeWordAgent;
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.BroadCast;
 
 /**

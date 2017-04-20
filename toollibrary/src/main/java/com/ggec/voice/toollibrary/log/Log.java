@@ -1,6 +1,7 @@
-package com.ggec.voice.assistservice.log;
+package com.ggec.voice.toollibrary.log;
 
-import com.ggec.voice.assistservice.BuildConfig;
+
+import com.ggec.voice.toollibrary.BuildConfig;
 
 /**
  * Created by ggec on 2017/3/29.

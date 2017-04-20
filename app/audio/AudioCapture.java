@@ -7,7 +7,7 @@ import android.media.AudioRecord;
 import com.amazon.alexa.avs.AudioStateOutputStream;
 import com.amazon.alexa.avs.RecordingRMSListener;
 import com.amazon.alexa.avs.RecordingStateListener;
-import com.ggec.voice.assistservice.log.Log;
+import com.ggec.voice.toollibrary.log.Log;
 import com.ggec.voice.assistservice.speechutil.AbstractAudioRecorder;
 import com.ggec.voice.assistservice.speechutil.SpeechRecord;
 import com.ggec.voice.assistservice.speechutil.utils.AudioUtils;
