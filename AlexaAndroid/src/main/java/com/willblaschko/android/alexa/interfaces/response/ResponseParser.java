@@ -1,7 +1,6 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
-import android.util.Log;
-
+import com.ggec.voice.toollibrary.log.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.willblaschko.android.alexa.data.Directive;
@@ -21,14 +20,12 @@ import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeec
 import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
 import org.apache.commons.fileupload.MultipartStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -63,26 +60,13 @@ public class ResponseParser {
      * @return the parsed AvsResponse
      * @throws IOException
      */
-
-    public static AvsResponse parseResponse(InputStream stream, String boundary) throws IOException, IllegalStateException, AvsException {
-        return parseResponse(stream, boundary, false);
-    }
-
-    public static AvsResponse parseResponse(InputStream stream, String boundary, boolean checkBoundary) throws IOException, IllegalStateException, AvsException {
+    public static AvsResponse parseResponse(byte[] stream, String boundary, boolean checkBoundary) throws IOException, IllegalStateException, AvsException{
         long start = System.currentTimeMillis();
 
         List<Directive> directives = new ArrayList<>();
         HashMap<String, ByteArrayInputStream> audio = new HashMap<>();
 
-        byte[] bytes;
-        try {
-            bytes = IOUtils.toByteArray(stream);
-        } catch (IOException exp) {
-            exp.printStackTrace();
-            Log.e(TAG, "Error copying bytes[]");
-            return new AvsResponse();
-        }
-
+        byte[] bytes = stream;
         String responseString = string(bytes);
         if (checkBoundary) {
             final String responseTrim = responseString.trim();
@@ -93,7 +77,7 @@ public class ResponseParser {
             }
         }
 
-        MultipartStream mpStream = new MultipartStream(new ByteArrayInputStream(bytes), boundary.getBytes(), 100000, null);
+        MultipartStream mpStream = new MultipartStream(new ByteArrayInputStream(bytes), boundary.getBytes(), 2048, null);//FIXME 这个改小点后，要测下与没有问题
 
         //have to do this otherwise mpStream throws an exception
         if (mpStream.skipPreamble()) {

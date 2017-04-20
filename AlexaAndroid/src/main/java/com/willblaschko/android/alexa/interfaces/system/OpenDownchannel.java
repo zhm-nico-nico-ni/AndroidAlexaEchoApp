@@ -71,12 +71,12 @@ public class OpenDownchannel extends SendEvent {
                 callback.success(null);
             }
             while (!source.exhausted()) {
-                Log.d(TAG, "on response 1 ");
-                source.read(buffer, 8192);
+                long all = source.read(buffer, 8192);
+                Log.d(TAG, "on response 1. " +all);
                 AvsResponse val = new AvsResponse();
 
                 try {
-                    val = ResponseParser.parseResponse(buffer.inputStream(), boundary, true);
+                    val = ResponseParser.parseResponse(buffer.readByteArray(), boundary, true);
                 } catch (Exception exp) {
                     Log.e(TAG, "on response parseResponse error: " + exp.getMessage(), exp);
                 }

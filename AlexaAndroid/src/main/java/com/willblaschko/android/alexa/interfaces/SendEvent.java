@@ -1,7 +1,7 @@
 package com.willblaschko.android.alexa.interfaces;
 
-import android.util.Log;
 
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.connection.ClientUtil;
 import com.willblaschko.android.alexa.interfaces.response.ResponseParser;
@@ -97,15 +97,15 @@ public abstract class SendEvent {
         try {
             response = currentCall.execute();
             int statusCode = response.code();
-            Log.i(TAG, "response:" + statusCode + "  "+ response.message());
-            Log.i(TAG, "Response headers: {}" + response.headers().toString());
+            Log.d(TAG, "response:" + statusCode + "  "+ response.message());
+            Log.d(TAG, "Response headers: {}" + response.headers().toString());
 
             if(response.code() == HttpURLConnection.HTTP_NO_CONTENT){
                 Log.w(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
             }
 
             final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
-                    ResponseParser.parseResponse(response.body().byteStream(), getBoundary(response));
+                    ResponseParser.parseResponse(response.body().bytes(), getBoundary(response), false);
 
             response.body().close();
 
