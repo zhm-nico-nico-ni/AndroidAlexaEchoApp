@@ -26,7 +26,6 @@ import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendText;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendVoice;
-import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 import com.willblaschko.android.alexa.interfaces.system.OpenDownchannel;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 
@@ -784,32 +783,6 @@ public class AlexaManager {
         sendEvent(Event.getPlaybackNearlyFinishedEvent(item.getToken(), offsetMilliseconds), callback);
     }
 
-    /**
-     * Send an event to indicate that playback of a speech item has started
-     * See: {@link #sendEvent(String, AsyncCallback)}
-     *
-     * @param item     our speak item
-     * @param callback
-     */
-    public void sendPlaybackStartedEvent(AvsItem item, final AsyncCallback<AvsResponse, Exception> callback) {
-        if (item == null) {
-            return;
-        }
-        String event;
-        try {
-            if (item instanceof AvsSpeakItem) {
-                event = Event.getSpeechStartedEvent(item.getToken());
-            } else {
-                event = Event.getPlaybackStartedEvent(item.getToken());
-            }
-        } catch (NullPointerException e) {
-            if (callback != null) {
-                callback.failure(e);
-            }
-            return;
-        }
-        sendEvent(event, callback);
-    }
 
     /**
      * Send a generic event to the AVS server, this is generated using {@link com.willblaschko.android.alexa.data.Event.Builder}

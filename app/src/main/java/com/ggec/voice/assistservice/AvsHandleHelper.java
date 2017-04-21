@@ -112,7 +112,7 @@ public class AvsHandleHelper {
         if(response instanceof AvsAlertStopItem){ //FIXME 这个需要专门处理
             Log.d(TAG, "stop alarm right now :"+response.messageID);
             avsQueue.remove(response.messageID);
-            audioPlayer.release();
+            audioPlayer.release(false);
             checkQueue();
             return;
         }
@@ -120,13 +120,27 @@ public class AvsHandleHelper {
         if(processAvsItemImmediately(response)){
             return;
         }
-        //if we have a clear queue item in the list, we need to clear the current queue before proceeding
-        //iterate backwards to avoid changing our array positions and getting all the nasty errors that come
-        //from doing that
-        if (response instanceof AvsReplaceAllItem || response instanceof AvsReplaceEnqueuedItem) {
+        // Immediately begin playback of the stream returned with the Play directive,
+        // and replace current and enqueued streams.
+        if (response instanceof AvsReplaceAllItem) {
             //clear our queue
             avsQueue.clear();
-            Log.w(TAG, " handle clear queue ! AvsReplaceAllItem or AvsReplaceEnqueuedItem");
+            // 这个要结束当前播放的
+            sMainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if(audioPlayer.isPlaying()) {
+                        audioPlayer.release(true);
+                    }
+                }
+            });
+            Log.w(TAG, "Immediately begin playback of the stream returned with the Play directive, and replace current and enqueued streams");
+            return;
+        } else if(response instanceof AvsReplaceEnqueuedItem){
+            //Replace all streams in the queue.
+            // This does not impact the currently playing stream.
+            avsQueue.clear();
+            Log.w(TAG, "Replace all streams in the queue. This does not impact the currently playing stream.");
             return;
         }
 
@@ -418,11 +432,25 @@ public class AvsHandleHelper {
 
     /**
      * Send an event back to Alexa that we're starting a speech event
+     * 如果是PlaybackStartedEvent ，则只需要在一开始发一次即可
      * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
      */
     private void sendPlaybackStartedEvent(AvsItem item) {
-        AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendPlaybackStartedEvent(item, null);
-        Log.i(TAG, "Sending SpeechStartedEvent");
+        if (item == null) {
+            return;
+        }
+        String event;
+        if (item instanceof AvsSpeakItem) {
+            event = Event.getSpeechStartedEvent(item.getToken());
+            Log.i(TAG, "Sending SpeechStartedEvent");
+        } else {
+            // Note: For each URL that AVS sends, it expects no more than one PlaybackStarted event.
+            // If you receive a playlist URL (composed of multiple URLs) only send one PlaybackStarted event
+            event = Event.getPlaybackStartedEvent(item.getToken());
+            Log.i(TAG, "Sending PlaybackStarted");
+        }
+
+        AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
     }
 
     /**

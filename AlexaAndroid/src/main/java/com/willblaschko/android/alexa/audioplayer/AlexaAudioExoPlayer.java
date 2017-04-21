@@ -21,6 +21,7 @@ import com.google.android.exoplayer2.util.Util;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer.Callback;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
@@ -207,27 +208,13 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             //cast our item for easy access
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
             getMediaPlayer().prepare(buildMediaSource(playItem.getUri(), null));
-        }else if(mItem instanceof AvsSpeakItem){
+        } else if(mItem instanceof AvsPlayAudioItem){
+            AvsPlayAudioItem playAudioItem = (AvsPlayAudioItem) mItem;
+            playitem(playAudioItem, playAudioItem.mStream.getOffsetInMilliseconds());
+        } else if(mItem instanceof AvsSpeakItem){
             //cast our item for easy access
-            AvsSpeakItem playItem = (AvsSpeakItem) item;
-            //write out our raw audio data to a file
-            File path=new File(mContext.getCacheDir(), System.currentTimeMillis()+".pcm");
-            FileOutputStream fos = null;
-            try {
-                fos = new FileOutputStream(path);
-                fos.write(playItem.getAudio());
-                fos.close();
-                //play our newly-written file
-                getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), ".pcm"), path);
-            } catch (IOException e) {
-                e.printStackTrace();
-                //bubble up our error
-                bubbleUpError(e);
-            } finally {
-                if(fos!=null) IOUtils.closeQuietly(fos);
-            }
+            playitem((AvsSpeakItem) mItem, 0);
         } else if(mItem instanceof AvsAlertPlayItem){
-//            AvsAlertPlayItem playItem = (AvsAlertPlayItem) item;
             Uri path = Uri.parse("asset:///alarm.mp3");
             getMediaPlayer().prepare(buildMediaSource(path,"mp3"));
         } else {
@@ -291,12 +278,20 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     /**
      * A helper function to release the media player and remove it from memory
      */
-    public void release(){
+    public void release(boolean reportComplete){
+        long duration = 0;
         if(mMediaPlayer != null){
             mMediaPlayer.stop();
+            duration = mMediaPlayer.getDuration();
+            if(duration == C.TIME_UNSET){
+                duration = 0;
+            }
             mMediaPlayer.release();
         }
         mMediaPlayer = null;
+        if(reportComplete){
+            onComplete(duration);
+        }
     }
 
     //Sets the audio volume, with 0 being silence and 1 being unity gain.
@@ -359,7 +354,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     @Override
     public void onError(ExoPlaybackException exception) {
-        release();
+        release(false);
         bubbleUpError(exception);
     }
 
@@ -375,5 +370,24 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     @Override
     public void onProgress(float percent) {
         postProgress(percent);
+    }
+
+    private void playitem(AvsSpeakItem playItem, long offset){
+        //write out our raw audio data to a file
+        File path = new File(mContext.getCacheDir(), String.valueOf(System.currentTimeMillis()));
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(path);
+            fos.write(playItem.getAudio());
+            fos.close();
+            //play our newly-written file
+            getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
+        } catch (IOException e) {
+            e.printStackTrace();
+            //bubble up our error
+            bubbleUpError(e);
+        } finally {
+            if(fos!=null) IOUtils.closeQuietly(fos);
+        }
     }
 }

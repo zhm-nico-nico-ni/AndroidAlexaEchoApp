@@ -28,6 +28,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private boolean mFiredPrepareEvent;
     private TaskRunnar mAsyncTask;
     private File mDeleteWhenFinishPath;
+    private long beginOffset;
 
     public MyExoPlayer(Context context, IMyExoPlayerListener listener) {
         mListener = listener;
@@ -36,7 +37,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
                 null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER);
 
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mMediaPlayer.setPlayWhenReady(true);
+        mMediaPlayer.setPlayWhenReady(false);
         mMediaPlayer.addListener(this);
     }
 
@@ -57,6 +58,13 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        if (ExoPlayer.STATE_READY == playbackState){
+            if(beginOffset>0 && beginOffset < mMediaPlayer.getDuration()) {
+                mMediaPlayer.seekTo(beginOffset);
+            }
+            mMediaPlayer.setPlayWhenReady(true);
+        }
+
         if (ExoPlayer.STATE_ENDED == playbackState) {
             long duration = mMediaPlayer.getDuration();
             deletePlayFile();
@@ -89,15 +97,15 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     public void prepare(MediaSource mediaSource) {
-        prepare(mediaSource, null);
+        prepare(mediaSource, null, 0);
     }
 
-    public void prepare(MediaSource mediaSource, File deleteWhenFinishPath) {
+    public void prepare(MediaSource mediaSource, File deleteWhenFinishPath, long beginOffset) {
+        this.beginOffset = beginOffset;
         mFiredPrepareEvent = false;
         deletePlayFile();
         mDeleteWhenFinishPath = deleteWhenFinishPath;
         mMediaPlayer.prepare(mediaSource);
-
     }
 
     private void deletePlayFile() {

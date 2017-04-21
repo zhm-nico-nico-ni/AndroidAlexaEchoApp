@@ -7,8 +7,6 @@ import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
-import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
-import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaNextCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPauseCommandItem;
@@ -64,7 +62,7 @@ public class ResponseParser {
         long start = System.currentTimeMillis();
 
         List<Directive> directives = new ArrayList<>();
-        HashMap<String, ByteArrayInputStream> audio = new HashMap<>();
+        HashMap<String, byte[]> audio = new HashMap<>();
 
         byte[] bytes = stream;
         String responseString = string(bytes);
@@ -102,7 +100,7 @@ public class ResponseParser {
                         Matcher matcher = PATTERN.matcher(contentId);
                         if (matcher.find()) {
                             String currentId = "cid:" + matcher.group(1);
-                            audio.put(currentId, new ByteArrayInputStream(data.toByteArray()));
+                            audio.put(currentId, data.toByteArray());
                         }
                     }
                 } else {
@@ -150,17 +148,7 @@ public class ResponseParser {
             }
 
             if(item==null) {
-                if (directive.isTypePlay()) {
-                    String url = directive.getPayload().getAudioItem().getStream().getUrl();
-                    if (url.contains("cid:")) {
-                        ByteArrayInputStream sound = audio.get(url);
-                        item = new AvsPlayAudioItem(directive.getPayload().getToken(), url, sound, directive.getHeaderMessageId());
-                    } else {
-                        item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(), directive.getHeaderMessageId());
-                    }
-                } else if (directive.isTypeExpectSpeech()) {
-                    item = new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds(), directive.getHeaderMessageId());
-                } else if (directive.isTypeMediaPlay()) {
+                if (directive.isTypeMediaPlay()) {
                     item = new AvsMediaPlayCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
                 } else if (directive.isTypeMediaPause()) {
                     item = new AvsMediaPauseCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());

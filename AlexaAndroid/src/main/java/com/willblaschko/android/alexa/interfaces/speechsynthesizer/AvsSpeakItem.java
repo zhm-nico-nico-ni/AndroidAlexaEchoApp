@@ -2,11 +2,6 @@ package com.willblaschko.android.alexa.interfaces.speechsynthesizer;
 
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-
 /**
  * Directive to play a local, returned audio item from the Alexa post/get response
  *
@@ -16,18 +11,15 @@ import java.io.IOException;
  * @author will on 5/21/2016.
  */
 public class AvsSpeakItem extends AvsItem {
-    private String mCid;
+    private final String mCid;
     private byte[] mAudio;
+    private final String format;
 
-    public AvsSpeakItem(String token, String cid, ByteArrayInputStream audio,String messageID) throws IOException {
-        this(token, cid, IOUtils.toByteArray(audio),messageID);
-        audio.close();
-    }
-
-    public AvsSpeakItem(String token, String cid, byte[] audio,String messageID){
+    public AvsSpeakItem(String token, String cid, byte[] audio,String messageID, String format){
         super(token,messageID);
         mCid = cid;
         mAudio = audio;
+        this.format = format;
     }
 
     public String getCid() {
@@ -36,5 +28,9 @@ public class AvsSpeakItem extends AvsItem {
 
     public byte[] getAudio() {
         return mAudio;
+    }
+
+    public String getFormat(){
+        return format;
     }
 }

@@ -2,6 +2,8 @@ package com.willblaschko.android.alexa.data;
 
 import android.text.TextUtils;
 
+import com.willblaschko.android.alexa.data.message.directive.audio.ProgressReport;
+
 /**
  * A catch-all Directive to classify return responses from the Amazon Alexa v20160207 API
  * Will handle calls to:
@@ -20,14 +22,11 @@ public class Directive {
     private Header header;
     private Payload payload;
 
-    private static final String TYPE_PLAY = "Play";
-    private static final String TYPE_EXPECT_SPEECH = "ExpectSpeech";
     private static final String TYPE_MEDIA_PLAY = "PlayCommandIssued";
     private static final String TYPE_MEDIA_PAUSE = "PauseCommandIssued";
     private static final String TYPE_MEDIA_NEXT = "NextCommandIssued";
     private static final String TYPE_MEDIA_PREVIOUS = "PreviousCommandIssue";
     private static final String TYPE_EXCEPTION = "Exception";
-    private static final String TYPE_STOP_CAPTURE = "StopCapture";
 
     private static final String PLAY_BEHAVIOR_REPLACE_ALL = "REPLACE_ALL";
     private static final String PLAY_BEHAVIOR_ENQUEUE = "ENQUEUE";
@@ -35,13 +34,6 @@ public class Directive {
 
     //DIRECTIVE TYPES
 
-    public boolean isTypePlay(){
-        return TextUtils.equals(header.getName(), TYPE_PLAY);
-    }
-
-    public boolean isTypeExpectSpeech(){
-        return TextUtils.equals(header.getName(), TYPE_EXPECT_SPEECH);
-    }
 
     public boolean isTypeMediaPlay(){
         return TextUtils.equals(header.getName(), TYPE_MEDIA_PLAY);
@@ -63,19 +55,15 @@ public class Directive {
         return TextUtils.equals(header.getName(), TYPE_EXCEPTION);
     }
 
-    public boolean isTypeStopCapture(){
-        return TextUtils.equals(header.getName(), TYPE_STOP_CAPTURE);
-    }
-
 
     //PLAY BEHAVIORS
 
     public boolean isPlayBehaviorReplaceAll(){
         return TextUtils.equals(payload.getPlayBehavior(), PLAY_BEHAVIOR_REPLACE_ALL);
     }
-    public boolean isPlayBehaviorEnqueue(){
-        return TextUtils.equals(payload.getPlayBehavior(), PLAY_BEHAVIOR_ENQUEUE);
-    }
+//    public boolean isPlayBehaviorEnqueue(){ 默认就是这个，不需要专门处理
+//        return TextUtils.equals(payload.getPlayBehavior(), PLAY_BEHAVIOR_ENQUEUE);
+//    }
     public boolean isPlayBehaviorReplaceEnqueued(){
         return TextUtils.equals(payload.getPlayBehavior(), PLAY_BEHAVIOR_REPLACE_ENQUEUED);
     }
@@ -194,8 +182,7 @@ public class Directive {
         String expiryTime;
         String token;
         String expectedPreviousToken;
-        //todo progressReport
-
+        public ProgressReport progressReport;
 
         public String getUrl() {
             return url;
@@ -221,6 +208,8 @@ public class Directive {
             return expectedPreviousToken;
         }
     }
+
+
 
     public static class DirectiveWrapper{
         Directive directive;

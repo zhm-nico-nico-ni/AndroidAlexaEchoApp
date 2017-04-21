@@ -161,10 +161,6 @@ public final class AVSAPIConstants {
             public static final class StopCapture {
                 public static final String NAME = StopCapture.class.getSimpleName();
             }
-
-            public static final class RequestProcessingStarted {
-                public static final String NAME = RequestProcessingStarted.class.getSimpleName();
-            }
         }
     }
 

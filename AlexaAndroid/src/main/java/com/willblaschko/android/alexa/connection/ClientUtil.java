@@ -91,9 +91,9 @@ public class ClientUtil {
 //            });
 
             mHttp2Client = client
-                    .readTimeout(8000, TimeUnit.MILLISECONDS)
-                    .writeTimeout(8000, TimeUnit.MILLISECONDS)
-                    .connectTimeout(10000, TimeUnit.MILLISECONDS)
+                    .readTimeout(8, TimeUnit.SECONDS)
+                    .writeTimeout(8, TimeUnit.SECONDS)
+                    .connectTimeout(10, TimeUnit.SECONDS)
                     .retryOnConnectionFailure(true)
 
                     .addNetworkInterceptor(new StethoInterceptor())

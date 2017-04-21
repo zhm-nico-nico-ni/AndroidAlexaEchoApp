@@ -8,6 +8,8 @@ import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
@@ -17,7 +19,6 @@ import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -28,46 +29,59 @@ import java.util.HashMap;
 public class DirectiveParseHelper {
     private static String TAG = "DirectiveParseHelper";
 
-    public static final AvsItem parseDirective(@NonNull Directive directive, @NonNull HashMap<String, ByteArrayInputStream> audio) throws IOException {
+    public static final AvsItem parseDirective(@NonNull Directive directive, @NonNull HashMap<String, byte[]> audio) throws IOException {
         AvsItem item = null;
-        if (AVSAPIConstants.SpeechRecognizer.NAMESPACE.equals(directive.getHeaderNameSpace())) {
-            if (directive.isTypeExpectSpeech()) {
+        final String headNameSpace = directive.getHeaderNameSpace();
+        final String headName = directive.getHeaderName();
+        if (AVSAPIConstants.SpeechRecognizer.NAMESPACE.equals(headNameSpace)) {
+            if (AVSAPIConstants.SpeechRecognizer.Directives.ExpectSpeech.NAME.equals(headName)) {
                 return new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds(), directive.getHeaderMessageId());
-            } else if (directive.isTypeStopCapture()) {
+            } else if (AVSAPIConstants.SpeechRecognizer.Directives.StopCapture.NAME.equals(headName)) {
                 return new AvsStopCaptureItem(directive.getHeaderMessageId());
             }
-        } else if (AVSAPIConstants.SpeechSynthesizer.NAMESPACE.equals(directive.getHeaderNameSpace())) {
-            if (AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME.equals(directive.getHeaderName())) {
+        } else if (AVSAPIConstants.SpeechSynthesizer.NAMESPACE.equals(headNameSpace)) {
+            if (AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME.equals(headName)) {
                 String cid = directive.getPayload().getUrl();
-                ByteArrayInputStream sound = audio.get(cid);
-                item = new AvsSpeakItem(directive.getPayload().getToken(), cid, sound, directive.getHeaderMessageId());
+                byte[] sound = audio.get(cid);
+                item = new AvsSpeakItem(directive.getPayload().getToken(), cid, sound, directive.getHeaderMessageId(), directive.getPayload().getFormat());
             }
-        } else if (AVSAPIConstants.Alerts.NAMESPACE.equals(directive.getHeaderNameSpace())) {
-            if (AVSAPIConstants.Alerts.Directives.SetAlert.NAME.equals(directive.getHeaderName())) {
+        } else if (AVSAPIConstants.Alerts.NAMESPACE.equals(headNameSpace)) {
+            if (AVSAPIConstants.Alerts.Directives.SetAlert.NAME.equals(headName)) {
                 item = new AvsSetAlertItem(directive.getPayload().getToken()
                         , directive.getPayload().getType(), directive.getPayload().getScheduledTime()
                         , directive.getHeaderMessageId());
-            } else if (AVSAPIConstants.Alerts.Directives.DeleteAlert.NAME.equals(directive.getHeaderName())) {
+            } else if (AVSAPIConstants.Alerts.Directives.DeleteAlert.NAME.equals(headName)) {
                 item = new AvsDeleteAlertItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
             }
-        } else if (AVSAPIConstants.Speaker.NAMESPACE.equals(directive.getHeaderNameSpace())) {
-            if (AVSAPIConstants.Speaker.Directives.SetVolume.NAME.equals(directive.getHeaderName())) {
+        } else if (AVSAPIConstants.Speaker.NAMESPACE.equals(headNameSpace)) {
+            if (AVSAPIConstants.Speaker.Directives.SetVolume.NAME.equals(headName)) {
                 item = new AvsSetVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
-            } else if (AVSAPIConstants.Speaker.Directives.AdjustVolume.NAME.equals(directive.getHeaderName())) {
+            } else if (AVSAPIConstants.Speaker.Directives.AdjustVolume.NAME.equals(headName)) {
                 item = new AvsAdjustVolumeItem(directive.getPayload().getToken(), directive.getPayload().getVolume(), directive.getHeaderMessageId());
-            } else if (AVSAPIConstants.Speaker.Directives.SetMute.NAME.equals(directive.getHeaderName())) {
+            } else if (AVSAPIConstants.Speaker.Directives.SetMute.NAME.equals(headName)) {
                 item = new AvsSetMuteItem(directive.getPayload().getToken(), directive.getPayload().isMute(), directive.getHeaderMessageId());
             }
-        } else if(AVSAPIConstants.System.Directives.SetEndpoint.NAME.equals(directive.getHeaderNameSpace())){
-            if (AVSAPIConstants.System.Directives.SetEndpoint.NAME.equals(directive.getHeaderName())) {
+        } else if(AVSAPIConstants.System.NAMESPACE.equals(headNameSpace)){
+            if (AVSAPIConstants.System.Directives.SetEndpoint.NAME.equals(headName)) {
                 item = new AvsSetEndPointItem(directive.getHeaderMessageId(), directive.getPayload().getEndpoint());
-            } else if(AVSAPIConstants.System.Directives.ResetUserInactivity.NAME.equals(directive.getHeaderName())){
+            } else if(AVSAPIConstants.System.Directives.ResetUserInactivity.NAME.equals(headName)){
                 item = new AvsResetUserInactivityItem(directive.getHeaderMessageId());
+            }
+        } else if(AVSAPIConstants.AudioPlayer.NAMESPACE.equals(headNameSpace)){
+            if (AVSAPIConstants.AudioPlayer.Directives.Play.NAME.equals(headName)) {
+                String url = directive.getPayload().getAudioItem().getStream().getUrl();
+                if (url.contains("cid:")) {
+                    byte[] sound = audio.get(url);
+                    item = new AvsPlayAudioItem(directive.getPayload().getToken(), url, sound, directive.getHeaderMessageId()
+                            , directive.getPayload().getAudioItem().getStream());
+                } else {
+                    item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(), directive.getHeaderMessageId());
+                }
             }
         }
 
         if (item == null) {
-            Log.e(TAG, "Unknown type found -> " + directive.getHeaderNameSpace() + ":" + directive.getHeaderName());
+            Log.e(TAG, "Unknown type found -> " + headNameSpace + ":" + headName);
         }
         return item;
     }
