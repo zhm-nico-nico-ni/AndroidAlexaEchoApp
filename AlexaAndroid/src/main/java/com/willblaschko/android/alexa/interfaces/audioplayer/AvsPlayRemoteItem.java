@@ -1,7 +1,5 @@
 package com.willblaschko.android.alexa.interfaces.audioplayer;
 
-import com.willblaschko.android.alexa.interfaces.AvsItem;
-
 /**
  * Directive to play a remote URL item
  *
@@ -10,7 +8,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  *
  * @author will on 5/21/2016.
  */
-public class AvsPlayRemoteItem extends AvsItem {
+public class AvsPlayRemoteItem extends AvsAudioItem {
     private String mUrl;
     private String mStreamId;
     private long mStartOffset;

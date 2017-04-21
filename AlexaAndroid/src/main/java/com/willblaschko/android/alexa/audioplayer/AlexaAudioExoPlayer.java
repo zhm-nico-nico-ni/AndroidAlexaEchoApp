@@ -18,7 +18,6 @@ import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
-import com.willblaschko.android.alexa.audioplayer.AlexaAudioPlayer.Callback;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
@@ -43,33 +42,18 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     public static final String TAG = "AlexaAudioExoPlayer";
 
-    private static AlexaAudioExoPlayer mInstance;
-
     private MyExoPlayer mMediaPlayer;
     private Context mContext;
     private AvsItem mItem;
-    private final List<AlexaAudioPlayer.Callback> mCallbacks = new ArrayList<>();
+    private final List<Callback> mCallbacks = new ArrayList<>();
 
     /**
      * Create our new AlexaAudioPlayer
      * @param context any context, we will get the application level to store locally
      */
-    private AlexaAudioExoPlayer(Context context){
-       mContext = context.getApplicationContext();
-    }
-
-    /**
-     * Get a reference to the AlexaAudioPlayer instance, if it's null, we will create a new one
-     * using the supplied context.
-     * @param context any context, we will get the application level to store locally
-     * @return our instance of the AlexaAudioPlayer
-     */
-    public static AlexaAudioExoPlayer getInstance(Context context){
-        if(mInstance == null){
-            mInstance = new AlexaAudioExoPlayer(context);
-            trimCache(context); // FIXME 这里建议使用lrudishcache
-        }
-        return mInstance;
+    public AlexaAudioExoPlayer(Context context){
+        mContext = context.getApplicationContext();
+        trimCache(context);
     }
 
     private static void trimCache(Context context) {
@@ -123,7 +107,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * Add a callback to our AlexaAudioPlayer, this is added to our list of callbacks
      * @param callback Callback that listens to changes of player state
      */
-    public void addCallback(AlexaAudioPlayer.Callback callback){
+    public void addCallback(Callback callback){
         synchronized (mCallbacks) {
             if (!mCallbacks.contains(callback)) {
                 mCallbacks.add(callback);
@@ -271,8 +255,8 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     /**
      * A helper function to stop the MediaPlayer
      */
-    public void stop(){
-        getMediaPlayer().stop();
+    public long stop(){
+        return getMediaPlayer().stop();
     }
 
     /**
@@ -313,7 +297,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     private void postProgress(final float percent){
         synchronized (mCallbacks) {
-            for (AlexaAudioPlayer.Callback callback : mCallbacks) {
+            for (Callback callback : mCallbacks) {
                 if(mMediaPlayer != null && callback != null) {
                     callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), percent);
                 }
@@ -348,7 +332,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     public void onComplete(long duration) {
         for(Callback callback: mCallbacks){
             callback.playerProgress(mItem, 1, 1);
-            callback.itemComplete(mItem, duration);
+            callback.itemComplete(mItem, true, duration);
         }
     }
 
@@ -374,7 +358,11 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     private void playitem(AvsSpeakItem playItem, long offset){
         //write out our raw audio data to a file
-        File path = new File(mContext.getCacheDir(), String.valueOf(System.currentTimeMillis()));
+        File path = new File(mContext.getCacheDir(), playItem.messageID);
+        if(path.exists()){
+            getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
+            return;
+        }
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(path);
@@ -383,7 +371,6 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             //play our newly-written file
             getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
         } catch (IOException e) {
-            e.printStackTrace();
             //bubble up our error
             bubbleUpError(e);
         } finally {

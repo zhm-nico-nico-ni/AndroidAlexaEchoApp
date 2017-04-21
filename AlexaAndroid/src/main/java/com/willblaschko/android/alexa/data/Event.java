@@ -266,12 +266,12 @@ public class Event {
     }
 
 
-    public static String getPlaybackStartedEvent(String token){
+    public static String getPlaybackStartedEvent(String token, long offset){
         Builder builder = new Builder();
         builder.setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackStarted")
                 .setHeaderMessageId(getUuid())
-                .setPayload(PayloadFactory.createPayload(token));
+                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offset));
         return builder.toJson();
     }
 

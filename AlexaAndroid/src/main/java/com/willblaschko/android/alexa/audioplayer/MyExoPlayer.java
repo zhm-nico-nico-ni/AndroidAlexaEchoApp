@@ -92,8 +92,24 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     }
 
-    public void stop() {
+//    public void resume(){
+//        mMediaPlayer.setPlayWhenReady(true);
+//    }
+//
+//    public long pause(){
+//        mMediaPlayer.setPlayWhenReady(false);
+//        return mMediaPlayer.getCurrentPosition();
+//    }
+
+    public long stop() {
+        long pos = mMediaPlayer.getCurrentPosition();
+        if (mAsyncTask != null) {
+            mAsyncTask.cancel();
+            mAsyncTask = null;
+        }
         mMediaPlayer.stop();
+        deletePlayFile();
+        return pos;
     }
 
     public void prepare(MediaSource mediaSource) {
@@ -128,6 +144,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         mMediaPlayer.release();
         mMediaPlayer = null;
         mListener = null;
+        deletePlayFile();
     }
 
     public void setVolume(float value) {

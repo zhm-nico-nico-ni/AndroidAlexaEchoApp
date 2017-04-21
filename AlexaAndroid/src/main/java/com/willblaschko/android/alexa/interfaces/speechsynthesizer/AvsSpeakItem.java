@@ -1,6 +1,6 @@
 package com.willblaschko.android.alexa.interfaces.speechsynthesizer;
 
-import com.willblaschko.android.alexa.interfaces.AvsItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
 
 /**
  * Directive to play a local, returned audio item from the Alexa post/get response
@@ -10,7 +10,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  *
  * @author will on 5/21/2016.
  */
-public class AvsSpeakItem extends AvsItem {
+public class AvsSpeakItem extends AvsAudioItem {
     private final String mCid;
     private byte[] mAudio;
     private final String format;

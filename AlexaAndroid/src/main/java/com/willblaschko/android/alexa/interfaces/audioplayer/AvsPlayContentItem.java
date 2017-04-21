@@ -13,6 +13,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
  *
  * @author will on 5/21/2016.
  */
+@Deprecated
 public class AvsPlayContentItem extends AvsItem {
     private Uri mUri;
 

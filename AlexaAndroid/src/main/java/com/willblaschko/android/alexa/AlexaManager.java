@@ -767,24 +767,6 @@ public class AlexaManager {
     }
 
     /**
-     * Send an event to indicate that playback of media has nearly completed
-     * See: {@link #sendEvent(String, AsyncCallback)}
-     *
-     * @param item     our playback item
-     * @param callback
-     */
-
-
-    public void sendPlaybackNearlyFinishedEvent(AvsItem item, final long offsetMilliseconds, final AsyncCallback<AvsResponse, Exception> callback) {
-        if (!isAudioPlayItem(item)) {
-            return;
-        }
-
-        sendEvent(Event.getPlaybackNearlyFinishedEvent(item.getToken(), offsetMilliseconds), callback);
-    }
-
-
-    /**
      * Send a generic event to the AVS server, this is generated using {@link com.willblaschko.android.alexa.data.Event.Builder}
      *
      * @param event    the string JSON event
