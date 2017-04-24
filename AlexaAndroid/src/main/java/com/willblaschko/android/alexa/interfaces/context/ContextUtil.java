@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa.interfaces.context;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.util.Pair;
 
 import com.willblaschko.android.alexa.data.Event;
@@ -15,7 +16,8 @@ import java.util.List;
  */
 
 public class ContextUtil {
-    public static List<Event> getContextList(Context context){// TODO need send actually PlaybackState SpeechSynthesizer context
+    @Deprecated
+    public static List<Event> getContextList(Context context){
         List<Event> list = new ArrayList<>();
         String token = "";
 
@@ -49,5 +51,26 @@ public class ContextUtil {
         return list;
     }
 
+
+    public static List<Event> getActuallyContextList(Context context, @NonNull List<Event> audioAndSpeech){
+        List<Event> list = new ArrayList<>();
+
+        list.addAll(audioAndSpeech);
+
+        Event.Builder alertsEventBuilder = new Event.Builder()
+                .setHeaderNamespace("Alerts")
+                .setHeaderName("AlertsState")
+                .setPayload(PayloadFactory.createAlertsStatePayload(context));
+        list.add(alertsEventBuilder.build().getEvent());
+
+        Pair<Long, Boolean> p = SpeakerUtil.getConvertVolumeState(context);
+        Event.Builder speakerEventBuilder = new Event.Builder()
+                .setHeaderNamespace("Speaker")
+                .setHeaderName("VolumeState")
+                .setPayload(PayloadFactory.createVolumeStatePayload(p.first, p.second));
+        list.add(speakerEventBuilder.build().getEvent());
+
+        return list;
+    }
 
 }

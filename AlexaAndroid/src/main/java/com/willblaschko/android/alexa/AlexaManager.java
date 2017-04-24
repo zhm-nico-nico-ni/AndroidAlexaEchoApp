@@ -324,8 +324,8 @@ public class AlexaManager {
      *
      * @param callback state callback
      */
-    public void sendSynchronizeStateEvent2(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.createSystemSynchronizeStateEvent(ContextUtil.getContextList(mContext)), callback);
+    public void sendSynchronizeStateEvent2(List<Event> contextEvents,@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+        sendEvent(Event.createSystemSynchronizeStateEvent(contextEvents), callback);
     }
 
     public boolean hasOpenDownchannel() { //FIXME 这个不需要检查连接是否close的吗？
@@ -898,7 +898,7 @@ public class AlexaManager {
         }
     }
 
-    public void sendUserInactivityReport(){
+    public void sendUserInactivityReport(final List<Event> contextList){
         final long second = (SystemClock.elapsedRealtime() - mLastUserActivityElapsedTime )/ 1000;
         if(second<3) return;
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
@@ -917,8 +917,7 @@ public class AlexaManager {
                                 protected AvsResponse doInBackground(Void... params) {
                                     Log.d(TAG, "sendUserInactivityReport");
                                     new GenericSendEvent(url, token
-                                            , Event.createUserInactivityReportEvent(
-                                                    ContextUtil.getContextList(mContext), second)
+                                            , Event.createUserInactivityReportEvent(contextList, second)
                                             , null);
                                     return null;
                                 }

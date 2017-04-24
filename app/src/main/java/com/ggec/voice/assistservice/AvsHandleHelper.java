@@ -24,6 +24,8 @@ import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityIt
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
+import java.util.List;
+
 /**
  * Created by ggec on 2017/3/31.
  */
@@ -121,7 +123,8 @@ public class AvsHandleHelper {
             AvsUnableExecuteItem item = (AvsUnableExecuteItem) current;
             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
             alexaManager.sendEvent(Event
-                            .createExceptionEncounteredEvent(ContextUtil.getContextList(MyApplication.getContext())
+                            .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
+                                    , getAudioAndSpeechState())
                                     , item.unparsedDirective
                                     , item.type
                                     , item.message)
@@ -165,4 +168,7 @@ public class AvsHandleHelper {
         return true;
     }
 
+    public List<Event> getAudioAndSpeechState(){
+        return audioManager.getAudioAndSpeechState();
+    }
 }

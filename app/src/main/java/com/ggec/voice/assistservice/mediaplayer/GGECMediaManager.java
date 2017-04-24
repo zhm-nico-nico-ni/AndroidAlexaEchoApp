@@ -2,6 +2,7 @@ package com.ggec.voice.assistservice.mediaplayer;
 
 import android.content.Intent;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 
 import com.ggec.voice.assistservice.BgProcessIntentService;
@@ -13,6 +14,7 @@ import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioExoPlayer;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.data.message.PayloadFactory;
 import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
@@ -32,7 +34,9 @@ import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsStopItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Created by ggec on 2017/4/21.
@@ -385,15 +389,31 @@ public class GGECMediaManager {
         AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
     }
 
-    public String getSpeechSynthesizerState(){
+    private String getSpeechSynthesizerState(){
         return "PLAYING".equals(mSpeechSynthesizerPlayer.getStateString())? "PLAYING" : "FINISHED";
     }
 
-    public String getAudioState(){
+    private String getAudioState(){
         return mMediaAudioPlayer.getStateString();
     }
 
-    private Handler mMediaPlayHandler = new Handler() {
+    public List<Event> getAudioAndSpeechState(){
+        List<Event> list = new ArrayList<>();
+        Event.Builder playbackEventBuilder = new Event.Builder()
+                .setHeaderNamespace("AudioPlayer")
+                .setHeaderName("PlaybackState")
+                .setPayload(PayloadFactory.createPlaybackStatePayload("", mMediaAudioPlayer.getCurrentPosition(), getAudioState()))
+                ;
+        list.add(playbackEventBuilder.build().getEvent());
+
+        Event.Builder speechSynthesizerEventBuilder = new Event.Builder()
+                .setHeaderNamespace("SpeechSynthesizer")
+                .setHeaderName("SpeechState")
+                .setPayload(PayloadFactory.createSpeechStatePayload("", mSpeechSynthesizerPlayer.getCurrentPosition(), getSpeechSynthesizerState()));
+        return list;
+    }
+
+    private Handler mMediaPlayHandler = new Handler(Looper.getMainLooper()) {
         private boolean running, canPlayMedia = true;
 
         @Override

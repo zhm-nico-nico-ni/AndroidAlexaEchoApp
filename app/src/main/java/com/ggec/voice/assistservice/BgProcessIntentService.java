@@ -99,8 +99,8 @@ public class BgProcessIntentService extends IntentService {
             //stop
             textTest();
         } else if (cmd.type == 3) {
-            alexaManager.closeOpenDownchannel(false);
-//            search();
+//            alexaManager.closeOpenDownchannel(false);
+            search();
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
             final String messageId = intent.getStringExtra("messageId");
@@ -126,12 +126,17 @@ public class BgProcessIntentService extends IntentService {
                 }
             }, 15000);
         } else if (cmd.type == BackGroundProcessServiceControlCommand.STOP_ALARM) {
-            String token = intent.getStringExtra("token");
-            String messageId = intent.getStringExtra("messageId");
+            final String token = intent.getStringExtra("token");
+            final String messageId = intent.getStringExtra("messageId");
             Log.d(TAG, "STOP_ALARM: "+ messageId+ " ,token:"+token);
             SetAlertHelper.sendAlertStopped(alexaManager, token, getCallBack("sendAlertStopped"));
             SetAlertHelper.deleteAlertSP(MyApplication.getContext(), messageId);
-            AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token, messageId));
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token, messageId));
+                }
+            });
         } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
             SpeakerUtil.setMute(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
@@ -158,7 +163,8 @@ public class BgProcessIntentService extends IntentService {
             }
         } else if(cmd.type == BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT){
             if(Util.isNetworkAvailable(this)) {
-                alexaManager.sendUserInactivityReport();
+                alexaManager.sendUserInactivityReport(ContextUtil.getActuallyContextList(MyApplication.getContext()
+                        , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState()));
             }
             setTimerEvent(this, USER_INACTIVITY_REPORT_JOB_ID, BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT, 60 * 60 * 1000);
         } else if(cmd.type == BackGroundProcessServiceControlCommand.REFRESH_TOKEN){
@@ -347,7 +353,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Hello", getCallBack("textTest"));//Set a timer after 15 seconds from now"Set a timer after one minutes from now"
+        alexaManager.sendTextRequest("Tell me the baseball news", getCallBack("textTest"));//Set a timer after 15 seconds from now"  "Tell me the baseball news"
     }
 
     private void search() {
@@ -389,7 +395,8 @@ public class BgProcessIntentService extends IntentService {
                 if(error instanceof AvsAudioException) {
                     AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
                     alexaManager.sendEvent(Event
-                            .createExceptionEncounteredEvent(ContextUtil.getContextList(MyApplication.getContext())
+                            .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
+                                    , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState())
                             ,"", "UNEXPECTED_INFORMATION_RECEIVED", "Speech Recognize event send, but receive nothing, http response code = 204")
                             , null);
                 }
@@ -462,7 +469,8 @@ public class BgProcessIntentService extends IntentService {
                 public void success(AvsResponse result) {
                     super.success(result);
                     AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                    alexaManager.sendSynchronizeStateEvent2(getCallBack("SynchronizeState"));
+                    alexaManager.sendSynchronizeStateEvent2(ContextUtil.getActuallyContextList(MyApplication.getContext()
+                            , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState()), getCallBack("SynchronizeState"));
                     setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
                     setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
                 }
