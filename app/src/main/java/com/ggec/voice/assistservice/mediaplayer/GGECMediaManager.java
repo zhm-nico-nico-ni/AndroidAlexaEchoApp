@@ -39,11 +39,13 @@ import java.util.LinkedHashMap;
 public class GGECMediaManager {
     private final static String TAG = "GGECMediaManager";
     private volatile LinkedHashMap<String, AvsItem> avsQueue1 = new LinkedHashMap<>();
+    private volatile LinkedHashMap<String, AvsItem> avsQueue2 = new LinkedHashMap<>();
 
     private AlexaAudioExoPlayer mSpeechSynthesizerPlayer;
     private AlexaAudioExoPlayer mMediaAudioPlayer;
     private boolean needSendPlaybackStartEvent;
     //    private volatile int mediaState; // 0 idle, 1 play ,2 pause, 3 stop.
+    private int mManageState;
 
 
     public GGECMediaManager() {
@@ -57,17 +59,16 @@ public class GGECMediaManager {
     }
 
 
-//    public void appendAllAtBegin(List<AvsItem> other) {
-//        LinkedHashMap<String, AvsItem> to = new LinkedHashMap<>();
-//        for (AvsItem item : other) {
-//            to.put(item.messageID, item);
-//        }
-//        to.putAll(avsQueue1);
-//        avsQueue1 = to;
-//    }
+    private void appendAllAtBegin(AvsItem other) {
+        LinkedHashMap<String, AvsItem> to = new LinkedHashMap<>(1 + avsQueue1.size());
+        to.put(other.messageID, other);
+        to.putAll(avsQueue1);
+        avsQueue1 = to;
+    }
 
     public void clear(boolean stopCurrent) {
         avsQueue1.clear();
+        avsQueue2.clear();
         if (stopCurrent) {
             if (mSpeechSynthesizerPlayer.isPlaying()) {
                 mSpeechSynthesizerPlayer.release(false);
@@ -103,66 +104,6 @@ public class GGECMediaManager {
         mMediaPlayHandler.sendEmptyMessage(3);
     }
 
-    /**
-     * Check our current queue of items, and if we have more to parse (once we've reached a play or listen callback) then proceed to the
-     * next item in our list.
-     * <p>
-     * We're handling the AvsReplaceAllItem in handleResponse() because it needs to clear everything currently in the queue, before
-     * the new items are added to the list, it should have no function here.
-     */
-    private synchronized void checkQueueImpl() {
-
-        //if we're out of things, hang up the phone and move on
-        if (avsQueue1.size() == 0) {
-            return;
-        }
-        final String key = getFirstKey();
-        final AvsItem current = avsQueue1.get(key);
-
-        Log.d(TAG, "Item type " + current.getClass().getName());
-
-        if (current instanceof AvsPlayRemoteItem) {
-            //play a URL
-            if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
-                mMediaAudioPlayer.playItem((AvsPlayRemoteItem) current);
-                sendPlaybackStartedEvent(current, 0);
-            }
-//        } else if (current instanceof AvsPlayContentItem) {
-//            //play a URL
-//            if (!audioPlayer.isPlaying()) {
-//                audioPlayer.playItem((AvsPlayContentItem) current);
-//            }
-        } else if (current instanceof AvsPlayAudioItem) {
-            if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
-                mMediaAudioPlayer.playItem((AvsSpeakItem) current);
-                sendPlaybackStartedEvent(current, 0);
-            }
-        } else if (current instanceof AvsSpeakItem) {
-            //play a sound file
-            if (!mSpeechSynthesizerPlayer.isPlaying()) {
-                tryPauseMediaAudio();
-                mSpeechSynthesizerPlayer.playItem((AvsSpeakItem) current);
-            }
-//            setState(STATE_SPEAKING);
-        } else if (current instanceof AvsExpectSpeechItem) {
-            //listen for user input
-//            mSpeechSynthesizerPlayer.stop();
-//            mMediaAudioPlayer.stop();
-            avsQueue1.remove(current.messageID);
-            mMediaPlayHandler.sendEmptyMessage(2);
-            startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
-        } else if (current instanceof AvsAlertPlayItem) {
-            if (!mSpeechSynthesizerPlayer.isPlaying()) {
-                tryPauseMediaAudio();
-                mSpeechSynthesizerPlayer.playItem((AvsAlertPlayItem) current);
-            }
-        } else {
-            avsQueue1.remove(key);
-            Log.w(TAG, "pop a unhandle item !" + current.getClass());
-            checkQueueImpl();
-        }
-    }
-
     private void tryPauseMediaAudio() {
         if (mMediaAudioPlayer.isPlaying()) {
             pauseMediaAudio();
@@ -186,7 +127,7 @@ public class GGECMediaManager {
         public void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds) {
             boolean isRemove = avsQueue1.remove(completedItem.messageID) != null;
             if (BuildConfig.DEBUG) {
-                Log.i(TAG, "Complete " + completedItem.getToken() + " fired, remove old:" + isRemove);
+                Log.i(TAG, "SpeechSynthesizerCallback Complete " + completedItem.getToken() + " fired, remove old:" + isRemove);
             }
 
             if (completedItem instanceof AvsSpeakItem) {
@@ -195,12 +136,6 @@ public class GGECMediaManager {
             }
 
             checkQueue();
-        }
-
-        @Override
-        public boolean playerError(AvsItem item, int what, int extra) {
-            itemComplete(item, true, 0);
-            return true;
         }
 
         @Override
@@ -246,12 +181,12 @@ public class GGECMediaManager {
         @Override
         public void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds) {
             if (BuildConfig.DEBUG) {
-                Log.i(TAG, "Complete " + completedItem.getToken() + " fired");
+                Log.i(TAG, "MediaAudioPlayerCallback Complete " + completedItem.getToken() + " fired");
             }
 
             almostDoneFired = false;
             playbackStartedFired = false;
-            avsQueue1.remove(completedItem.messageID);
+            avsQueue2.remove(completedItem.messageID);
             checkQueue();
             if (completedItem instanceof AvsPlayContentItem) {
                 return;
@@ -259,12 +194,6 @@ public class GGECMediaManager {
 
             if (!(completedItem instanceof AvsAlertPlayItem))
                 sendPlaybackCompleteEvent(completedItem, offsetInMilliseconds, offsetInMilliseconds > 0);
-        }
-
-        @Override
-        public boolean playerError(AvsItem item, int what, int extra) {
-            itemComplete(item, true, 0);
-            return true;
         }
 
         @Override
@@ -339,15 +268,6 @@ public class GGECMediaManager {
         }
     }
 
-    private String getFirstKey() {
-        String out = null;
-        for (String key : avsQueue1.keySet()) {
-            out = (key);
-            break;
-        }
-        return out;
-    }
-
     public boolean addAvsItemToQueue(AvsItem response) {
 
         if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理
@@ -366,18 +286,18 @@ public class GGECMediaManager {
         } else if (response instanceof AvsPlayRemoteItem
                 || response instanceof AvsPlayAudioItem) {
 
-            avsQueue1.put(response.messageID, response);
+            avsQueue2.put(response.messageID, response);
         } else if (response instanceof AvsSpeakItem
                 || response instanceof AvsExpectSpeechItem
                 || response instanceof AvsAlertPlayItem) {
 
-            avsQueue1.put(response.messageID, response);
+            appendAllAtBegin(response);
         } else if (response instanceof AvsStopItem) {
             //stop our play
             mMediaAudioPlayer.stop(); //FIXME 注意这个,现在是完全停止
             mSpeechSynthesizerPlayer.stop();
             avsQueue1.clear();
-        } else if (response instanceof AvsMediaPlayCommandItem) {
+        } else if (response instanceof AvsMediaPlayCommandItem) { //TODO
         } else if (response instanceof AvsMediaPauseCommandItem) {
         } else if (response instanceof AvsMediaNextCommandItem) {
         } else if (response instanceof AvsMediaPreviousCommandItem) {
@@ -393,29 +313,136 @@ public class GGECMediaManager {
     }
 
     private Handler mMediaPlayHandler = new Handler() {
-        private boolean running;
+        private final static int STATE_IDLE = 0;
+        private final static int STATE_PLAYING = 1;
+        private final static int STATE_STOPPED = 2;
+        private final static int STATE_PAUSED = 3;
+        private final static int STATE_BUFFER_UNDERRUN = 4;
+        private final static int STATE_FINISH = 5;
+
+        private boolean running, canPlayMedia = true;
+
 
         @Override
         public void handleMessage(Message msg) {
             if (msg.what == 1) {
-                if (avsQueue1.size() == 0){
-                    running = false;
-                }
-                if (!running && (avsQueue1.size() > 0 )) {
+                checkIsFinish();
+
+                if (!running &&
+                        (avsQueue1.size() > 0 || (canPlayMedia && avsQueue2.size() > 0))) {
                     running = true;
                     checkQueueImpl();
+                } else if(running && avsQueue1.size() == 0 ){
+                    checkQueueImpl();
                 }
-            } else if (msg.what == 2) {
+
+            } else if (msg.what == 2) { // STOP
                 running = false;
+                mMediaAudioPlayer.stop();
                 this.removeMessages(1);
-            } else if (msg.what == 3) {
-                if (avsQueue1.size() == 0) {
-                    running = false;
-                }
+                this.removeMessages(3);
+
+            } else if (msg.what == 3) { // continue
+
                 if (running) {
                     checkQueueImpl();
                 }
             }
+        }
+
+        private boolean checkIsFinish() {
+            if (canPlayMedia) {
+                if (avsQueue1.size() == 0 && (avsQueue2.size() == 0)) {
+                    running = false;
+                }
+            } else {
+                if (avsQueue1.size() == 0) {
+                    running = false;
+                }
+            }
+            return running;
+        }
+
+        /**
+         * Check our current queue of items, and if we have more to parse (once we've reached a play or listen callback) then proceed to the
+         * next item in our list.
+         * <p>
+         * We're handling the AvsReplaceAllItem in handleResponse() because it needs to clear everything currently in the queue, before
+         * the new items are added to the list, it should have no function here.
+         */
+        private synchronized void checkQueueImpl() {
+            if (!checkIsFinish()) {
+                Log.d(TAG, "Audio Handle finish: " + running + " m:" + canPlayMedia);
+                return;
+            }
+
+
+            final AvsItem current = getItem();
+
+            Log.d(TAG, "Item type " + current.getClass().getName());
+
+            if (current instanceof AvsPlayRemoteItem) {
+                //play a URL
+                if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
+                    mMediaAudioPlayer.playItem((AvsPlayRemoteItem) current);
+                    sendPlaybackStartedEvent(current, 0);
+                }
+//        } else if (current instanceof AvsPlayContentItem) {
+//            //play a URL
+//            if (!audioPlayer.isPlaying()) {
+//                audioPlayer.playItem((AvsPlayContentItem) current);
+//            }
+            } else if (current instanceof AvsPlayAudioItem) {
+                if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
+                    mMediaAudioPlayer.playItem((AvsSpeakItem) current);
+                    sendPlaybackStartedEvent(current, 0);
+                }
+            } else if (current instanceof AvsSpeakItem) {
+                //play a sound file
+                if (!mSpeechSynthesizerPlayer.isPlaying()) {
+                    tryPauseMediaAudio();
+                    mSpeechSynthesizerPlayer.playItem((AvsSpeakItem) current);
+                }
+//            setState(STATE_SPEAKING);
+            } else if (current instanceof AvsExpectSpeechItem) {
+                //listen for user input
+//            mSpeechSynthesizerPlayer.stop();
+//            mMediaAudioPlayer.stop();
+                avsQueue1.remove(current.messageID);
+                mMediaPlayHandler.sendEmptyMessage(2);
+                startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
+            } else if (current instanceof AvsAlertPlayItem) {
+                if (!mSpeechSynthesizerPlayer.isPlaying()) {
+                    tryPauseMediaAudio();
+                    mSpeechSynthesizerPlayer.playItem((AvsAlertPlayItem) current);
+                }
+            } else {
+                avsQueue1.remove(current.messageID);
+                avsQueue2.remove(current.messageID);
+
+                Log.w(TAG, "pop a unhandle item !" + current.getClass());
+                checkQueueImpl();
+            }
+        }
+
+        private AvsItem getItem(){
+            AvsItem current;
+            if(!avsQueue1.isEmpty()){
+                current = avsQueue1.get(getFirstKey(avsQueue1));
+            } else {
+                current = avsQueue2.get(getFirstKey(avsQueue2));
+            }
+
+            return current;
+        }
+
+        private String getFirstKey(LinkedHashMap<String, AvsItem> queue) {
+            String out = null;
+            for (String key : queue.keySet()) {
+                out = (key);
+                break;
+            }
+            return out;
         }
     };
 }
