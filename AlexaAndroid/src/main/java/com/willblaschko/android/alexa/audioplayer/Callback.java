@@ -7,4 +7,6 @@ public interface Callback{
         void playerProgress(AvsItem currentItem, long offsetInMilliseconds, float percent);
         void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds);
         void dataError(AvsItem item, Exception e);
+        void onBufferReady(AvsItem item, long offsetInMilliseconds, long stutterDurationInMilliseconds);
+        void onBuffering(AvsItem item, long offset);
     }

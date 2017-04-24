@@ -8,6 +8,7 @@ import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsStopItem;
@@ -81,7 +82,7 @@ public class DirectiveParseHelper {
             } else if(AVSAPIConstants.AudioPlayer.Directives.Stop.NAME.equals(headName)){
                 item = new AvsStopItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
             } else if(AVSAPIConstants.AudioPlayer.Directives.ClearQueue.NAME.equals(headName)){
-                //TODO
+                item = new AvsClearQueueItem(directive.getHeaderMessageId(), directive.getPayload().clearBehavior);
             }
         }
 

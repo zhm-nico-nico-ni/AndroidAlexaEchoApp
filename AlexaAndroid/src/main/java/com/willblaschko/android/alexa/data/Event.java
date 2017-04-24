@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.willblaschko.android.alexa.AVSAPIConstants;
 import com.willblaschko.android.alexa.data.message.Payload;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
+import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -266,32 +267,98 @@ public class Event {
     }
 
 
-    public static String getPlaybackStartedEvent(String token, long offset){
+    public static String getPlaybackStartedEvent(String directiveToken, long offset){
         Builder builder = new Builder();
         builder.setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackStarted")
                 .setHeaderMessageId(getUuid())
-                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offset));
+                .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
         return builder.toJson();
     }
 
-    public static String getPlaybackFinishedEvent(String token, long offset){
+    public static String getPlaybackStoppedEvent(String directiveToken, long offset){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("AudioPlayer")
-                .setHeaderName("PlaybackFinished")
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackStopped.NAME)
                 .setHeaderMessageId(getUuid())
-                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offset));
+                .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
         return builder.toJson();
     }
 
-//    public static String getPlaybackFailEvent(String token){
-//        Builder builder = new Builder();
-//        builder.setHeaderNamespace("AudioPlayer")
-//                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackFailed.NAME)
-//                .setHeaderMessageId(getUuid())
-//                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offset));
-//        return builder.toJson();
-//    }
+    /**
+     * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#playbackfinished
+     * This event is not sent when:
+     * Playback is stopped (either locally or as the result of a Stop directive)
+     * Navigating between streams (next/previous)
+     *
+     * For each URL that AVS sends,
+     * it expects no more than one PlaybackFinished event.
+     * If you receive a playlist URL (composed of multiple URLs) only send one PlaybackFinished event
+     *
+     * @param directiveToken
+     * @param offset
+     * @return
+     */
+    public static String getPlaybackFinishedEvent(String directiveToken, long offset){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackFinished.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
+        return builder.toJson();
+    }
+
+    public static String getPlaybackFailEvent(String directiveToken, long offset, String playerActivity, PlaybackError error){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackFailed.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createPlaybackFailPayload(directiveToken, offset, playerActivity, error));
+        return builder.toJson();
+    }
+
+    public static String getPlaybackStutterStartedEvent(String directiveToken, long offset){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackStutterStarted.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
+        return builder.toJson();
+    }
+    public static String getPlaybackStutterFinishEvent(String directiveToken, long offset, long stutterDurationInMilliseconds){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackStutterFinished.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createPlaybackStutterFinishedPayload(directiveToken, offset, stutterDurationInMilliseconds));
+        return builder.toJson();
+    }
+
+    public static String getPlaybackQueueClearedEvent(){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackQueueCleared.NAME)
+                .setHeaderMessageId(getUuid());
+        return builder.toJson();
+    }
+
+    public static String getPlaybackResumedEvent(String directiveToken, long offset){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackResumed.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
+        return builder.toJson();
+    }
+
+    public static String getPlaybackPausedEvent(String directiveToken, long offset){
+        Builder builder = new Builder();
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackPaused.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
+        return builder.toJson();
+    }
 
     public static String createSystemSynchronizeStateEvent(List<Event> contextList){
 

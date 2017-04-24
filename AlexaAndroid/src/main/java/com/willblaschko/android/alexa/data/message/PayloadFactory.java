@@ -4,6 +4,9 @@ package com.willblaschko.android.alexa.data.message;
 import android.content.Context;
 
 import com.willblaschko.android.alexa.data.message.request.audioplayer.AudioPlayerPayload;
+import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
+import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackFailPayload;
+import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackStutterFinishedPayload;
 import com.willblaschko.android.alexa.data.message.request.context.AlertsStatePayload;
 import com.willblaschko.android.alexa.data.message.request.context.PlaybackStatePayload;
 import com.willblaschko.android.alexa.data.message.request.context.SpeechStatePayload;
@@ -48,6 +51,19 @@ public class PayloadFactory {
         AudioPlayerPayload payload = new AudioPlayerPayload();
         payload.token = token;
         payload.offsetInMilliseconds = offsetInMilliseconds;
+        return payload;
+    }
+
+    public static PlaybackFailPayload createPlaybackFailPayload(String directiveToken, long offset, String playerActivity, PlaybackError error) {
+        return new PlaybackFailPayload(directiveToken, offset, playerActivity, error);
+    }
+
+    public static PlaybackStutterFinishedPayload createPlaybackStutterFinishedPayload(String token
+            , long offsetInMilliseconds, long stutterDurationInMilliseconds) {
+        PlaybackStutterFinishedPayload payload = new PlaybackStutterFinishedPayload();
+        payload.token = token;
+        payload.offsetInMilliseconds = offsetInMilliseconds;
+        payload.stutterDurationInMilliseconds = stutterDurationInMilliseconds;
         return payload;
     }
 

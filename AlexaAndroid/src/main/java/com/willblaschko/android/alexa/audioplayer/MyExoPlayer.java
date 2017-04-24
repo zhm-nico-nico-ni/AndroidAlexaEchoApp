@@ -3,6 +3,7 @@ package com.willblaschko.android.alexa.audioplayer;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Handler;
+import android.os.SystemClock;
 
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -29,6 +30,8 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private TaskRunnar mAsyncTask;
     private File mDeleteWhenFinishPath;
     private long beginOffset;
+    private int mPlaybackState;
+    private long bufferBeginTime;
 
     public MyExoPlayer(Context context, IMyExoPlayerListener listener) {
         mListener = listener;
@@ -58,6 +61,13 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        if(ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY){
+            if(bufferBeginTime > 0 && mListener != null)
+                mListener.onBufferReady(mMediaPlayer.getCurrentPosition(),
+                    SystemClock.elapsedRealtime() - bufferBeginTime);
+        }
+
+        mPlaybackState = playbackState;
         if (ExoPlayer.STATE_READY == playbackState){
             if(beginOffset>0 && beginOffset < mMediaPlayer.getDuration()) {
                 mMediaPlayer.seekTo(beginOffset);
@@ -78,6 +88,9 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
             if (mListener != null) mListener.onPrepare();
             mAsyncTask = new TaskRunnar();
             handler.postDelayed(mAsyncTask, 100);
+        } else if(ExoPlayer.STATE_BUFFERING == playbackState){
+            bufferBeginTime = SystemClock.elapsedRealtime();
+            mListener.onBuffering(mMediaPlayer.getCurrentPosition());
         }
     }
 
@@ -119,6 +132,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     public void prepare(MediaSource mediaSource, File deleteWhenFinishPath, long beginOffset) {
         this.beginOffset = beginOffset;
         mFiredPrepareEvent = false;
+        bufferBeginTime = 0;
         deletePlayFile();
         mDeleteWhenFinishPath = deleteWhenFinishPath;
         mMediaPlayer.prepare(mediaSource);
@@ -152,7 +166,13 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     public long getCurrentPosition() {
-        return mMediaPlayer.getCurrentPosition();
+        long position = 0;
+        try {
+            position = mMediaPlayer.getCurrentPosition();
+        }catch (Exception ex){
+            Log.e(Log.TAG_APP, "!!!!! error when get media position");
+        }
+        return position;
     }
 
     public long getDuration() {
@@ -196,5 +216,8 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         void onPrepare();
 
         void onProgress(float percent);
+
+        void onBuffering(long offsetInMilliseconds);
+        void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds);
     }
 }

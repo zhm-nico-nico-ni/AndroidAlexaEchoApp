@@ -42,16 +42,25 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     public static final String TAG = "AlexaAudioExoPlayer";
 
+    private final static int STATE_IDLE = 0;
+    private final static int STATE_PLAYING = 1;
+    private final static int STATE_STOPPED = 2;
+    private final static int STATE_PAUSED = 3;
+    private final static int STATE_BUFFER_UNDERRUN = 4;
+    private final static int STATE_FINISHED = 5;
+
     private MyExoPlayer mMediaPlayer;
     private Context mContext;
     private AvsItem mItem;
     private final List<Callback> mCallbacks = new ArrayList<>();
+    private int mMediaState = STATE_IDLE;
 
     /**
      * Create our new AlexaAudioPlayer
+     *
      * @param context any context, we will get the application level to store locally
      */
-    public AlexaAudioExoPlayer(Context context){
+    public AlexaAudioExoPlayer(Context context) {
         mContext = context.getApplicationContext();
         trimCache(context);
     }
@@ -77,7 +86,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
                 }
             }
         }
-        if(dir != null){
+        if (dir != null) {
             // The directory is now empty so delete it
             return dir.delete();
         }
@@ -87,17 +96,15 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     /**
      * Return a reference to the MediaPlayer instance, if it does not exist,
      * then create it and configure it to our needs
+     *
      * @return Android native MediaPlayer
      */
-    private MyExoPlayer getMediaPlayer(){
-        if(mMediaPlayer == null){
+    private MyExoPlayer getMediaPlayer() {
+        if (mMediaPlayer == null) {
             mMediaPlayer = new MyExoPlayer(mContext, this);
 
 //            mMediaPlayer.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
 //            mMediaPlayer.setPlayWhenReady(true);
-//            mMediaPlayer.setOnCompletionListener(mCompletionListener);
-//            mMediaPlayer.setOnPreparedListener(mPreparedListener);
-//            mMediaPlayer.setOnErrorListener(mErrorListener);
         }
 
         return mMediaPlayer;
@@ -105,9 +112,10 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     /**
      * Add a callback to our AlexaAudioPlayer, this is added to our list of callbacks
+     *
      * @param callback Callback that listens to changes of player state
      */
-    public void addCallback(Callback callback){
+    public void addCallback(Callback callback) {
         synchronized (mCallbacks) {
             if (!mCallbacks.contains(callback)) {
                 mCallbacks.add(callback);
@@ -132,25 +140,28 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     /**
      * A helper function to play an AvsPlayContentItem, this is passed to play() and handled accordingly,
+     *
      * @param item a speak type item
      */
-    public void playItem(AvsPlayContentItem item){
+    public void playItem(AvsPlayContentItem item) {
         play(item);
     }
 
     /**
      * A helper function to play an AvsSpeakItem, this is passed to play() and handled accordingly,
+     *
      * @param item a speak type item
      */
-    public void playItem(AvsSpeakItem item){
+    public void playItem(AvsSpeakItem item) {
         play(item);
     }
 
     /**
      * A helper function to play an AvsPlayRemoteItem, this is passed to play() and handled accordingly,
+     *
      * @param item a play type item, usually a url
      */
-    public void playItem(AvsPlayRemoteItem item){
+    public void playItem(AvsPlayRemoteItem item) {
         play(item);
     }
 
@@ -161,46 +172,38 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     /**
      * Request our MediaPlayer to play an item, if it's an AvsPlayRemoteItem (url, usually), we set that url as our data source for the MediaPlayer
      * if it's an AvsSpeakItem, then we write the raw audio to a file and then read it back using the MediaPlayer
+     *
      * @param item
      */
-    private void play(@NonNull AvsItem item){
-        if(isPlaying()){
-            Log.w(TAG, "Already playing an item, did you mean to play another?");
-        }
-
+    private void play(@NonNull AvsItem item) {
         mItem = item;
-//        if(getMediaPlayer().getPlaybackState().isPlaying()){
-            //if we're playing, stop playing before we continue
-            getMediaPlayer().stop();
-//        }
+        //if we're playing, stop playing before we continue
+        getMediaPlayer().stop();
 
-        //reset our player
-//        getMediaPlayer().setLooping(false);
-
-
-
-        if(!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")){
+        if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
             Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
             getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///start.mp3"), "mp3"));
-        }else if(mItem instanceof AvsPlayRemoteItem){
-            //cast our item for easy access
+        } else if (mItem instanceof AvsPlayRemoteItem) {
             AvsPlayRemoteItem playItem = (AvsPlayRemoteItem) item;
+            long startOffset = playItem.pausePosition > playItem.getStartOffset()
+                    ? playItem.pausePosition : playItem.getStartOffset();
             //play new url
-            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getUrl()), null));
-        }else if(mItem instanceof AvsPlayContentItem){
-            //cast our item for easy access
+            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getUrl()), null), null, startOffset);
+        } else if (mItem instanceof AvsPlayContentItem) {
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
             getMediaPlayer().prepare(buildMediaSource(playItem.getUri(), null));
-        } else if(mItem instanceof AvsPlayAudioItem){
+        } else if (mItem instanceof AvsPlayAudioItem) {
             AvsPlayAudioItem playAudioItem = (AvsPlayAudioItem) mItem;
-            playitem(playAudioItem, playAudioItem.mStream.getOffsetInMilliseconds());
-        } else if(mItem instanceof AvsSpeakItem){
-            //cast our item for easy access
+            long offset = playAudioItem.mStream.getOffsetInMilliseconds();
+            long startOffset = playAudioItem.pausePosition > offset
+                    ? playAudioItem.pausePosition : offset;
+            playitem(playAudioItem, startOffset);
+        } else if (mItem instanceof AvsSpeakItem) {
             playitem((AvsSpeakItem) mItem, 0);
-        } else if(mItem instanceof AvsAlertPlayItem){
+        } else if (mItem instanceof AvsAlertPlayItem) {
             Uri path = Uri.parse("asset:///alarm.mp3");
-            getMediaPlayer().prepare(buildMediaSource(path,"mp3"));
+            getMediaPlayer().prepare(buildMediaSource(path, "mp3"));
         } else {
 
             bubbleUpError(new Exception("not suitable process"));
@@ -232,48 +235,51 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     /**
      * Check whether our MediaPlayer is currently playing
+     *
      * @return true playing, false not
      */
-    public boolean isPlaying(){
+    public boolean isPlaying() {
         return getMediaPlayer().isPlaying();
     }
 
     /**
      * A helper function to pause the MediaPlayer
      */
-    public void pause(){
+    public void pause() {
         getMediaPlayer().setPlayWhenReady(false);
     }
 
     /**
      * A helper function to play the MediaPlayer
      */
-    public void play(){
+    public void play() {
         getMediaPlayer().setPlayWhenReady(true);
     }
 
     /**
      * A helper function to stop the MediaPlayer
      */
-    public long stop(){
+    public long stop(boolean setStatePause) {
+        mMediaState = setStatePause ? STATE_PAUSED : STATE_STOPPED;
         return getMediaPlayer().stop();
     }
 
     /**
      * A helper function to release the media player and remove it from memory
      */
-    public void release(boolean reportComplete){
+    public void release(boolean reportComplete) {
         long duration = 0;
-        if(mMediaPlayer != null){
+        if (mMediaPlayer != null) {
             mMediaPlayer.stop();
             duration = mMediaPlayer.getDuration();
-            if(duration == C.TIME_UNSET){
+            if (duration == C.TIME_UNSET) {
                 duration = 0;
             }
             mMediaPlayer.release();
         }
         mMediaPlayer = null;
-        if(reportComplete){
+        mMediaState = STATE_STOPPED;
+        if (reportComplete) {
             onComplete(duration);
         }
     }
@@ -295,10 +301,10 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * If our callback is not null, post our player progress back to the controlling
      * application so we can do "almost done" type of calls
      */
-    private void postProgress(final float percent){
+    private void postProgress(final float percent) {
         synchronized (mCallbacks) {
             for (Callback callback : mCallbacks) {
-                if(mMediaPlayer != null && callback != null) {
+                if (mMediaPlayer != null && callback != null) {
                     callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), percent);
                 }
             }
@@ -306,31 +312,23 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     }
 
 
-//    /**
-//     * A callback to keep track of the state of the MediaPlayer and various AvsItem states
-//     */
-//    public interface Callback{
-//        void playerPrepared(AvsItem pendingItem);
-//        void playerProgress(AvsItem currentItem, long offsetInMilliseconds, float percent);
-//        void itemComplete(AvsItem completedItem);
-//        boolean playerError(AvsItem item, int what, int extra);
-//        void dataError(AvsItem item, Exception e);
-//    }
-
     /**
      * Pass our Exception to all the Callbacks, handle it at the top level
+     *
      * @param e the thrown exception
      */
-    private void bubbleUpError(Exception e){
-        for(Callback callback: mCallbacks){
+    private void bubbleUpError(Exception e) {
+        for (Callback callback : mCallbacks) {
             callback.dataError(mItem, e);
         }
+        mMediaState = STATE_STOPPED;
     }
 
 
     @Override
     public void onComplete(long duration) {
-        for(Callback callback: mCallbacks){
+        mMediaState = STATE_FINISHED;
+        for (Callback callback : mCallbacks) {
             callback.playerProgress(mItem, 1, 1);
             callback.itemComplete(mItem, true, duration);
         }
@@ -344,7 +342,8 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     @Override
     public void onPrepare() {
-        for(Callback callback: mCallbacks){
+        mMediaState = STATE_PLAYING;
+        for (Callback callback : mCallbacks) {
             callback.playerPrepared(mItem);
             callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0);
         }
@@ -356,10 +355,25 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
         postProgress(percent);
     }
 
-    private void playitem(AvsSpeakItem playItem, long offset){
+    @Override
+    public void onBuffering(long offset) {
+        mMediaState = STATE_BUFFER_UNDERRUN;
+        for (Callback callback : mCallbacks) {
+            callback.onBuffering(getCurrentItem(), offset);
+        }
+    }
+
+    @Override
+    public void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds) {
+        for (Callback callback : mCallbacks) {
+            callback.onBufferReady(getCurrentItem(), offsetInMilliseconds, stutterDurationInMilliseconds);
+        }
+    }
+
+    private void playitem(AvsSpeakItem playItem, long offset) {
         //write out our raw audio data to a file
         File path = new File(mContext.getCacheDir(), playItem.messageID);
-        if(path.exists()){
+        if (path.exists()) {
             getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
             return;
         }
@@ -374,7 +388,30 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             //bubble up our error
             bubbleUpError(e);
         } finally {
-            if(fos!=null) IOUtils.closeQuietly(fos);
+            if (fos != null) IOUtils.closeQuietly(fos);
+        }
+    }
+
+    public long getCurrentPosition() {
+        return mMediaPlayer == null ? 0 : mMediaPlayer.getCurrentPosition();
+    }
+
+    public String getStateString() {
+        switch (mMediaState) {
+            case STATE_IDLE:
+                return "IDLE";
+            case STATE_STOPPED:
+                return "STOPPED";
+            case STATE_PLAYING:
+                return "PLAYING";
+            case STATE_PAUSED:
+                return "PAUSED";
+            case STATE_BUFFER_UNDERRUN:
+                return "BUFFER_UNDERRUN";
+            case STATE_FINISHED:
+                return "FINISHED";
+            default:
+                return "";
         }
     }
 }

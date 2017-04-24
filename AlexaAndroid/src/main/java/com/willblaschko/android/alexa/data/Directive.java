@@ -105,6 +105,7 @@ public class Directive {
         String description;
         String code;
         String endpoint;
+        public String clearBehavior;
 
         public String getUrl() {
             return url;

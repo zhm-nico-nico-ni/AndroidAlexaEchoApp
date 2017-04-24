@@ -13,10 +13,12 @@ import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioExoPlayer;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
@@ -38,14 +40,16 @@ import java.util.LinkedHashMap;
 
 public class GGECMediaManager {
     private final static String TAG = "GGECMediaManager";
+    private final static int QUEUE_STATE_START = 1;
+    private final static int QUEUE_STATE_STOP = 2;
+    private final static int QUEUE_STATE_DO_WORK = 3;
+
     private volatile LinkedHashMap<String, AvsItem> avsQueue1 = new LinkedHashMap<>();
     private volatile LinkedHashMap<String, AvsItem> avsQueue2 = new LinkedHashMap<>();
 
     private AlexaAudioExoPlayer mSpeechSynthesizerPlayer;
     private AlexaAudioExoPlayer mMediaAudioPlayer;
     private boolean needSendPlaybackStartEvent;
-    //    private volatile int mediaState; // 0 idle, 1 play ,2 pause, 3 stop.
-    private int mManageState;
 
 
     public GGECMediaManager() {
@@ -88,25 +92,28 @@ public class GGECMediaManager {
         needSendPlaybackStartEvent = true;
     }
 
-    private final void pauseMediaAudio() {
-        long lastPosition = mMediaAudioPlayer.stop();
+    private final AvsAudioItem pauseMediaAudio() {
+        long lastPosition = mMediaAudioPlayer.stop(true);
         AvsItem item = mMediaAudioPlayer.getCurrentItem();
         if (item instanceof AvsAudioItem) {
             ((AvsAudioItem) item).pausePosition = lastPosition;
+            return (AvsAudioItem) item;
         } else if (item instanceof AvsAlertPlayItem || item == null) {
 
         } else {
             avsQueue1.remove(item.messageID);
         }
+        return null;
     }
 
     private void checkQueue() {
-        mMediaPlayHandler.sendEmptyMessage(3);
+        mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_DO_WORK);
     }
 
     private void tryPauseMediaAudio() {
         if (mMediaAudioPlayer.isPlaying()) {
-            pauseMediaAudio();
+            AvsAudioItem item = pauseMediaAudio();
+            sendPlaybackPauseOrResumeEvent(true, item);
         }
     }
 
@@ -116,7 +123,11 @@ public class GGECMediaManager {
 
         @Override
         public void playerPrepared(AvsItem pendingItem) {
-            sendSpeakStartedEvent(pendingItem);
+            if (pendingItem instanceof AvsSpeakItem) {
+                Log.i(TAG, "Sending SpeechStartedEvent");
+                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        .sendEvent(Event.getSpeechStartedEvent(pendingItem.getToken()), null);
+            }
         }
 
         @Override
@@ -143,6 +154,16 @@ public class GGECMediaManager {
             itemComplete(item, true, 0);
             Log.e(TAG, "mSpeechSynthesizerCallback dataError!", e);
         }
+
+        @Override
+        public void onBufferReady(AvsItem item, long offsetInMilliseconds, long stutterDurationInMilliseconds) {
+
+        }
+
+        @Override
+        public void onBuffering(AvsItem item, long offset) {
+
+        }
     };
 
     //Our callback that deals with removing played items in our media player and then checking to see if more items exist
@@ -163,11 +184,14 @@ public class GGECMediaManager {
                 return;
             }
             if (!playbackStartedFired) {
-                if (BuildConfig.DEBUG) {
-                    Log.i(TAG, "PlaybackStarted " + item.getToken() + " fired: " + percent);
-                }
                 playbackStartedFired = true;
-                sendPlaybackStartedEvent(item, offsetInMilliseconds);
+                if(item instanceof AvsAudioItem){
+                    AvsAudioItem audioItem = (AvsAudioItem) item;
+                    if(audioItem.pausePosition > 0){
+                        sendPlaybackPauseOrResumeEvent(false, audioItem);
+                    }
+                    sendPlaybackStartedEvent(item, offsetInMilliseconds);
+                }
             }
             if (!almostDoneFired && percent > .8f) {
                 Log.d(TAG, "AlmostDone " + item.getToken() + " fired: " + percent);
@@ -198,8 +222,76 @@ public class GGECMediaManager {
 
         @Override
         public void dataError(AvsItem item, Exception e) {
+            long position = mMediaAudioPlayer.getCurrentPosition();
             itemComplete(item, true, 0);
             Log.e(TAG, "mMediaAudioPlayerCallback error!", e);
+            if(item == null) return;
+            //String directiveToken, long offset, String playerActivity, String errorType, String errorMessage
+            Log.w(TAG, "send getPlaybackFailEvent:");
+            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    .sendEvent(Event.getPlaybackFailEvent(item.getToken(), position, mMediaAudioPlayer.getStateString()
+                    , new PlaybackError(e)), null);
+        }
+
+        @Override
+        public void onBufferReady(AvsItem item, long offsetInMilliseconds, long stutterDurationInMilliseconds) {
+//            send PlaybackStutterFinished Event
+            if(item != null) {
+                Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
+                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        .sendEvent(Event.getPlaybackStutterFinishEvent(item.getToken(), offsetInMilliseconds, stutterDurationInMilliseconds), null);
+            }
+        }
+
+        @Override
+        public void onBuffering(AvsItem item, long offset) {
+            if(item != null) {
+                Log.i(TAG, "Sending getPlaybackStutterStartedEvent");
+                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        .sendEvent(Event.getPlaybackStutterStartedEvent(item.getToken(), offset), null);
+            }
+        }
+
+        private void sendPlaybackStartedEvent(AvsItem item, long offset) {
+            if (needSendPlaybackStartEvent) {
+                if (item instanceof AvsPlayAudioItem || item instanceof AvsPlayRemoteItem) {
+                    needSendPlaybackStartEvent = false;
+                    Log.i(TAG, "Sending PlaybackStarted");
+                    AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(Event.getPlaybackStartedEvent(item.getToken(), offset), null);
+                }
+            }
+        }
+
+        /**
+         * Send an event back to Alexa that we're nearly done with our current playback event, this should supply us with the next item
+         * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
+         */
+        private void sendPlaybackNearlyFinishedEvent(AvsPlayAudioItem item, long offsetInMilliseconds) {
+            if (item != null) {
+                Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
+                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        .sendEvent(Event.getPlaybackNearlyFinishedEvent(item.getToken(), offsetInMilliseconds), null);
+            }
+        }
+
+        /**
+         * Send an event back to Alexa that we're done with our current speech event, this should supply us with the next item
+         * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
+         */
+        private void sendPlaybackCompleteEvent(AvsItem item, long offset, boolean success) {
+            if (success) {
+                String event = null;
+                if (item instanceof AvsPlayAudioItem || item instanceof AvsPlayRemoteItem) {
+                    if (avsQueue2.isEmpty()) {
+                        event = Event.getPlaybackFinishedEvent(item.getToken(), offset);
+                    }
+                } else if (item instanceof AvsSpeakItem) {
+//                    event = Event.getSpeechFinishedEvent(item.getToken());
+                    Log.e(TAG, "why AvsSpeakItem appear hear?");
+                }
+                if (event != null)
+                    AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
+            }
         }
     };
 
@@ -213,79 +305,38 @@ public class GGECMediaManager {
         MyApplication.getContext().startService(it);
     }
 
-    /**
-     * Send an event back to Alexa that we're starting a speech event
-     * 如果是PlaybackStartedEvent ，则只需要在一开始发一次即可
-     * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
-     */
-    private void sendSpeakStartedEvent(AvsItem item) {
-        if (item instanceof AvsSpeakItem) {
-            Log.i(TAG, "Sending SpeechStartedEvent");
-            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(Event.getSpeechStartedEvent(item.getToken()), null);
-        }
-    }
-
-    private void sendPlaybackStartedEvent(AvsItem item, long offset) {
-        if (needSendPlaybackStartEvent) {
-            if (item instanceof AvsPlayAudioItem || item instanceof AvsPlayRemoteItem) {
-                needSendPlaybackStartEvent = false;
-                Log.i(TAG, "Sending PlaybackStarted");
-                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(Event.getPlaybackStartedEvent(item.getToken(), offset), null);
-            }
-        }
-    }
-
-    /**
-     * Send an event back to Alexa that we're done with our current speech event, this should supply us with the next item
-     * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
-     */
-    private void sendPlaybackCompleteEvent(AvsItem item, long offset, boolean success) {
-        if (item != null) {
-            String event = null;
-            if (item instanceof AvsPlayAudioItem) {
-                if (success) {
-                    event = Event.getPlaybackFinishedEvent(item.getToken(), offset);
-                } else {
-                    //TODO
-                }
-            } else if (item instanceof AvsSpeakItem) {
-                event = Event.getSpeechFinishedEvent(item.getToken());
-            }
-            if (event != null)
-                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
-        }
-    }
-
-    /**
-     * Send an event back to Alexa that we're nearly done with our current playback event, this should supply us with the next item
-     * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
-     */
-    private void sendPlaybackNearlyFinishedEvent(AvsPlayAudioItem item, long offsetInMilliseconds) {
-        if (item != null) {
-            Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
-            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                    .sendEvent(Event.getPlaybackNearlyFinishedEvent(item.getToken(), offsetInMilliseconds), null);
-        }
-    }
-
     public boolean addAvsItemToQueue(AvsItem response) {
 
         if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理
             Log.d(TAG, "stop alarm right now :" + response.messageID);
             avsQueue1.remove(response.messageID);
             mSpeechSynthesizerPlayer.release(false);
+        } else if(response instanceof AvsClearQueueItem){
+            if(((AvsClearQueueItem) response).isClearAll()){
+                Log.w(TAG, "ClearQueue Directive, and replace current and enqueued streams");
+                long position = mMediaAudioPlayer.getCurrentPosition();
+                clear(true);
+                sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
+            } else {
+                Log.w(TAG, "ClearQueue Directive. This does not impact the currently playing stream.");
+                clear(false);
+            }
+            Log.d(TAG, "send PlaybackQueueCleared Event");
+            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(Event.getPlaybackQueueClearedEvent(), null);
         } else if (response instanceof AvsReplaceAllItem) {
             //clear our queue
-            clear(true);
             Log.w(TAG, "Immediately begin playback of the stream returned with the Play directive, and replace current and enqueued streams");
+            long position = mMediaAudioPlayer.getCurrentPosition();
+            clear(true);
+            sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
         } else if (response instanceof AvsReplaceEnqueuedItem) {
             //Replace all streams in the queue.
             // This does not impact the currently playing stream.
-            clear(false);
             Log.w(TAG, "Replace all streams in the queue. This does not impact the currently playing stream.");
+            clear(false);
         } else if (response instanceof AvsPlayRemoteItem
                 || response instanceof AvsPlayAudioItem) {
-
+            setNeedSendPlaybackStartEvent();
             avsQueue2.put(response.messageID, response);
         } else if (response instanceof AvsSpeakItem
                 || response instanceof AvsExpectSpeechItem
@@ -293,9 +344,10 @@ public class GGECMediaManager {
 
             appendAllAtBegin(response);
         } else if (response instanceof AvsStopItem) {
-            //stop our play
-            mMediaAudioPlayer.stop(); //FIXME 注意这个,现在是完全停止
-            mSpeechSynthesizerPlayer.stop();
+            // The Stop directive is sent to your client to stop playback of an audio stream.
+            // Your client may receive a Stop directive as the result of a voice request, a physical button press or GUI affordance.
+            long position = mMediaAudioPlayer.stop(false); //注意这个,只停止audio
+            sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
             avsQueue1.clear();
         } else if (response instanceof AvsMediaPlayCommandItem) { //TODO
         } else if (response instanceof AvsMediaPauseCommandItem) {
@@ -307,21 +359,42 @@ public class GGECMediaManager {
             return false;
         }
 
-        mMediaPlayHandler.sendEmptyMessage(1);
+        mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_START);
 
         return true;
     }
 
+    private void sendPlaybackStoppedEvent(AvsItem playingItem, long position){
+        if(playingItem!=null) {
+            Log.d(TAG, "sendPlaybackStoppedEvent");
+            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    .sendEvent(Event.getPlaybackStoppedEvent(playingItem.getToken(), position), null);
+        }
+    }
+
+    private void sendPlaybackPauseOrResumeEvent(boolean isPause, AvsAudioItem item){
+        if(item == null) return;
+
+        String event;
+        if(isPause){
+            Log.d(TAG, "sendPlaybackPausedEven");
+            event = Event.getPlaybackPausedEvent(item.getToken(), item.pausePosition);
+        } else {
+            event = Event.getPlaybackResumedEvent(item.getToken(), item.pausePosition);
+        }
+        AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
+    }
+
+    public String getSpeechSynthesizerState(){
+        return "PLAYING".equals(mSpeechSynthesizerPlayer.getStateString())? "PLAYING" : "FINISHED";
+    }
+
+    public String getAudioState(){
+        return mMediaAudioPlayer.getStateString();
+    }
+
     private Handler mMediaPlayHandler = new Handler() {
-        private final static int STATE_IDLE = 0;
-        private final static int STATE_PLAYING = 1;
-        private final static int STATE_STOPPED = 2;
-        private final static int STATE_PAUSED = 3;
-        private final static int STATE_BUFFER_UNDERRUN = 4;
-        private final static int STATE_FINISH = 5;
-
         private boolean running, canPlayMedia = true;
-
 
         @Override
         public void handleMessage(Message msg) {
@@ -338,7 +411,6 @@ public class GGECMediaManager {
 
             } else if (msg.what == 2) { // STOP
                 running = false;
-                mMediaAudioPlayer.stop();
                 this.removeMessages(1);
                 this.removeMessages(3);
 
@@ -385,7 +457,6 @@ public class GGECMediaManager {
                 //play a URL
                 if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
                     mMediaAudioPlayer.playItem((AvsPlayRemoteItem) current);
-                    sendPlaybackStartedEvent(current, 0);
                 }
 //        } else if (current instanceof AvsPlayContentItem) {
 //            //play a URL
@@ -394,8 +465,7 @@ public class GGECMediaManager {
 //            }
             } else if (current instanceof AvsPlayAudioItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
-                    mMediaAudioPlayer.playItem((AvsSpeakItem) current);
-                    sendPlaybackStartedEvent(current, 0);
+                    mMediaAudioPlayer.playItem((AvsPlayAudioItem) current);
                 }
             } else if (current instanceof AvsSpeakItem) {
                 //play a sound file
@@ -406,10 +476,10 @@ public class GGECMediaManager {
 //            setState(STATE_SPEAKING);
             } else if (current instanceof AvsExpectSpeechItem) {
                 //listen for user input
-//            mSpeechSynthesizerPlayer.stop();
-//            mMediaAudioPlayer.stop();
+                mSpeechSynthesizerPlayer.stop(false);
+                mMediaAudioPlayer.stop(true);
                 avsQueue1.remove(current.messageID);
-                mMediaPlayHandler.sendEmptyMessage(2);
+                mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
                 startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
             } else if (current instanceof AvsAlertPlayItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying()) {
