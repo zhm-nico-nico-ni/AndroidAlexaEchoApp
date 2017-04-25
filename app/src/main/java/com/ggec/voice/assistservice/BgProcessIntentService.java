@@ -94,7 +94,7 @@ public class BgProcessIntentService extends IntentService {
         if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
             //start
 //            startRecord1(cmd.waitMicDelayMillSecond);
-            startNearTalkRecord();
+            startNearTalkRecord(cmd.waitMicDelayMillSecond);
 //            search();
         } else if (cmd.type == 2) {
             //stop
@@ -131,11 +131,11 @@ public class BgProcessIntentService extends IntentService {
             final String messageId = intent.getStringExtra("messageId");
             Log.d(TAG, "STOP_ALARM: "+ messageId+ " ,token:"+token);
             SetAlertHelper.sendAlertStopped(alexaManager, token, getCallBack("sendAlertStopped"));
-            SetAlertHelper.deleteAlertSP(MyApplication.getContext(), messageId);
+            SetAlertHelper.deleteAlertSP(MyApplication.getContext(), token);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token, messageId));
+                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token));
                 }
             });
         } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
@@ -237,7 +237,7 @@ public class BgProcessIntentService extends IntentService {
         });
     }
 
-    private void startNearTalkRecord() {
+    private void startNearTalkRecord(final long waitMicTimeOut) {
         playStart(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
@@ -249,11 +249,10 @@ public class BgProcessIntentService extends IntentService {
                         if (recordSuccess) {
                             handler.removeCallbacks(waitMicTimeoutRunnable);
                         } else {
-//                            if (waitMicTimeOut > 0) {
-//                                handler.removeCallbacks(waitMicTimeoutRunnable);
-//                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-//                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
-//                            }
+                            if (waitMicTimeOut > 0 && actuallyLong == -1) {
+                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
+                            }
                             playError();
                         }
                     }
@@ -379,7 +378,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Tell me the baseball news", getCallBack("textTest"));//Set a timer after 15 seconds from now"  "Tell me the baseball news"
+        alexaManager.sendTextRequest("Set a timer", getCallBack("textTest"));//Set a timer after 15 seconds from now"  "Tell me the baseball news"
     }
 
     private void search() {

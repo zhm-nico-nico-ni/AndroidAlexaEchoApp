@@ -8,7 +8,7 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
 
 public class AvsAlertStopItem extends AvsItem {
 
-    public AvsAlertStopItem(String token, String messageID) {
-        super(token, messageID);
+    public AvsAlertStopItem(String token) {
+        super(token, null);
     }
 }

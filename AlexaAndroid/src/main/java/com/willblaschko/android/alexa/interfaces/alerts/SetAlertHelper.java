@@ -63,19 +63,19 @@ public class SetAlertHelper {
 
     public static void putAlert(Context context, AvsSetAlertItem setAlertItem) {
         SharedPreferences.Editor ed = context.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit();
-        ed.putString(setAlertItem.getMessageId(), setAlertItem.toJsonString());
+        ed.putString(setAlertItem.getToken(), setAlertItem.toJsonString());
         ed.apply();
     }
 
-    public static void deleteAlertSP(Context context, String messageID) {
+    public static void deleteAlertSP(Context context, String tokenID) {
         SharedPreferences.Editor ed = context.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit();
-        ed.remove(messageID);
+        ed.remove(tokenID);
         ed.apply();
     }
 
-    public static AvsSetAlertItem getAlertItemByMessageId(Context context, String messageID) {
+    public static AvsSetAlertItem getAlertItemByToken(Context context, String token) {
         SharedPreferences sp = context.getSharedPreferences(PREF, Context.MODE_PRIVATE);
-        String json = sp.getString(messageID, null);
+        String json = sp.getString(token, null);
         if (!TextUtils.isEmpty(json)) {
             return AvsSetAlertItem.create(json);
         }
@@ -116,12 +116,14 @@ public class SetAlertHelper {
         }
     }
 
-    public static boolean cancelOrDeleteAlert(Context context, String messageId, Intent it) {
-        AvsSetAlertItem setAlertItem = getAlertItemByMessageId(context, messageId);
-        it.putExtra("token", setAlertItem.getToken());
-        it.putExtra("messageId", messageId);
+    public static boolean cancelOrDeleteAlert(Context context, String tokenID, Intent it) {
+        AvsSetAlertItem setAlertItem = getAlertItemByToken(context, tokenID);
+        if(setAlertItem==null) return false;
 
-        deleteAlertSP(context, messageId);
+        it.putExtra("token", setAlertItem.getToken());
+        it.putExtra("messageId", setAlertItem.getMessageId());
+
+        deleteAlertSP(context, tokenID);
         PendingIntent intent = PendingIntent.getService(context, setAlertItem.getTimeId(), it, PendingIntent.FLAG_CANCEL_CURRENT);
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

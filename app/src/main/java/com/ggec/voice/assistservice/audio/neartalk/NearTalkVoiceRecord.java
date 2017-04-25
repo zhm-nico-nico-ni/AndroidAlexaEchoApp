@@ -37,7 +37,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     public final static float DEFAULT_SILENT_THRESHOLD = -70f;
 
-    private final int MAX_WAIT_TIME = 10 * 1000;
+    private final int MAX_WAIT_TIME = 8 * 1000;
     private final int MAX_RECORD_TIME = 10 * 1000;
     private final int MAX_WAIT_END_TIME = 1500;
 
@@ -205,7 +205,7 @@ public class NearTalkVoiceRecord extends Thread {
 //            mListener.recordFinish(true, mFilePath, actuallyLong);
         } else {
             new File(mFilePath).delete();
-            mListener.recordFinish(false, "", 0);
+            mListener.recordFinish(false, "", -1);
         }
     }
 
@@ -263,6 +263,11 @@ public class NearTalkVoiceRecord extends Thread {
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
 
+            try {
+                throw new Exception();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             byte[] buffer = new byte[1024];
             Log.w(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
             try {

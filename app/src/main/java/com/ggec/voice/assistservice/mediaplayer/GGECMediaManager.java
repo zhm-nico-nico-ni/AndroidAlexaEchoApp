@@ -343,9 +343,9 @@ public class GGECMediaManager {
             setNeedSendPlaybackStartEvent();
             avsQueue2.put(response.messageID, response);
         } else if (response instanceof AvsSpeakItem
-                || response instanceof AvsExpectSpeechItem
-                || response instanceof AvsAlertPlayItem) {
-
+                || response instanceof AvsExpectSpeechItem){
+            avsQueue1.put(response.messageID, response);
+        } else if(response instanceof AvsAlertPlayItem) {
             appendAllAtBegin(response);
         } else if (response instanceof AvsStopItem) {
             // The Stop directive is sent to your client to stop playback of an audio stream.
