@@ -657,14 +657,16 @@ public class AlexaManager {
             }
         }, callback);
     }
-
+    public void sendAudioRequest(final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback){
+        sendAudioRequest("CLOSE_TALK", requestBody, callback);
+    }
     /**
      * Send streamed raw audio data to the Alexa servers, this is a more advanced option to bypass other issues (like only one item being able to use the mic at a time).
      *
      * @param requestBody a request body that incorporates either a static byte[] write to the BufferedSink or a streamed, managed byte[] data source
      * @param callback    the state change callback
      */
-    public void sendAudioRequest(final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+    public void sendAudioRequest(final String profile, final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
@@ -685,7 +687,7 @@ public class AlexaManager {
                                 protected AvsResponse doInBackground(Void... params) {
                                     mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
                                     try {
-                                        getSpeechSendAudio().sendAudio(url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
+                                        getSpeechSendAudio().sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
                                     } catch (AvsResponseException e){
                                         if(e.isUnAuthorized()){
 //TODO handle UnAuthorized

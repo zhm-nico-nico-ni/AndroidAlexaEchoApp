@@ -124,14 +124,14 @@ public class Event {
 
     }
 
-    public static String getSpeechRecognizerEvent(List<Event> events){
+    public static String getSpeechRecognizerEvent(String profile, List<Event> events){
         Builder builder = new Builder();
         builder.setHeaderNamespace("SpeechRecognizer")
                 .setHeaderName("Recognize")
                 .setHeaderMessageId(getUuid())
                 .setHeaderDialogRequestId(getUuid())
                 .setPayload(PayloadFactory
-                        .createSpeechRecognizerPayload("CLOSE_TALK", //"CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
+                        .createSpeechRecognizerPayload(profile, //"CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
                                 "AUDIO_L16_RATE_16000_CHANNELS_1"))
                 .setContext(events)
                 ;

@@ -93,7 +93,8 @@ public class BgProcessIntentService extends IntentService {
 
         if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
             //start
-            startRecord1(cmd.waitMicDelayMillSecond);
+//            startRecord1(cmd.waitMicDelayMillSecond);
+            startNearTalkRecord();
 //            search();
         } else if (cmd.type == 2) {
             //stop
@@ -232,6 +233,31 @@ public class BgProcessIntentService extends IntentService {
                     }
                 });
                 myVoiceRecord.start();
+            }
+        });
+    }
+
+    private void startNearTalkRecord() {
+        playStart(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                String path = MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
+
+                AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, new IMyVoiceRecordListener() {
+                    @Override
+                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
+                        if (recordSuccess) {
+                            handler.removeCallbacks(waitMicTimeoutRunnable);
+                        } else {
+//                            if (waitMicTimeOut > 0) {
+//                                handler.removeCallbacks(waitMicTimeoutRunnable);
+//                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
+//                            }
+                            playError();
+                        }
+                    }
+                }, getFileCallBack("record", path));
             }
         });
     }

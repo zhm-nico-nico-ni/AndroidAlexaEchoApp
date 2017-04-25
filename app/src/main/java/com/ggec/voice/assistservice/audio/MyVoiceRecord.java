@@ -29,7 +29,7 @@ public class MyVoiceRecord extends Thread {
 
     private final static String TAG = "MyVoiceRecord";
 
-    private enum RecordState {empty, init, start, stop, interrupt}
+    public enum RecordState {empty, init, start, stop, interrupt}
 
     private static final int RECORDER_SAMPLERATE = 16000;
     private static final int RECORDER_BPP = 16;
@@ -39,7 +39,7 @@ public class MyVoiceRecord extends Thread {
 
     private final int MAX_WAIT_TIME = 10 * 1000;
     private final int MAX_RECORD_TIME = 10 * 1000;
-    private final int MAX_WAIT_END_TIME = 1500; // TODO 这个多余的时间要截掉
+    private final int MAX_WAIT_END_TIME = 1500;
 
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
     private final AudioRecord audioRecorder;
@@ -264,11 +264,11 @@ public class MyVoiceRecord extends Thread {
 //        return i;
 //    }
 
-    class State {
-        long initTime;
-        long beginSpeakTime;
-        long lastSilentTime;
-        long lastSilentRecordIndex;
+    public static class State {
+        public long initTime;
+        public long beginSpeakTime;
+        public long lastSilentTime;
+        public long lastSilentRecordIndex;
 
         @Override
         public String toString() {

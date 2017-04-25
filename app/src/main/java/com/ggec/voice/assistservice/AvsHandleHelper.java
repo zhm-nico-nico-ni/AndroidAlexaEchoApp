@@ -4,10 +4,13 @@ import android.support.annotation.MainThread;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
+import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
 import com.willblaschko.android.alexa.AlexaManager;
+import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -34,6 +37,7 @@ public class AvsHandleHelper {
     private static final String TAG = "com.ggec.voice.assistservice.AvsHandleHelper";
     private static AvsHandleHelper sAvsHandleHelper;
     private GGECMediaManager audioManager;
+    private NearTalkVoiceRecord myNearTalkVoiceRecord;
 
 //    private AlexaAudioExoPlayer exoPlayer;
     //TODO 這裏把microphone 的控制加上
@@ -133,15 +137,13 @@ public class AvsHandleHelper {
             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
             alexaManager.resetUserInactivityTime();
         } else if(current instanceof AvsSetEndPointItem){
+            Log.w(TAG, " handle clear queue ! AvsSetEndPointItem");
             audioManager.clear(true);
             AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
             alexaManager.setEndPoint(((AvsSetEndPointItem) current).endPoint);
-            Log.w(TAG, " handle clear queue ! AvsSetEndPointItem");
         } else if(current instanceof AvsStopCaptureItem) {
-//            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-//            alexaManager.cancelAudioRequest(); //FIXME 不应该是cancel request，应该是停止录音，但是现在用的都是close talk，在client这边判断语音是否结束，因此不需要。
-//            avsQueue.remove(current.messageID);
             Log.w(TAG, "handle AvsStopCaptureItem");
+            stopCaptureNearTalkVoiceRecord();
         } else if (current instanceof AvsSetAlertItem) {
             AvsSetAlertItem setAlertItem = (AvsSetAlertItem) current;
             boolean setSuccess = SetAlertHelper.setAlert(MyApplication.getContext(), setAlertItem
@@ -170,5 +172,23 @@ public class AvsHandleHelper {
 
     public List<Event> getAudioAndSpeechState(){
         return audioManager.getAudioAndSpeechState();
+    }
+
+    private void stopCaptureNearTalkVoiceRecord(){
+        if (myNearTalkVoiceRecord != null && !myNearTalkVoiceRecord.isInterrupted()) {
+            myNearTalkVoiceRecord.interrupt();
+            Log.d(TAG, "stopCaptureNearTalkVoiceRecord called");
+        }
+
+//        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//        alexaManager.cancelAudioRequest(); //FIXME 不应该是cancel request，应该是停止录音，但是现在用的都是close talk，在client这边判断语音是否结束，因此不需要。
+    }
+
+    public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, AsyncCallback<AvsResponse, Exception> callback){
+        stopCaptureNearTalkVoiceRecord();
+
+        myNearTalkVoiceRecord = new NearTalkVoiceRecord(path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);
+        myNearTalkVoiceRecord.start();
+        myNearTalkVoiceRecord.startHttpRequest(callback);
     }
 }

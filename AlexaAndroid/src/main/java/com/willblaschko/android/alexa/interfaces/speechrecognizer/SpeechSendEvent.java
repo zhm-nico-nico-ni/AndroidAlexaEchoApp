@@ -17,11 +17,11 @@ import okhttp3.RequestBody;
  * @author will on 5/21/2016.
  */
 public abstract class SpeechSendEvent extends SendEvent {
-
+    protected String mProfile = "CLOSE_TALK";
     @NotNull
     @Override
     protected String getEvent() {
-        return Event.getSpeechRecognizerEvent(getContextStateEvents());
+        return Event.getSpeechRecognizerEvent(mProfile, getContextStateEvents());
     }
 
     @Override

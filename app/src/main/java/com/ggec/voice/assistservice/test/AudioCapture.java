@@ -44,6 +44,7 @@ public class AudioCapture {
         try {
             startCapture();
             PipedInputStream inputStream = new PipedInputStream(BUFFER_SIZE_IN_BYTES);
+
             thread = new AudioBufferThread(inputStream, stateListener, rmsListener);
             thread.start();
             return inputStream;
