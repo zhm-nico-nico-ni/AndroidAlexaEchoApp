@@ -14,7 +14,7 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
     private volatile long actuallyLong;
 
     public NearTalkRandomAccessFile(String name) throws FileNotFoundException {
-        super(name, "rws");
+        super(name, "rwd");
     }
 
     @Override
@@ -29,25 +29,20 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
     public void cancel() {
         mCanceled = true;
         close();
-        try {
-            doActuallyClose();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public boolean isCanceled() {
         return mCanceled;
     }
 
-    public void doActuallyClose() throws IOException {
-        mIsActuallyClose = true;
-        super.close();
-    }
-
-    public boolean getIsActuallyClose(){
-        return mIsActuallyClose;
-    }
+//    public void doActuallyClose() throws IOException { // 这个调用好危险，最好别调用
+//        mIsActuallyClose = true;
+//        super.close();
+//    }
+//
+//    public boolean getIsActuallyClose(){
+//        return mIsActuallyClose;
+//    }
 
     public void setActuallyLong(long actuallyLong){
         this.actuallyLong = actuallyLong;
@@ -55,5 +50,15 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
 
     public long getActuallyLong() {
         return actuallyLong;
+    }
+
+    @Override
+    public long length() {
+        try{
+            return super.length();
+        } catch (IOException ioe){
+            ioe.printStackTrace();
+        }
+        return 0;
     }
 }

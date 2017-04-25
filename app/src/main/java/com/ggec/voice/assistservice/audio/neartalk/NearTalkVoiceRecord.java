@@ -88,7 +88,7 @@ public class NearTalkVoiceRecord extends Thread {
             mShareFile = new NearTalkRandomAccessFile(mFilePath);
         } catch (IOException e) {
             e.printStackTrace();
-            interrupt();
+            doActuallyInterrupt();
         }
 
         recordState = MyVoiceRecord.RecordState.init;
@@ -210,11 +210,21 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     @Override
+    public boolean isInterrupted() {
+        return recordState == MyVoiceRecord.RecordState.interrupt;
+    }
+
+    @Override
     public void interrupt() {
+//        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
         Log.d(TAG, "NearTalkVoiceRecord # interrupt");
         recordState = MyVoiceRecord.RecordState.interrupt;
         mShareFile.cancel();
-        super.interrupt();
+    }
+
+    public void doActuallyInterrupt(){
+        interrupt();
+        if(!super.isInterrupted()) super.interrupt();
     }
 
     public void startHttpRequest(AsyncCallback<AvsResponse, Exception> callback) {
@@ -224,8 +234,8 @@ public class NearTalkVoiceRecord extends Thread {
 
     class NearTalkFileDataRequestBody extends RequestBody {
         private NearTalkRandomAccessFile mFile;
-        int pointer = 0;
-        FileOutputStream mRecordOutputStream;
+        private int pointer = 0;
+        private FileOutputStream mRecordOutputStream;
 
         public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file) {
             if (file == null) throw new NullPointerException("content == null");
@@ -233,6 +243,7 @@ public class NearTalkVoiceRecord extends Thread {
             if (BuildConfig.DEBUG) { // Record wav
                 try {
                     mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
+                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -254,32 +265,43 @@ public class NearTalkVoiceRecord extends Thread {
 
             byte[] buffer = new byte[1024];
             Log.w(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
-            while (!mFile.isClose()) {
-                if (mFile.length() > pointer) {
+            try {
+                while (!mFile.isClose()) {
+                    if (mFile.length() > pointer) {
 
-                    if(writeToSink(buffer, sink)){
-                        break;
-                    }
+                        if (writeToSink(buffer, sink)) {
+                            break;
+                        }
 //                    Log.v(TAG, "writeToSink p:"+pointer+" l:"+mFile.length());
-                }
-            }
-            Log.w(TAG, "writeTo2 isClose:" + mFile.isClose() + " l:" + mFile.length() + " cancel:"+mFile.isCanceled());
-            if (!mFile.isCanceled()) {
-                while (pointer < mFile.length()) {
-                    if(writeToSink(buffer, sink)){
-                        break;
                     }
-                    //Log.v(TAG, "writeToSink p:"+pointer+" r:"+readCount+" l:"+mFile.length());
                 }
-                mListener.recordFinish(true, mFilePath, pointer);
-            } else {
-                mListener.recordFinish(false, mFilePath, 0);
-                Log.w(TAG, "it should cancel http request here");
+
+                if (!mFile.isCanceled()) {
+                    while (pointer < mFile.length()) {
+                        if (writeToSink(buffer, sink)) {
+                            break;
+                        }
+                        //Log.v(TAG, "writeToSink p:"+pointer+" r:"+readCount+" l:"+mFile.length());
+                    }
+                    mListener.recordFinish(true, mFilePath, pointer);
+                } else {
+                    mListener.recordFinish(false, mFilePath, 0);
+                    Log.w(TAG, "it should cancel http request here");
+                }
+//                try {
+//                    mFile.doActuallyClose(); //这里应该是异步线程调用close，会导致难以恢复的异常,千万别调用
+//                } catch (final IOException ioe) {
+//                    // ignore
+//                    ioe.printStackTrace();
+//                }
+            } catch (IOException ioe){
+                ioe.printStackTrace();
+                throw ioe;
+            } finally {
+                IOUtils.closeQuietly(mRecordOutputStream);
             }
 
-            IOUtils.closeQuietly(mRecordOutputStream);
-
-            Log.w(TAG, "writeToSink end l:" + mFile.length() + " actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
+            Log.d(TAG, "writeToSink end, actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
         }
 
         private synchronized boolean writeToSink(byte[] buffer, BufferedSink sink) throws IOException {

@@ -239,9 +239,13 @@ public class MyVoiceRecord extends Thread {
     }
 
     @Override
-    public void interrupt() {
+    public boolean isInterrupted() {
+        return recordState == MyVoiceRecord.RecordState.interrupt;
+    }
+
+    @Override
+    public void interrupt() { //warn 这里不能这的调用super的方法，否则只能返回no content
         recordState = RecordState.interrupt;
-        super.interrupt();
     }
 
 //    private int appendByteArray(byte[] left, int appendIndex, byte[] right, int rightOffset, int rightAvail) {

@@ -143,7 +143,7 @@ public class AvsHandleHelper {
             alexaManager.setEndPoint(((AvsSetEndPointItem) current).endPoint);
         } else if(current instanceof AvsStopCaptureItem) {
             Log.w(TAG, "handle AvsStopCaptureItem");
-            stopCaptureNearTalkVoiceRecord();
+            stopCaptureNearTalkVoiceRecord(true);
         } else if (current instanceof AvsSetAlertItem) {
             AvsSetAlertItem setAlertItem = (AvsSetAlertItem) current;
             boolean setSuccess = SetAlertHelper.setAlert(MyApplication.getContext(), setAlertItem
@@ -174,9 +174,14 @@ public class AvsHandleHelper {
         return audioManager.getAudioAndSpeechState();
     }
 
-    private void stopCaptureNearTalkVoiceRecord(){
+    private void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
         if (myNearTalkVoiceRecord != null && !myNearTalkVoiceRecord.isInterrupted()) {
-            myNearTalkVoiceRecord.interrupt();
+            if(justStopMic) {
+                myNearTalkVoiceRecord.interrupt();
+            } else {
+                myNearTalkVoiceRecord.doActuallyInterrupt();
+            }
+
             Log.d(TAG, "stopCaptureNearTalkVoiceRecord called");
         }
 
@@ -185,7 +190,7 @@ public class AvsHandleHelper {
     }
 
     public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, AsyncCallback<AvsResponse, Exception> callback){
-        stopCaptureNearTalkVoiceRecord();
+        stopCaptureNearTalkVoiceRecord(false);
 
         myNearTalkVoiceRecord = new NearTalkVoiceRecord(path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);
         myNearTalkVoiceRecord.start();

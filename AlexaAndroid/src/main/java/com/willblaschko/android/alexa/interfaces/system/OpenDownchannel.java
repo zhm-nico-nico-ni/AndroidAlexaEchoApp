@@ -50,9 +50,6 @@ public class OpenDownchannel extends SendEvent {
      */
     public boolean connect(String accessToken) throws IOException {
         isStop = false;
-        if (callback != null) {
-            callback.start();
-        }
 
         final Request request = new Request.Builder()
                 .url(url)
@@ -68,7 +65,7 @@ public class OpenDownchannel extends SendEvent {
             Buffer buffer = new Buffer();
             Log.d(TAG, "on response 0 :"+boundary);
             if (callback != null) {
-                callback.success(null);
+                callback.start();
             }
             while (!source.exhausted()) {
                 long all = source.read(buffer, 8192);

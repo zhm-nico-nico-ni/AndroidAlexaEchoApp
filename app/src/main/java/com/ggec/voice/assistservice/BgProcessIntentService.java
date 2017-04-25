@@ -492,13 +492,13 @@ public class BgProcessIntentService extends IntentService {
         if (!alexaManager.hasOpenDownchannel()) {
             alexaManager.sendOpenDownchannelDirective(new ImplAsyncCallback("{opendownchannel}"){
                 @Override
-                public void success(AvsResponse result) {
-                    super.success(result);
+                public void start() {
                     AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
                     alexaManager.sendSynchronizeStateEvent2(ContextUtil.getActuallyContextList(MyApplication.getContext()
                             , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState()), getCallBack("SynchronizeState"));
                     setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
                     setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
+                    Log.i(TAG, "opendownchannel connected");
                 }
 
                 @Override
