@@ -10,13 +10,13 @@ public class PlaybackError {
     public final String type;
     public final String message;
 
-    public PlaybackError(Exception ex){
-        if(ex instanceof ExoPlaybackException){
-            type  = "MEDIA_ERROR_UNKNOWN";
+    public PlaybackError(Exception ex) {
+        if (ex instanceof ExoPlaybackException) {
+            type = "MEDIA_ERROR_UNKNOWN";
         } else { // IOException
             type = "MEDIA_ERROR_INTERNAL_DEVICE_ERROR";
         }
 
-        message = ex.getMessage();
+        message = ex.getMessage() != null ? ex.getMessage() : "An unknown error occurred";
     }
 }
