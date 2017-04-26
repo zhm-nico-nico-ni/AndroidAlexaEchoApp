@@ -177,7 +177,7 @@ public class AvsHandleHelper {
     private void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
         if (myNearTalkVoiceRecord != null && !myNearTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
-                myNearTalkVoiceRecord.interrupt();
+                myNearTalkVoiceRecord.interrupt(false);
             } else {
                 myNearTalkVoiceRecord.doActuallyInterrupt();
             }
@@ -190,6 +190,7 @@ public class AvsHandleHelper {
     }
 
     public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, AsyncCallback<AvsResponse, Exception> callback){
+        Log.d(TAG, "startNearTalkVoiceRecord");
         stopCaptureNearTalkVoiceRecord(false);
 
         myNearTalkVoiceRecord = new NearTalkVoiceRecord(path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);

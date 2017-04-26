@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.TextUtils;
 
 import com.ggec.voice.assistservice.BgProcessIntentService;
 import com.ggec.voice.assistservice.BuildConfig;
@@ -377,7 +378,7 @@ public class GGECMediaManager {
     }
 
     private void sendPlaybackPauseOrResumeEvent(boolean isPause, AvsAudioItem item){
-        if(item == null) return;
+        if(item == null || TextUtils.isEmpty(item.getToken())) return;
 
         String event;
         if(isPause){
@@ -498,7 +499,8 @@ public class GGECMediaManager {
                 //listen for user input
                 mSpeechSynthesizerPlayer.stop(false);
                 mMediaAudioPlayer.stop(true);
-                avsQueue1.remove(current.messageID);
+//                avsQueue1.remove(current.messageID);
+                avsQueue1.clear();
                 mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
                 startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
             } else if (current instanceof AvsAlertPlayItem) {

@@ -101,7 +101,8 @@ public class BgProcessIntentService extends IntentService {
             textTest();
         } else if (cmd.type == 3) {
 //            alexaManager.closeOpenDownchannel(false);
-            search();
+//            search();
+            startRecord1(cmd.waitMicDelayMillSecond);
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
             final String messageId = intent.getStringExtra("messageId");
@@ -247,7 +248,7 @@ public class BgProcessIntentService extends IntentService {
                     @Override
                     public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
                         if (recordSuccess) {
-                            handler.removeCallbacks(waitMicTimeoutRunnable);
+
                         } else {
                             if (waitMicTimeOut > 0 && actuallyLong == -1) {
                                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
@@ -378,7 +379,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Set a timer", getCallBack("textTest"));//Set a timer after 15 seconds from now"  "Tell me the baseball news"
+        alexaManager.sendTextRequest("Tell me some news", getCallBack("textTest"));//Set a timer after 15 seconds from now"  "Tell me the baseball news"
     }
 
     private void search() {

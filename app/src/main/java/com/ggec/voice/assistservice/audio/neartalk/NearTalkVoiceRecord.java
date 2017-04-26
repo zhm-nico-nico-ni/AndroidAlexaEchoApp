@@ -18,7 +18,6 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -54,7 +53,7 @@ public class NearTalkVoiceRecord extends Thread {
     private MyVoiceRecord.State mState;
     private String mFilePath;
     private volatile MyVoiceRecord.RecordState recordState = MyVoiceRecord.RecordState.empty;
-    private NearTalkRandomAccessFile mShareFile;
+    private volatile NearTalkRandomAccessFile mShareFile;
     private IMyVoiceRecordListener mListener;
 
     public NearTalkVoiceRecord(String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) {
@@ -111,8 +110,8 @@ public class NearTalkVoiceRecord extends Thread {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
             while (!isInterrupted()) {
-//                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
-                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes);
+                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
+//                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes);
 
                 if (numberOfReadFloat > 0) {
                     TarsosDSPAudioFloatConverter
@@ -211,25 +210,60 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public boolean isInterrupted() {
-        return recordState == MyVoiceRecord.RecordState.interrupt;
+        return recordState == MyVoiceRecord.RecordState.interrupt || recordState == MyVoiceRecord.RecordState.stop;
     }
 
     @Override
     public void interrupt() {
 //        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
-        Log.d(TAG, "NearTalkVoiceRecord # interrupt");
-        recordState = MyVoiceRecord.RecordState.interrupt;
+//        Log.d(TAG, "NearTalkVoiceRecord # interrupt");
+//        recordState = MyVoiceRecord.RecordState.interrupt;
+//        mShareFile.cancel();
+    }
+
+    public void interrupt(boolean stopAll) {
+//        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
+
+        if(stopAll) {
+            Log.d(TAG, "NearTalkVoiceRecord # interrupt");
+            recordState = MyVoiceRecord.RecordState.interrupt;
+        } else {
+            Log.d(TAG, "NearTalkVoiceRecord # stop");
+            recordState = MyVoiceRecord.RecordState.stop;
+        }
         mShareFile.cancel();
     }
 
     public void doActuallyInterrupt(){
-        interrupt();
+        interrupt(true);
         if(!super.isInterrupted()) super.interrupt();
     }
 
-    public void startHttpRequest(AsyncCallback<AvsResponse, Exception> callback) {
+    public void startHttpRequest(final AsyncCallback<AvsResponse, Exception> callback) {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile), callback);
+        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile), new AsyncCallback<AvsResponse, Exception>(){
+            @Override
+            public void start() {
+                if(callback != null) callback.start();
+            }
+
+            @Override
+            public void success(AvsResponse result) {
+                if(callback != null) callback.success(result);
+            }
+
+            @Override
+            public void failure(Exception error) {
+                // 这里表示Http已经超时了
+                interrupt(true);
+                if(callback != null) callback.failure(error);
+            }
+
+            @Override
+            public void complete() {
+                if(callback != null) callback.complete();
+            }
+        });
     }
 
     class NearTalkFileDataRequestBody extends RequestBody {
@@ -240,14 +274,14 @@ public class NearTalkVoiceRecord extends Thread {
         public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file) {
             if (file == null) throw new NullPointerException("content == null");
             mFile = file;
-            if (BuildConfig.DEBUG) { // Record wav
-                try {
-                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
-                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
+//            if (BuildConfig.DEBUG) { // Record wav
+//                try {
+//                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
+//                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
+//                } catch (FileNotFoundException e) {
+//                    e.printStackTrace();
+//                }
+//            }
         }
 
         @Override
@@ -263,11 +297,6 @@ public class NearTalkVoiceRecord extends Thread {
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
 
-            try {
-                throw new Exception();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
             byte[] buffer = new byte[1024];
             Log.w(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
             try {
@@ -277,21 +306,19 @@ public class NearTalkVoiceRecord extends Thread {
                         if (writeToSink(buffer, sink)) {
                             break;
                         }
-//                    Log.v(TAG, "writeToSink p:"+pointer+" l:"+mFile.length());
                     }
                 }
 
-                if (!mFile.isCanceled()) {
+                if (!mFile.isCanceled() && !isInterrupted()) {
                     while (pointer < mFile.length()) {
                         if (writeToSink(buffer, sink)) {
                             break;
                         }
-                        //Log.v(TAG, "writeToSink p:"+pointer+" r:"+readCount+" l:"+mFile.length());
                     }
                     mListener.recordFinish(true, mFilePath, pointer);
                 } else {
-                    mListener.recordFinish(false, mFilePath, 0);
-                    Log.w(TAG, "it should cancel http request here");
+//                    mListener.recordFinish(false, mFilePath, 0);
+//                    Log.w(TAG, "it should cancel http request here");
                 }
 //                try {
 //                    mFile.doActuallyClose(); //这里应该是异步线程调用close，会导致难以恢复的异常,千万别调用
@@ -306,11 +333,11 @@ public class NearTalkVoiceRecord extends Thread {
                 IOUtils.closeQuietly(mRecordOutputStream);
             }
 
-            Log.d(TAG, "writeToSink end, actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
+            Log.w(TAG, "writeToSink end, actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
         }
 
         private synchronized boolean writeToSink(byte[] buffer, BufferedSink sink) throws IOException {
-            if(mFile.getActuallyLong()>0 && pointer>mFile.getActuallyLong()){
+            if (mFile.getActuallyLong() > 0 && pointer > mFile.getActuallyLong()) {
                 return true;
             }
             mFile.seek(pointer);
@@ -318,7 +345,7 @@ public class NearTalkVoiceRecord extends Thread {
 
             if (readCount > 0) {
                 sink.write(buffer, 0, readCount);
-                if(mRecordOutputStream!=null){
+                if (mRecordOutputStream != null) {
                     mRecordOutputStream.write(buffer, 0, readCount);
                 }
                 pointer += readCount;
