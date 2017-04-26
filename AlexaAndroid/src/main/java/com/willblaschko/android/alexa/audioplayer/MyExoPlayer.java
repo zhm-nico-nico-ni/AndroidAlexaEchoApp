@@ -142,7 +142,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         if (mDeleteWhenFinishPath != null && mDeleteWhenFinishPath.exists()) {
             boolean del = mDeleteWhenFinishPath.delete();
             if(del) mDeleteWhenFinishPath = null;
-            Log.d("zhm", "delete file:" + del);
+            Log.d("MyExoPlayer", "delete file:" + del);
         }
     }
 

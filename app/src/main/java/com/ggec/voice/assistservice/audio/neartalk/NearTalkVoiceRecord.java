@@ -235,6 +235,7 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     public void doActuallyInterrupt(){
+        Log.d(TAG, "NearTalkVoiceRecord # doActuallyInterrupt");
         interrupt(true);
         if(!super.isInterrupted()) super.interrupt();
     }
@@ -255,7 +256,7 @@ public class NearTalkVoiceRecord extends Thread {
             @Override
             public void failure(Exception error) {
                 // 这里表示Http已经超时了
-                interrupt(true);
+                doActuallyInterrupt();
                 if(callback != null) callback.failure(error);
             }
 
@@ -297,8 +298,8 @@ public class NearTalkVoiceRecord extends Thread {
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
 
-            byte[] buffer = new byte[1024];
-            Log.w(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
+            byte[] buffer = new byte[256];
+            Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
             try {
                 while (!mFile.isClose()) {
                     if (mFile.length() > pointer) {
@@ -306,9 +307,11 @@ public class NearTalkVoiceRecord extends Thread {
                         if (writeToSink(buffer, sink)) {
                             break;
                         }
+
                     }
                 }
 
+                Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() +"\n cancel:"+mFile.isCanceled()+ " interrupted:"+isInterrupted());
                 if (!mFile.isCanceled() && !isInterrupted()) {
                     while (pointer < mFile.length()) {
                         if (writeToSink(buffer, sink)) {
@@ -327,13 +330,11 @@ public class NearTalkVoiceRecord extends Thread {
 //                    ioe.printStackTrace();
 //                }
             } catch (IOException ioe){
-                ioe.printStackTrace();
                 throw ioe;
             } finally {
                 IOUtils.closeQuietly(mRecordOutputStream);
+                Log.d(TAG, "writeToSink end, actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
             }
-
-            Log.w(TAG, "writeToSink end, actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
         }
 
         private synchronized boolean writeToSink(byte[] buffer, BufferedSink sink) throws IOException {
