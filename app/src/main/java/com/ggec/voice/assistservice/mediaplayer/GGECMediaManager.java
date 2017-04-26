@@ -411,6 +411,7 @@ public class GGECMediaManager {
                 .setHeaderNamespace("SpeechSynthesizer")
                 .setHeaderName("SpeechState")
                 .setPayload(PayloadFactory.createSpeechStatePayload("", mSpeechSynthesizerPlayer.getCurrentPosition(), getSpeechSynthesizerState()));
+        list.add(speechSynthesizerEventBuilder.build().getEvent());
         return list;
     }
 
