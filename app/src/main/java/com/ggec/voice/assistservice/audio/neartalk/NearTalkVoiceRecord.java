@@ -310,8 +310,8 @@ public class NearTalkVoiceRecord extends Thread {
                 Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
                 try {
                     while (!mFile.isClose()) {
-                        if (mFile.length() > pointer) {
-
+                        long act = mFile.getActuallyLong();
+                        if ((act == 0 && mFile.length() > pointer) || pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
@@ -328,6 +328,10 @@ public class NearTalkVoiceRecord extends Thread {
                             }
                         }
                         mListener.recordFinish(true, mFilePath, pointer);
+                    }else if(mFile.isClose() && mFile.length() == 0){
+                        //is cancel here
+                        Log.d(TAG, "writeTo1 cancel http!");
+                        AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).cancelAudioRequest();
                     } else {
 //                    mListener.recordFinish(false, mFilePath, 0);
 //                    Log.w(TAG, "it should cancel http request here");

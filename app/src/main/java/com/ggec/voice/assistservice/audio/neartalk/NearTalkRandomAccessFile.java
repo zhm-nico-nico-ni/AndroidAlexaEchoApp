@@ -11,7 +11,7 @@ import java.io.RandomAccessFile;
 
 public class NearTalkRandomAccessFile extends RandomAccessFile {
     private boolean mIsClose, mCanceled;
-    private long actuallyLong;
+    private volatile long actuallyLong;
 
     public NearTalkRandomAccessFile(String name) throws FileNotFoundException {
         super(name, "rwd");
