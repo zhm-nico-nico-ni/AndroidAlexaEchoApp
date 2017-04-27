@@ -301,7 +301,7 @@ public class NearTalkVoiceRecord extends Thread {
 
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
-            if(mFile.isClose() && !mFile.isCanceled()){
+            if(mFile.isClose() && mByteArrayStream.size()>0){
                 Log.w(TAG, "writeTo0000:"+mByteArrayStream.size());
                 sink.write(mByteArrayStream.toByteArray());
                 sink.flush();
@@ -319,9 +319,10 @@ public class NearTalkVoiceRecord extends Thread {
                         }
                     }
 
-                    Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled() + " interrupted:" + isInterrupted());
+                    Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled()
+                            + " interrupted:" + isInterrupted() + "\n pointer:"+pointer + " act_length:"+mFile.getActuallyLong() );
                     if (!mFile.isCanceled() && !isInterrupted()) {
-                        while (pointer < mFile.length()) {
+                        while (pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
