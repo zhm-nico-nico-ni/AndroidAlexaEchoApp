@@ -276,7 +276,7 @@ public class GGECMediaManager {
             if (item != null) {
                 Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
                 AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                        .sendEvent(Event.getPlaybackNearlyFinishedEvent(item.getToken(), offsetInMilliseconds), null);
+                        .sendEvent(Event.getPlaybackNearlyFinishedEvent(item.getToken(), offsetInMilliseconds), new ImplAsyncCallback("PlaybackNearlyFinishedEvent"));
             }
         }
 
@@ -296,7 +296,7 @@ public class GGECMediaManager {
                     Log.e(TAG, "why AvsSpeakItem appear hear?");
                 }
                 if (event != null)
-                    AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
+                    AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, new ImplAsyncCallback("PlaybackComplete"));
             }
         }
     };

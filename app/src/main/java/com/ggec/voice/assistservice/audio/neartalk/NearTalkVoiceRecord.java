@@ -302,7 +302,7 @@ public class NearTalkVoiceRecord extends Thread {
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
             if(mFile.isClose() && !mFile.isCanceled()){
-                Log.w(TAG, "writeTo0000:");
+                Log.w(TAG, "writeTo0000:"+mByteArrayStream.size());
                 sink.write(mByteArrayStream.toByteArray());
                 sink.flush();
             } else {

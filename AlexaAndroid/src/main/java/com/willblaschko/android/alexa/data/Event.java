@@ -164,15 +164,15 @@ public class Event {
      * The MuteChanged event must be sent to AVS when:
      * 1) A SetMute directive is received and processed to indicate that the mute status of the product’s speaker has changed.
      * 2) Your product is muted/unmuted locally to indicate that the mute status of the product’s speaker has changed.
-     * @param isMute
+     * @param isMuted
      * @return
      */
-    public static String getMuteChangeEvent(boolean isMute, long volume){
+    public static String getMuteChangeEvent(boolean isMuted, long volume){
         Builder builder = new Builder();
         builder.setHeaderNamespace("Speaker")
                 .setHeaderName(AVSAPIConstants.Speaker.Events.MuteChanged.NAME)
                 .setHeaderMessageId(getUuid())
-                .setPayload(PayloadFactory.createSetMutePayload(isMute, volume));
+                .setPayload(PayloadFactory.createSetMutePayload(isMuted, volume));
         return builder.toJson();
     }
 

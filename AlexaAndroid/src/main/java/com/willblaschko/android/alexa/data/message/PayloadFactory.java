@@ -111,9 +111,9 @@ public class PayloadFactory {
         return payload;
     }
 
-    public static MuteChange createSetMutePayload(boolean mute, long volume){
+    public static MuteChange createSetMutePayload(boolean muted, long volume){
         MuteChange payload = new MuteChange();
-        payload.mute = mute;
+        payload.muted = muted;
         payload.volume = volume;
         return payload;
     }
