@@ -900,7 +900,7 @@ public class AlexaManager {
         }
     }
 
-    public void sendUserInactivityReport(final List<Event> contextList){
+    public void sendUserInactivityReport(){
         final long second = (SystemClock.elapsedRealtime() - mLastUserActivityElapsedTime )/ 1000;
         if(second<3) return;
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
@@ -919,7 +919,7 @@ public class AlexaManager {
                                 protected AvsResponse doInBackground(Void... params) {
                                     Log.d(TAG, "sendUserInactivityReport");
                                     new GenericSendEvent(url, token
-                                            , Event.createUserInactivityReportEvent(contextList, second)
+                                            , Event.createUserInactivityReportEvent(second)
                                             , null);
                                     return null;
                                 }

@@ -10,6 +10,7 @@ import com.ggec.voice.assistservice.BgProcessIntentService;
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
+import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.audioplayer.AlexaAudioExoPlayer;
@@ -235,7 +236,7 @@ public class GGECMediaManager {
             Log.w(TAG, "send getPlaybackFailEvent:");
             AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     .sendEvent(Event.getPlaybackFailEvent(item.getToken(), position, mMediaAudioPlayer.getStateString()
-                    , new PlaybackError(e)), null);
+                    , new PlaybackError(e)), new ImplAsyncCallback("getPlaybackFailEvent"));
         }
 
         @Override

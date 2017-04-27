@@ -6,11 +6,14 @@ import android.util.Log;
 import com.willblaschko.android.alexa.AVSAPIConstants;
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
+import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
+import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceAllItem;
+import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceEnqueuedItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsStopItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
@@ -31,7 +34,7 @@ import java.util.HashMap;
 public class DirectiveParseHelper {
     private static String TAG = "DirectiveParseHelper";
 
-    public static final AvsItem parseDirective(@NonNull Directive directive, @NonNull HashMap<String, byte[]> audio) throws IOException {
+    public static final AvsItem parseDirective(@NonNull Directive directive, @NonNull HashMap<String, byte[]> audio, AvsResponse response) throws IOException {
         AvsItem item = null;
         final String headNameSpace = directive.getHeaderNameSpace();
         final String headName = directive.getHeaderName();
@@ -71,6 +74,13 @@ public class DirectiveParseHelper {
             }
         } else if(AVSAPIConstants.AudioPlayer.NAMESPACE.equals(headNameSpace)){
             if (AVSAPIConstants.AudioPlayer.Directives.Play.NAME.equals(headName)) {
+                if(directive.isPlayBehaviorReplaceAll()){
+                    response.add(0, new AvsReplaceAllItem(directive.getPayload().getToken()));
+                }
+                if(directive.isPlayBehaviorReplaceEnqueued()){
+                    response.add(new AvsReplaceEnqueuedItem(directive.getPayload().getToken()));
+                }
+
                 String url = directive.getPayload().getAudioItem().getStream().getUrl();
                 if (url.contains("cid:")) {
                     byte[] sound = audio.get(url);

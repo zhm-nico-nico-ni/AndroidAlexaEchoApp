@@ -385,16 +385,14 @@ public class Event {
 
     /**
      *
-     * @param contextList
      * @param inactiveTimeInSeconds 单位是秒 ！！！
      * @return
      */
-    public static String createUserInactivityReportEvent(List<Event> contextList, long inactiveTimeInSeconds){ // TODO send this per hour
+    public static String createUserInactivityReportEvent(long inactiveTimeInSeconds){ // TODO send this per hour
         Event.Builder builder = new Event.Builder();
-        builder.setHeaderNamespace("System")
+        builder.setHeaderNamespace(AVSAPIConstants.System.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.System.Events.UserInactivityReport.NAME)
                 .setHeaderMessageId(getUuid())
-                .setContext(contextList)
                 .setPayload(PayloadFactory.createUserInactivityReportPayload(inactiveTimeInSeconds));
 
         return builder.toJson();

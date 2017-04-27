@@ -12,8 +12,6 @@ import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaNextCom
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPauseCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPlayCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPreviousCommandItem;
-import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceAllItem;
-import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceEnqueuedItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
@@ -135,14 +133,7 @@ public class ResponseParser {
 
             Log.i(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName());
 
-            if(directive.isPlayBehaviorReplaceAll()){
-                response.add(0, new AvsReplaceAllItem(directive.getPayload().getToken()));
-            }
-            if(directive.isPlayBehaviorReplaceEnqueued()){
-                response.add(new AvsReplaceEnqueuedItem(directive.getPayload().getToken()));
-            }
-
-            AvsItem item = DirectiveParseHelper.parseDirective(directive, audio); //FIXME 根据namespace来区分
+            AvsItem item = DirectiveParseHelper.parseDirective(directive, audio, response); //FIXME 根据namespace来区分
             if(item instanceof AvsExpectSpeechItem){
                 response.continueWakeWordDetect = false;
             }

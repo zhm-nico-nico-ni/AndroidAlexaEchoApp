@@ -165,8 +165,7 @@ public class BgProcessIntentService extends IntentService {
             }
         } else if(cmd.type == BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT){
             if(Util.isNetworkAvailable(this)) {
-                alexaManager.sendUserInactivityReport(ContextUtil.getActuallyContextList(MyApplication.getContext()
-                        , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState()));
+                alexaManager.sendUserInactivityReport();
             }
             setTimerEvent(this, USER_INACTIVITY_REPORT_JOB_ID, BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT, 60 * 60 * 1000);
         } else if(cmd.type == BackGroundProcessServiceControlCommand.REFRESH_TOKEN){
