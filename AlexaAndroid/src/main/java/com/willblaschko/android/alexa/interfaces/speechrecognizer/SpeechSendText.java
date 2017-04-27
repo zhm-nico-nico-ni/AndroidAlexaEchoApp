@@ -101,6 +101,7 @@ public abstract class SpeechSendText extends SpeechSendEvent {
         return new DataRequestBody() {
             @Override
             public void writeTo(BufferedSink sink) throws IOException {
+                Log.w(TAG, "wwwwwwwwww to");
                 sink.write(mOutputStream.toByteArray());
                 sink.flush();
             }

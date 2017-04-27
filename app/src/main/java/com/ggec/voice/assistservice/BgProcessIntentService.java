@@ -195,7 +195,7 @@ public class BgProcessIntentService extends IntentService {
         @Override
         public void run() {
             if (myVoiceRecord != null && (myVoiceRecord.isAlive() || !myVoiceRecord.isInterrupted())) {
-                myVoiceRecord.interrupt();
+                myVoiceRecord.doActuallyInterrupt();
             }
         }
     };
@@ -214,7 +214,7 @@ public class BgProcessIntentService extends IntentService {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 if (myVoiceRecord != null && !myVoiceRecord.isInterrupted()) {
-                    myVoiceRecord.interrupt();
+                    myVoiceRecord.doActuallyInterrupt();
                 }
                 myVoiceRecord = new MyVoiceRecord(MyVoiceRecord.DEFAULT_SILENT_THRESHOLD, new IMyVoiceRecordListener() {
                     @Override

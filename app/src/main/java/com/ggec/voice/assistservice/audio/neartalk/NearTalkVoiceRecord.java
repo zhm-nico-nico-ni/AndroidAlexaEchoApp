@@ -17,6 +17,7 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
 
 import org.apache.commons.io.IOUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -255,6 +256,7 @@ public class NearTalkVoiceRecord extends Thread {
 
             @Override
             public void failure(Exception error) {
+                Log.d(TAG, "startHttpRequest#failure");
                 // 这里表示Http已经超时了
                 doActuallyInterrupt();
                 if(callback != null) callback.failure(error);
@@ -271,10 +273,12 @@ public class NearTalkVoiceRecord extends Thread {
         private NearTalkRandomAccessFile mFile;
         private int pointer = 0;
         private FileOutputStream mRecordOutputStream;
+        ByteArrayOutputStream mByteArrayStream;
 
         public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file) {
             if (file == null) throw new NullPointerException("content == null");
             mFile = file;
+            mByteArrayStream = new ByteArrayOutputStream();
 //            if (BuildConfig.DEBUG) { // Record wav
 //                try {
 //                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
@@ -297,43 +301,48 @@ public class NearTalkVoiceRecord extends Thread {
 
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
+            if(mFile.isClose() && !mFile.isCanceled()){
+                Log.w(TAG, "writeTo0000:");
+                sink.write(mByteArrayStream.toByteArray());
+                sink.flush();
+            } else {
+                byte[] buffer = new byte[256];
+                Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
+                try {
+                    while (!mFile.isClose()) {
+                        if (mFile.length() > pointer) {
 
-            byte[] buffer = new byte[256];
-            Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
-            try {
-                while (!mFile.isClose()) {
-                    if (mFile.length() > pointer) {
+                            if (writeToSink(buffer, sink)) {
+                                break;
+                            }
 
-                        if (writeToSink(buffer, sink)) {
-                            break;
-                        }
-
-                    }
-                }
-
-                Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() +"\n cancel:"+mFile.isCanceled()+ " interrupted:"+isInterrupted());
-                if (!mFile.isCanceled() && !isInterrupted()) {
-                    while (pointer < mFile.length()) {
-                        if (writeToSink(buffer, sink)) {
-                            break;
                         }
                     }
-                    mListener.recordFinish(true, mFilePath, pointer);
-                } else {
+
+                    Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled() + " interrupted:" + isInterrupted());
+                    if (!mFile.isCanceled() && !isInterrupted()) {
+                        while (pointer < mFile.length()) {
+                            if (writeToSink(buffer, sink)) {
+                                break;
+                            }
+                        }
+                        mListener.recordFinish(true, mFilePath, pointer);
+                    } else {
 //                    mListener.recordFinish(false, mFilePath, 0);
 //                    Log.w(TAG, "it should cancel http request here");
-                }
+                    }
 //                try {
 //                    mFile.doActuallyClose(); //这里应该是异步线程调用close，会导致难以恢复的异常,千万别调用
 //                } catch (final IOException ioe) {
 //                    // ignore
 //                    ioe.printStackTrace();
 //                }
-            } catch (IOException ioe){
-                throw ioe;
-            } finally {
-                IOUtils.closeQuietly(mRecordOutputStream);
-                Log.d(TAG, "writeToSink end, actually_end_point:"+ mFile.getActuallyLong()+ " p:" + pointer+" diff: "+(mFile.getActuallyLong() - pointer));
+                } catch (IOException ioe) {
+                    throw ioe;
+                } finally {
+                    IOUtils.closeQuietly(mRecordOutputStream);
+                    Log.d(TAG, "writeToSink end, actually_end_point:" + mFile.getActuallyLong() + " p:" + pointer + " diff: " + (mFile.getActuallyLong() - pointer));
+                }
             }
         }
 
@@ -346,6 +355,7 @@ public class NearTalkVoiceRecord extends Thread {
 
             if (readCount > 0) {
                 sink.write(buffer, 0, readCount);
+                mByteArrayStream.write(buffer, 0, readCount);
                 if (mRecordOutputStream != null) {
                     mRecordOutputStream.write(buffer, 0, readCount);
                 }

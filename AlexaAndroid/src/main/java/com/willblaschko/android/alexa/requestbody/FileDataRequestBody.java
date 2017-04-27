@@ -1,5 +1,7 @@
 package com.willblaschko.android.alexa.requestbody;
 
+import com.ggec.voice.toollibrary.log.Log;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -35,6 +37,7 @@ public class FileDataRequestBody extends RequestBody {
 
     @Override
     public void writeTo(BufferedSink sink) throws IOException {
+        Log.w("FileDataRequestBody", "writeTo call");
         Source source = null;
         try {
             source = Okio.source(mFile);
