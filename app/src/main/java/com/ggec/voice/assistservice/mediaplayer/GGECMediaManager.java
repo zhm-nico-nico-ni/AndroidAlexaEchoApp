@@ -352,9 +352,14 @@ public class GGECMediaManager {
         } else if (response instanceof AvsStopItem) {
             // The Stop directive is sent to your client to stop playback of an audio stream.
             // Your client may receive a Stop directive as the result of a voice request, a physical button press or GUI affordance.
+            Log.w(TAG, "handle AvsStopItem");
             long position = mMediaAudioPlayer.stop(false); //注意这个,只停止audio
-            sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
+            mSpeechSynthesizerPlayer.stop(false);
+            mMediaAudioPlayer.release(false);
             avsQueue1.clear();
+            mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
+            sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
+            return true;
         } else if (response instanceof AvsMediaPlayCommandItem) { //TODO
         } else if (response instanceof AvsMediaPauseCommandItem) {
         } else if (response instanceof AvsMediaNextCommandItem) {
@@ -436,7 +441,7 @@ public class GGECMediaManager {
 
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what == 1) {
+            if (msg.what == QUEUE_STATE_START) {
                 checkIsFinish();
 
                 if (!running &&
@@ -447,12 +452,12 @@ public class GGECMediaManager {
                     checkQueueImpl();
                 }
 
-            } else if (msg.what == 2) { // STOP
+            } else if (msg.what == QUEUE_STATE_STOP) { // STOP
                 running = false;
-                this.removeMessages(1);
-                this.removeMessages(3);
+                this.removeMessages(QUEUE_STATE_START);
+                this.removeMessages(QUEUE_STATE_DO_WORK);
 
-            } else if (msg.what == 3) { // continue
+            } else if (msg.what == QUEUE_STATE_DO_WORK) { // continue
 
                 if (running) {
                     checkQueueImpl();
