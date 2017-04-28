@@ -32,16 +32,24 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private long beginOffset;
     private int mPlaybackState;
     private long bufferBeginTime;
+    private EventLogger eventLogger;
 
     public MyExoPlayer(Context context, IMyExoPlayerListener listener) {
         mListener = listener;
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector();
         mMediaPlayer = ExoPlayerFactory.newSimpleInstance(context
-                , new DefaultTrackSelector(), new DefaultLoadControl(),
+                , trackSelector, new DefaultLoadControl(),
                 null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER);
+        eventLogger = new EventLogger(trackSelector);
 
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mMediaPlayer.setPlayWhenReady(false);
         mMediaPlayer.addListener(this);
+
+        mMediaPlayer.addListener(eventLogger);
+        mMediaPlayer.setAudioDebugListener(eventLogger);
+        mMediaPlayer.setVideoDebugListener(eventLogger);
+        mMediaPlayer.setMetadataOutput(eventLogger);
     }
 
     @Override
@@ -158,6 +166,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     public void release() {
+        eventLogger = null;
         mMediaPlayer.release();
         mMediaPlayer = null;
         mListener = null;
