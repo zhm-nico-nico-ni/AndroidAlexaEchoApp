@@ -246,7 +246,7 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void startNearTalkRecord(final long waitMicTimeOut) {
-        AvsHandleHelper.getAvsHandleHelper().stopSound();
+        AvsHandleHelper.getAvsHandleHelper().pauseSound();
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
         SpeechSendAudio audio = alexaManager.getSpeechSendAudio(new IGetContextEventCallBack() {
             @Override
@@ -400,7 +400,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Play TuneIn music radio", getCallBack("textTest"));//Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news"
+        alexaManager.sendTextRequest("Play TuneIn music radio", getCallBack("textTest"));//Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
     }
 
     private void search() {

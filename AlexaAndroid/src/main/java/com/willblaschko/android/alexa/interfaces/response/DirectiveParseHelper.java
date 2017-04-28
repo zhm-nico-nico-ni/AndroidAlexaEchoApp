@@ -90,6 +90,7 @@ public class DirectiveParseHelper {
                     item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(), directive.getHeaderMessageId());
                 }
             } else if(AVSAPIConstants.AudioPlayer.Directives.Stop.NAME.equals(headName)){
+                response.continueAudio = false;
                 item = new AvsStopItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
             } else if(AVSAPIConstants.AudioPlayer.Directives.ClearQueue.NAME.equals(headName)){
                 item = new AvsClearQueueItem(directive.getHeaderMessageId(), directive.getPayload().clearBehavior);

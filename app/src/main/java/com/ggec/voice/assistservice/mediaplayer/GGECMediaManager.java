@@ -47,7 +47,7 @@ import java.util.List;
 public class GGECMediaManager {
     private final static String TAG = "GGECMediaManager";
     private final static int QUEUE_STATE_START = 1;
-    private final static int QUEUE_STATE_STOP = 2;
+    private final static int QUEUE_STATE_PAUSE = 2;
     private final static int QUEUE_STATE_DO_WORK = 3;
 
     private volatile LinkedHashMap<String, AvsItem> avsQueue1 = new LinkedHashMap<>();
@@ -346,6 +346,7 @@ public class GGECMediaManager {
             avsQueue2.put(response.messageID, response);
         } else if (response instanceof AvsSpeakItem
                 || response instanceof AvsExpectSpeechItem){
+            canPlayMedia = true;
             avsQueue1.put(response.messageID, response);
         } else if(response instanceof AvsAlertPlayItem) {
             appendAllAtBegin(response);
@@ -353,12 +354,12 @@ public class GGECMediaManager {
             // The Stop directive is sent to your client to stop playback of an audio stream.
             // Your client may receive a Stop directive as the result of a voice request, a physical button press or GUI affordance.
             Log.w(TAG, "handle AvsStopItem");
-            long position = mMediaAudioPlayer.stop(false); //注意这个,只停止audio
-            mSpeechSynthesizerPlayer.stop(false);
-            mMediaAudioPlayer.release(false);
-            avsQueue1.clear();
-            mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
+            canPlayMedia = false;
+            long position = mMediaAudioPlayer.stop(false); //注意这个,停止全部audio
+            clear(true);
+            mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_PAUSE);
             sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
+
             return true;
         } else if (response instanceof AvsMediaPlayCommandItem) { //TODO
         } else if (response instanceof AvsMediaPauseCommandItem) {
@@ -423,21 +424,23 @@ public class GGECMediaManager {
         return list;
     }
 
-    public void stopSound(){
+    public void pauseSound(){
         tryPauseMediaAudio();
         mSpeechSynthesizerPlayer.stop(false);
 //        mMediaAudioPlayer.release(false);
 //                avsQueue1.remove(current.messageID);
         avsQueue1.clear();
-        mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
+        mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_PAUSE);
     }
 
     public void continueSound(){
         mMediaPlayHandler.sendEmptyMessageDelayed(QUEUE_STATE_START, 2000);
     }
 
+
+    private boolean canPlayMedia = true;
     private Handler mMediaPlayHandler = new Handler(Looper.getMainLooper()) {
-        private boolean running, canPlayMedia = true;
+        private boolean running;
 
         @Override
         public void handleMessage(Message msg) {
@@ -452,7 +455,7 @@ public class GGECMediaManager {
                     checkQueueImpl();
                 }
 
-            } else if (msg.what == QUEUE_STATE_STOP) { // STOP
+            } else if (msg.what == QUEUE_STATE_PAUSE) { // STOP
                 running = false;
                 this.removeMessages(QUEUE_STATE_START);
                 this.removeMessages(QUEUE_STATE_DO_WORK);
@@ -519,7 +522,7 @@ public class GGECMediaManager {
 //            setState(STATE_SPEAKING);
             } else if (current instanceof AvsExpectSpeechItem) {
                 //listen for user input
-                stopSound();
+                pauseSound();
                 startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
             } else if (current instanceof AvsAlertPlayItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying()) {

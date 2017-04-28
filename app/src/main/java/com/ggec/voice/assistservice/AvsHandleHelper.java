@@ -189,8 +189,8 @@ public class AvsHandleHelper {
         }
     }
 
-    public void stopSound(){
-        audioManager.stopSound();
+    public void pauseSound(){
+        audioManager.pauseSound();
     }
 
     public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, final AsyncCallback<AvsResponse, Exception> callback){
@@ -208,6 +208,7 @@ public class AvsHandleHelper {
             @Override
             public void success(AvsResponse result) {
                 if(callback != null) callback.success(result);
+                if(result.continueAudio) audioManager.continueSound();
             }
 
             @Override
@@ -219,7 +220,6 @@ public class AvsHandleHelper {
             @Override
             public void complete() {
                 if(callback != null) callback.complete();
-                audioManager.continueSound();
             }
         }, new IGetContextEventCallBack() {
             @Override
