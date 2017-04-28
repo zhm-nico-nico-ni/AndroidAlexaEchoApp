@@ -87,7 +87,9 @@ public class DirectiveParseHelper {
                     item = new AvsPlayAudioItem(directive.getPayload().getToken(), url, sound, directive.getHeaderMessageId()
                             , directive.getPayload().getAudioItem().getStream());
                 } else {
-                    item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url, directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(), directive.getHeaderMessageId());
+                    item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url,
+                            directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(),
+                            directive.getHeaderMessageId(), directive.getPayload().getAudioItem().getStream());
                 }
             } else if(AVSAPIConstants.AudioPlayer.Directives.Stop.NAME.equals(headName)){
                 response.continueAudio = false;

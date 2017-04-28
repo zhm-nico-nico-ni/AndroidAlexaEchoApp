@@ -26,6 +26,7 @@ import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.IAvsPlayDirectiveBaseItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaNextCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPauseCommandItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaPlayCommandItem;
@@ -292,8 +293,7 @@ public class GGECMediaManager {
                         event = Event.getPlaybackFinishedEvent(item.getToken(), offset);
                     }
                 } else if (item instanceof AvsSpeakItem) {
-//                    event = Event.getSpeechFinishedEvent(item.getToken());
-                    Log.e(TAG, "why AvsSpeakItem appear hear?");
+                    Log.e(TAG, "why AvsSpeakItem appear here?");
                 }
                 if (event != null)
                     AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, new ImplAsyncCallback("PlaybackComplete"));
@@ -342,11 +342,20 @@ public class GGECMediaManager {
             clear(false);
         } else if (response instanceof AvsPlayRemoteItem
                 || response instanceof AvsPlayAudioItem) {
-            setNeedSendPlaybackStartEvent();
-            avsQueue2.put(response.messageID, response);
+            canPlayMedia = true;
+            //Note: When adding streams to your playback queue, you must ensure that the token for the
+            // active stream matches the expectedPreviousToken in the stream being added to the queue.
+            // If the tokens do not match the stream must be ignored. However,
+            // if no expectedPreviousToken is returned, the stream must be added to the queue.
+            if(((IAvsPlayDirectiveBaseItem)response).canAddToQueue()) {
+                avsQueue2.put(response.messageID, response);
+                setNeedSendPlaybackStartEvent();
+            } else {
+                Log.w(TAG, "expectedPreviousToken not equal token, ignore!");
+            }
+
         } else if (response instanceof AvsSpeakItem
                 || response instanceof AvsExpectSpeechItem){
-            canPlayMedia = true;
             avsQueue1.put(response.messageID, response);
         } else if(response instanceof AvsAlertPlayItem) {
             appendAllAtBegin(response);
@@ -389,9 +398,10 @@ public class GGECMediaManager {
 
         String event;
         if(isPause){
-            Log.d(TAG, "sendPlaybackPausedEven");
+            Log.d(TAG, "sendPlaybackPausedEvent");
             event = Event.getPlaybackPausedEvent(item.getToken(), item.pausePosition);
         } else {
+            Log.d(TAG, "sendPlaybackResumeEvent");
             event = Event.getPlaybackResumedEvent(item.getToken(), item.pausePosition);
         }
         AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);

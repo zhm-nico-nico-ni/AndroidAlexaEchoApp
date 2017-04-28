@@ -155,9 +155,7 @@ public class ResponseParser {
                 }
             }
 
-            if(item != null){
-                response.add(item);
-            }
+            response.add(item);
         }
 
         Log.i(TAG, "Parsing response took: " + (System.currentTimeMillis() - start) +" size is " + response.size());

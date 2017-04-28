@@ -1,5 +1,7 @@
 package com.willblaschko.android.alexa.interfaces.audioplayer;
 
+import android.text.TextUtils;
+
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
@@ -15,11 +17,20 @@ import java.io.IOException;
  *
  * @author will on 5/21/2016.
  */
-public class AvsPlayAudioItem extends AvsSpeakItem {
-    public Directive.Stream mStream;
+public class AvsPlayAudioItem extends AvsSpeakItem implements IAvsPlayDirectiveBaseItem {
+    public final Directive.Stream mStream;
 
     public AvsPlayAudioItem(String token, String cid, byte[] audio, String messageID, Directive.Stream stream) throws IOException {
         super(token, cid, audio, messageID, stream.getStreamFormat());
         mStream = stream;
+    }
+
+    @Override
+    public boolean canAddToQueue() {
+        if (TextUtils.isEmpty(mStream.getExpectedPreviousToken())) {
+            return true;
+        } else {
+            return TextUtils.equals(mStream.getExpectedPreviousToken(), token);
+        }
     }
 }

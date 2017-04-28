@@ -5,7 +5,7 @@ package com.willblaschko.android.alexa.interfaces;
  */
 public abstract class AvsItem {
     public transient final String messageID;
-    String token;
+    protected String token;
     public AvsItem(String token, String messageID){
         this.token = token;
         this.messageID = messageID;
