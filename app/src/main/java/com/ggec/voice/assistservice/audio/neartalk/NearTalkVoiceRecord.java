@@ -13,6 +13,7 @@ import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 
 import org.apache.commons.io.IOUtils;
@@ -237,21 +238,23 @@ public class NearTalkVoiceRecord extends Thread {
 
     public void doActuallyInterrupt(){
         Log.d(TAG, "NearTalkVoiceRecord # doActuallyInterrupt");
+//        audioRecorder.stop(); // 这里不应该会到这一步
+//        audioRecorder.release();
         interrupt(true);
         if(!super.isInterrupted()) super.interrupt();
     }
 
-    public void startHttpRequest(final AsyncCallback<AvsResponse, Exception> callback) {
+    public void startHttpRequest(final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile), new AsyncCallback<AvsResponse, Exception>(){
+        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile), new AsyncCallback<AvsResponse, Exception>() {
             @Override
             public void start() {
-                if(callback != null) callback.start();
+                if (callback != null) callback.start();
             }
 
             @Override
             public void success(AvsResponse result) {
-                if(callback != null) callback.success(result);
+                if (callback != null) callback.success(result);
             }
 
             @Override
@@ -259,14 +262,14 @@ public class NearTalkVoiceRecord extends Thread {
                 Log.d(TAG, "startHttpRequest#failure");
                 // 这里表示Http已经超时了
                 doActuallyInterrupt();
-                if(callback != null) callback.failure(error);
+                if (callback != null) callback.failure(error);
             }
 
             @Override
             public void complete() {
-                if(callback != null) callback.complete();
+                if (callback != null) callback.complete();
             }
-        });
+        },getContextEventCallBack);
     }
 
     class NearTalkFileDataRequestBody extends RequestBody {
@@ -335,6 +338,14 @@ public class NearTalkVoiceRecord extends Thread {
                     } else {
 //                    mListener.recordFinish(false, mFilePath, 0);
 //                    Log.w(TAG, "it should cancel http request here");
+                    }
+                    int actl = (int) mFile.getActuallyLong();
+                    if(actl>0 && actl<mByteArrayStream.size()){
+                        Log.d(TAG, "trying change ByteArrayStream size to "+ actl);
+                        byte[] raw = mByteArrayStream.toByteArray();
+                        mByteArrayStream.reset();
+                        mByteArrayStream.write(raw, 0, actl);
+                        Log.d(TAG, "change ByteArrayStream size to "+ mByteArrayStream.size());
                     }
 //                try {
 //                    mFile.doActuallyClose(); //这里应该是异步线程调用close，会导致难以恢复的异常,千万别调用

@@ -142,6 +142,11 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
         return mItem;
     }
 
+    public String getCurrentToken() {
+        return mItem == null ? "" :
+                (TextUtils.isEmpty(mItem.getToken()) ? "" : mItem.getToken());
+    }
+
 //    /**
 //     * Remove a callback from our AlexaAudioPlayer, this is removed from our list of callbacks
 //     * @param callback Callback that listens to changes of player state
@@ -190,6 +195,9 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @param item
      */
     private void play(@NonNull AvsItem item) {
+        if (mItem == item && mAvsRemoteCall != null && mAvsRemoteCall.isExecuted()) {
+            Log.w(TAG, "play the same item");
+        }
         mItem = item;
         //if we're playing, stop playing before we continue
         getMediaPlayer().stop();
@@ -207,10 +215,10 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 //            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getUrl()), null), null, startOffset);
             Log.d(TAG, "play remote item, url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
             if(TextUtils.isEmpty(playItem.getConvertUrl())) {
-                Flowable.fromCallable(new Callable<Uri>() {
+                Flowable.fromCallable(new Callable<String>() {
                     @Override
-                    public Uri call() throws Exception {
-                        Uri playUri = null;
+                    public String call() throws Exception {
+                        String playUri;
                         final HttpUrl urll = HttpUrl.parse(playItem.getUrl());
                         OkHttpClient okHttpClient;
                         if(urll.isHttps()){
@@ -237,36 +245,40 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
                                 HttpUrl maybeUrl = HttpUrl.parse(bodyString.trim());
                                 if(maybeUrl!= null && !TextUtils.isEmpty(maybeUrl.scheme()) && maybeUrl.scheme().contains("http")){
                                     playItem.setConvertUrl(bodyString.trim());
-                                    playUri = Uri.parse(playItem.getConvertUrl());
+                                    playUri = playItem.getConvertUrl();
                                 } else {
-                                    playUri = Uri.parse(playItem.getUrl());
+                                    playUri = playItem.getUrl();
                                 }
                             } else {
-                                playUri = Uri.parse(playItem.getUrl());
+                                playUri = playItem.getUrl();
                             }
                         } catch (Exception ex){
                             ex.printStackTrace();
-                            playUri = Uri.parse(playItem.getUrl());
+                            playUri = playItem.getUrl();
                         }
 
-                        return !mAvsRemoteCall.isCanceled() ? playUri: null;
+                        if(playUri==null) playUri = "";
+                        if(mAvsRemoteCall!= null) {
+                            return !mAvsRemoteCall.isCanceled() ? playUri : "";
+                        } else {
+                            return "";
+                        }
                     }
                 }).subscribeOn(Schedulers.io())
-                        .doOnError(new Consumer<Throwable>() {
+                        .observeOn(Schedulers.single())
+                        .subscribe(new Consumer<String>() {
+                            @Override
+                            public void accept(@io.reactivex.annotations.NonNull String s) throws Exception {
+                                if (!TextUtils.isEmpty(s)) {
+                                    getMediaPlayer().prepare(buildMediaSource(Uri.parse(s), null), null, startOffset);
+                                }
+                            }
+                        }, new Consumer<Throwable>() {
                             @Override
                             public void accept(@io.reactivex.annotations.NonNull Throwable throwable) throws Exception {
                                 bubbleUpError((Exception) throwable);
                             }
-                        })
-                        .observeOn(Schedulers.single())
-                        .subscribe(new Consumer<Uri>() {
-                    @Override
-                    public void accept(@io.reactivex.annotations.NonNull Uri s) throws Exception {
-                        if(null != s) {
-                            getMediaPlayer().prepare(buildMediaSource(s, null), null, startOffset);
-                        }
-                    }
-                });
+                        });
             } else {
                 getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getConvertUrl()), null), null, startOffset);
             }

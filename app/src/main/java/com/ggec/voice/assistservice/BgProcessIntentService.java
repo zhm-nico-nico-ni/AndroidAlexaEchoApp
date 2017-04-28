@@ -25,6 +25,7 @@ import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
@@ -41,6 +42,7 @@ import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 import okio.BufferedSink;
 
@@ -88,14 +90,20 @@ public class BgProcessIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {// TODO 修改接入OpenDownChannel ，简化这段代码
-        BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
+        final BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
 
         if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
             //start
 //            startRecord1(cmd.waitMicDelayMillSecond);
-            startNearTalkRecord(cmd.waitMicDelayMillSecond);
-//            search();
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    startNearTalkRecord(cmd.waitMicDelayMillSecond);
+                }
+            });
+
+
         } else if (cmd.type == 2) {
             //stop
             textTest();
@@ -238,6 +246,15 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void startNearTalkRecord(final long waitMicTimeOut) {
+        AvsHandleHelper.getAvsHandleHelper().stopSound();
+        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+        SpeechSendAudio audio = alexaManager.getSpeechSendAudio(new IGetContextEventCallBack() {
+            @Override
+            public List<Event> getContextEvent() {
+                return ContextUtil.getContextList(MyApplication.getContext());
+            }
+        });
+        if (audio != null) audio.cancelRequest();
         playStart(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
@@ -282,7 +299,12 @@ public class BgProcessIntentService extends IntentService {
 
 
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        SpeechSendAudio audio = alexaManager.getSpeechSendAudio();
+        SpeechSendAudio audio = alexaManager.getSpeechSendAudio(new IGetContextEventCallBack() {
+            @Override
+            public List<Event> getContextEvent() {
+                return ContextUtil.getContextList(MyApplication.getContext());
+            }
+        });
         if (audio != null) audio.cancelRequest(); // TODO 这里要cancel Http request
         if (recorder != null) {
             recorder.stop();
@@ -378,7 +400,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Tell me some news", getCallBack("textTest"));//Set a timer after 15 seconds from now"  "Tell me the baseball news"
+        alexaManager.sendTextRequest("Play TuneIn music radio", getCallBack("textTest"));//Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news"
     }
 
     private void search() {
@@ -418,12 +440,13 @@ public class BgProcessIntentService extends IntentService {
                 deleteFile(filePath);
                 continueWakeWordDetect();
                 if(error instanceof AvsAudioException) {
-                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                    alexaManager.sendEvent(Event
-                            .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
-                                    , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState())
-                            ,"", "UNEXPECTED_INFORMATION_RECEIVED", "Speech Recognize event send, but receive nothing, http response code = 204")
-                            , null);
+                    Log.e(TAG, "Speech Recognize event send, but receive nothing, http response code = 204");
+//                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                    alexaManager.sendEvent(Event
+//                            .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
+//                                    , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState())
+//                            ,"", "UNEXPECTED_INFORMATION_RECEIVED", "Speech Recognize event send, but receive nothing, http response code = 204")
+//                            , null);
                 }
             }
 
@@ -455,6 +478,7 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void playError() {
+        Log.d(TAG, "playError");
         handler.post(new Runnable() {
             @Override
             public void run() {

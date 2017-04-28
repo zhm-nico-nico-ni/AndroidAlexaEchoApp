@@ -13,6 +13,7 @@ import com.ggec.voice.toollibrary.Util;
 import com.google.android.gms.security.ProviderInstaller;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
+import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsException;
@@ -119,12 +120,12 @@ public class AlexaManager {
         return mSpeechSendText;
     }
 
-    public SpeechSendAudio getSpeechSendAudio() {
+    public SpeechSendAudio getSpeechSendAudio(@NonNull final IGetContextEventCallBack contextEventCallBack) {
         if (mSpeechSendAudio == null) {
             mSpeechSendAudio = new SpeechSendAudio(){
                 @Override
                 protected List<Event> getContextStateEvents() {
-                    return ContextUtil.getContextList(mContext);
+                    return contextEventCallBack.getContextEvent();
                 }
             };
         }
@@ -658,7 +659,12 @@ public class AlexaManager {
         }, callback);
     }
     public void sendAudioRequest(final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback){
-        sendAudioRequest("CLOSE_TALK", requestBody, callback);
+        sendAudioRequest("CLOSE_TALK", requestBody, callback, new IGetContextEventCallBack() {
+            @Override
+            public List<Event> getContextEvent() {
+                return ContextUtil.getContextList(mContext);
+            }
+        });
     }
     /**
      * Send streamed raw audio data to the Alexa servers, this is a more advanced option to bypass other issues (like only one item being able to use the mic at a time).
@@ -666,7 +672,7 @@ public class AlexaManager {
      * @param requestBody a request body that incorporates either a static byte[] write to the BufferedSink or a streamed, managed byte[] data source
      * @param callback    the state change callback
      */
-    public void sendAudioRequest(final String profile, final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+    public void sendAudioRequest(final String profile, final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback, @NonNull final IGetContextEventCallBack getContextEventCallBack) {
         //check if the user is already logged in
         mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
@@ -687,7 +693,7 @@ public class AlexaManager {
                                 protected AvsResponse doInBackground(Void... params) {
                                     mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
                                     try {
-                                        getSpeechSendAudio().sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
+                                        getSpeechSendAudio(getContextEventCallBack).sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
                                     } catch (AvsResponseException e){
                                         if(e.isUnAuthorized()){
 //TODO handle UnAuthorized

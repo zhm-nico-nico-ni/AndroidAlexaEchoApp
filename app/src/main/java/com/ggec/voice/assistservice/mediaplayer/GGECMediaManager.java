@@ -400,20 +400,35 @@ public class GGECMediaManager {
     }
 
     public List<Event> getAudioAndSpeechState(){
+        String playDirectiveToken = mMediaAudioPlayer.getCurrentToken();
+        String SpeakDirectiveToken = mSpeechSynthesizerPlayer.getCurrentToken();
         List<Event> list = new ArrayList<>();
         Event.Builder playbackEventBuilder = new Event.Builder()
                 .setHeaderNamespace("AudioPlayer")
                 .setHeaderName("PlaybackState")
-                .setPayload(PayloadFactory.createPlaybackStatePayload("", mMediaAudioPlayer.getCurrentPosition(), getAudioState()))
+                .setPayload(PayloadFactory.createPlaybackStatePayload(playDirectiveToken, mMediaAudioPlayer.getCurrentPosition(), getAudioState()))
                 ;
         list.add(playbackEventBuilder.build().getEvent());
 
         Event.Builder speechSynthesizerEventBuilder = new Event.Builder()
                 .setHeaderNamespace("SpeechSynthesizer")
                 .setHeaderName("SpeechState")
-                .setPayload(PayloadFactory.createSpeechStatePayload("", mSpeechSynthesizerPlayer.getCurrentPosition(), getSpeechSynthesizerState()));
+                .setPayload(PayloadFactory.createSpeechStatePayload(SpeakDirectiveToken, mSpeechSynthesizerPlayer.getCurrentPosition(), getSpeechSynthesizerState()));
         list.add(speechSynthesizerEventBuilder.build().getEvent());
         return list;
+    }
+
+    public void stopSound(){
+        tryPauseMediaAudio();
+        mSpeechSynthesizerPlayer.stop(false);
+//        mMediaAudioPlayer.release(false);
+//                avsQueue1.remove(current.messageID);
+        avsQueue1.clear();
+        mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
+    }
+
+    public void continueSound(){
+        mMediaPlayHandler.sendEmptyMessageDelayed(QUEUE_STATE_START, 2000);
     }
 
     private Handler mMediaPlayHandler = new Handler(Looper.getMainLooper()) {
@@ -499,11 +514,7 @@ public class GGECMediaManager {
 //            setState(STATE_SPEAKING);
             } else if (current instanceof AvsExpectSpeechItem) {
                 //listen for user input
-                mSpeechSynthesizerPlayer.stop(false);
-                mMediaAudioPlayer.stop(true);
-//                avsQueue1.remove(current.messageID);
-                avsQueue1.clear();
-                mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_STOP);
+                stopSound();
                 startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
             } else if (current instanceof AvsAlertPlayItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying()) {

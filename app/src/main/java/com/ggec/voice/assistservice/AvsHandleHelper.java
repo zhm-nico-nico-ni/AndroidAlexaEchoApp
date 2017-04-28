@@ -11,6 +11,7 @@ import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -180,21 +181,51 @@ public class AvsHandleHelper {
                 myNearTalkVoiceRecord.interrupt(false);
             } else {
                 myNearTalkVoiceRecord.doActuallyInterrupt();
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                alexaManager.cancelAudioRequest();
             }
 
             Log.d(TAG, "stopCaptureNearTalkVoiceRecord called");
         }
-
-//        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-//        alexaManager.cancelAudioRequest(); //FIXME 不应该是cancel request，应该是停止录音，但是现在用的都是close talk，在client这边判断语音是否结束，因此不需要。
     }
 
-    public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, AsyncCallback<AvsResponse, Exception> callback){
+    public void stopSound(){
+        audioManager.stopSound();
+    }
+
+    public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, final AsyncCallback<AvsResponse, Exception> callback){
         Log.d(TAG, "startNearTalkVoiceRecord");
         stopCaptureNearTalkVoiceRecord(false);
 
         myNearTalkVoiceRecord = new NearTalkVoiceRecord(path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);
         myNearTalkVoiceRecord.start();
-        myNearTalkVoiceRecord.startHttpRequest(callback);
+        myNearTalkVoiceRecord.startHttpRequest( new AsyncCallback<AvsResponse, Exception>(){
+            @Override
+            public void start() {
+                if(callback != null) callback.start();
+            }
+
+            @Override
+            public void success(AvsResponse result) {
+                if(callback != null) callback.success(result);
+            }
+
+            @Override
+            public void failure(Exception error) {
+                if(callback != null) callback.failure(error);
+                audioManager.continueSound();
+            }
+
+            @Override
+            public void complete() {
+                if(callback != null) callback.complete();
+                audioManager.continueSound();
+            }
+        }, new IGetContextEventCallBack() {
+            @Override
+            public List<Event> getContextEvent() {
+                return ContextUtil.getActuallyContextList(MyApplication.getContext(), getAudioAndSpeechState());
+            }
+        });
     }
 }

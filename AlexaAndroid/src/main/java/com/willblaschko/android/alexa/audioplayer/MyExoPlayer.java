@@ -61,15 +61,15 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        if(ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY){
-            if(bufferBeginTime > 0 && mListener != null)
+        if (ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY) {
+            if (bufferBeginTime > 0 && mListener != null)
                 mListener.onBufferReady(mMediaPlayer.getCurrentPosition(),
-                    SystemClock.elapsedRealtime() - bufferBeginTime);
+                        SystemClock.elapsedRealtime() - bufferBeginTime);
         }
 
         mPlaybackState = playbackState;
-        if (ExoPlayer.STATE_READY == playbackState){
-            if(beginOffset>0 && beginOffset < mMediaPlayer.getDuration()) {
+        if (ExoPlayer.STATE_READY == playbackState) {
+            if (beginOffset > 0 && beginOffset < mMediaPlayer.getDuration()) {
                 mMediaPlayer.seekTo(beginOffset);
             }
             mMediaPlayer.setPlayWhenReady(true);
@@ -88,9 +88,12 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
             if (mListener != null) mListener.onPrepare();
             mAsyncTask = new TaskRunnar();
             handler.postDelayed(mAsyncTask, 100);
-        } else if(ExoPlayer.STATE_BUFFERING == playbackState){
-            bufferBeginTime = SystemClock.elapsedRealtime();
-            mListener.onBuffering(mMediaPlayer.getCurrentPosition());
+        } else if (ExoPlayer.STATE_BUFFERING == playbackState) {
+            long current = SystemClock.elapsedRealtime();
+            if (bufferBeginTime > 0 && current - bufferBeginTime > 2000) {
+                mListener.onBuffering(mMediaPlayer.getCurrentPosition());
+            }
+            bufferBeginTime = current;
         }
     }
 
@@ -141,7 +144,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private void deletePlayFile() {
         if (mDeleteWhenFinishPath != null && mDeleteWhenFinishPath.exists()) {
             boolean del = mDeleteWhenFinishPath.delete();
-            if(del) mDeleteWhenFinishPath = null;
+            if (del) mDeleteWhenFinishPath = null;
             Log.d("MyExoPlayer", "delete file:" + del);
         }
     }
@@ -169,7 +172,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         long position = 0;
         try {
             position = mMediaPlayer.getCurrentPosition();
-        }catch (Exception ex){
+        } catch (Exception ex) {
             Log.e(Log.TAG_APP, "!!!!! error when get media position");
         }
         return position;
@@ -206,8 +209,6 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         }
     }
 
-    ;
-
     public interface IMyExoPlayerListener {
         void onComplete(long duration);
 
@@ -218,6 +219,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         void onProgress(float percent);
 
         void onBuffering(long offsetInMilliseconds);
+
         void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds);
     }
 }
