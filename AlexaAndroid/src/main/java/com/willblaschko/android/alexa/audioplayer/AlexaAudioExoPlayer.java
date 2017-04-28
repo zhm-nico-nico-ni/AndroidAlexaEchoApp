@@ -197,6 +197,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private void play(@NonNull AvsItem item) {
         if (mItem == item && mAvsRemoteCall != null && mAvsRemoteCall.isExecuted()) {
             Log.w(TAG, "play the same item");
+            return;
         }
         mItem = item;
         //if we're playing, stop playing before we continue
