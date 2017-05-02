@@ -52,7 +52,7 @@ public abstract class SendEvent {
         mRequestBuilder.url(url);
 
         //set our authentication access token header
-        mRequestBuilder.addHeader("Authorization", "Bearer " + accessToken);
+        mRequestBuilder.header("Authorization", "Bearer " + accessToken);
 
         mBodyBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
@@ -149,7 +149,7 @@ public abstract class SendEvent {
      */
     protected void addFormDataParts(MultipartBody.Builder builder){
 
-    };
+    }
 
     /**
      * Get our JSON {@link com.willblaschko.android.alexa.data.Event} for this call

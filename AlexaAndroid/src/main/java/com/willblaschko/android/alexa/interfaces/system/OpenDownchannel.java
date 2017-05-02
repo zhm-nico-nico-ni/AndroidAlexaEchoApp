@@ -53,7 +53,7 @@ public class OpenDownchannel extends SendEvent {
 
         final Request request = new Request.Builder()
                 .url(url)
-                .addHeader("Authorization", "Bearer " + accessToken)
+                .header("Authorization", "Bearer " + accessToken)
                 .build();
 
         Response response = null;

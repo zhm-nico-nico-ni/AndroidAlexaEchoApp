@@ -54,13 +54,13 @@ public class PingSendEvent extends SendEvent{
         mRequestBuilder.url(url);
 
         //set our authentication access token header
-        mRequestBuilder.addHeader("Authorization", "Bearer " + accessToken);
+        mRequestBuilder.header("Authorization", "Bearer " + accessToken);
     }
 
     @NotNull
     @Override
     public String getEvent() {
-        return null;
+        return "";
     }
 
 
