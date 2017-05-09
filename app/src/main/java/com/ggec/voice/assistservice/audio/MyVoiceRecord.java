@@ -248,6 +248,14 @@ public class MyVoiceRecord extends Thread {
         recordState = RecordState.interrupt;
     }
 
+    public void doActuallyInterrupt(){
+        Log.d(TAG, "NearTalkVoiceRecord # doActuallyInterrupt");
+//        audioRecorder.stop(); // 这里不应该会到这一步
+//        audioRecorder.release();
+        interrupt();
+        if(!super.isInterrupted()) super.interrupt();
+    }
+
 //    private int appendByteArray(byte[] left, int appendIndex, byte[] right, int rightOffset, int rightAvail) {
 //        if (appendIndex + rightAvail > left.length) {
 //            throw new IndexOutOfBoundsException("not enough! left:" + left.length + ", max is " + appendIndex + rightAvail);
