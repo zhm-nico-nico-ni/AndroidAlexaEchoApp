@@ -112,8 +112,8 @@ public class NearTalkVoiceRecord extends Thread {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
             while (!isInterrupted()) {
-                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
-//                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes);
+//                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
+                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes);
 
                 if (numberOfReadFloat > 0) {
                     TarsosDSPAudioFloatConverter
