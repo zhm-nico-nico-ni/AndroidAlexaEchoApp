@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
+import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.wakeword.IWakeWordAgentEvent;
 import com.ggec.voice.assistservice.wakeword.WakeWordAgent;
@@ -23,6 +24,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent {
     private static final String TAG = "AssistService";
 
     private WakeWordAgent mWakeWordAgent;
+    private DeviceLinkHandler mDeviceLinkHandler;
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -41,12 +43,15 @@ public class AssistService extends Service implements IWakeWordAgentEvent {
     public void onCreate() {
         super.onCreate();
 
+        Log.i(TAG, "AssistService # onCreate");
         startForeground(21940, new Notification.Builder(this)
                 .setContentText("GGEC Assist Service")
                 .build());
 
 //        mWakeWordAgent = new CumSphinxWakeWordAgent(this, this);
 //        mWakeWordAgent.continueSearch();
+
+        mDeviceLinkHandler = new DeviceLinkHandler();
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
     }
 

@@ -1,2 +1,2 @@
-include ':app', ':auth', ':toollibrary', ':wakewordassest', /*':avs', */ ':AlexaAndroid1', ':wakeworddetectmodule'
+include ':app', ':auth', ':toollibrary', ':wakewordassest', ':bluetoothconnect', /*':avs', */ ':AlexaAndroid1', ':wakeworddetectmodule'
 project(':AlexaAndroid1').projectDir = new File('AlexaAndroid')

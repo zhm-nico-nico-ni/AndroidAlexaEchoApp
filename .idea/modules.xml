@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/AssistService.iml" filepath="$PROJECT_DIR$/AssistService.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/auth/auth.iml" filepath="$PROJECT_DIR$/auth/auth.iml" />
+      <module fileurl="file://$PROJECT_DIR$/bluetoothconnect/bluetoothconnect.iml" filepath="$PROJECT_DIR$/bluetoothconnect/bluetoothconnect.iml" />
       <module fileurl="file://$PROJECT_DIR$/toollibrary/toollibrary.iml" filepath="$PROJECT_DIR$/toollibrary/toollibrary.iml" />
       <module fileurl="file://$PROJECT_DIR$/wakewordassest/wakewordassest.iml" filepath="$PROJECT_DIR$/wakewordassest/wakewordassest.iml" />
       <module fileurl="file://$PROJECT_DIR$/wakeworddetectmodule/wakeworddetectmodule.iml" filepath="$PROJECT_DIR$/wakeworddetectmodule/wakeworddetectmodule.iml" />

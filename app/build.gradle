@@ -101,4 +101,5 @@ dependencies {
     compile project(':AlexaAndroid1')
     compile project(':wakewordassest')
     compile project(':wakeworddetectmodule')
+    compile project(':bluetoothconnect')
 }
