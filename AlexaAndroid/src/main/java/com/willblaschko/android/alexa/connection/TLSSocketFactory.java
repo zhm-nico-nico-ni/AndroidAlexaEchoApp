@@ -1,7 +1,5 @@
 package com.willblaschko.android.alexa.connection;
 
-import com.ggec.voice.toollibrary.log.Log;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -10,7 +8,6 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -71,20 +68,16 @@ public class TLSSocketFactory extends SSLSocketFactory {
     private static Socket enableTLSOnSocket(Socket socket) {
         if (socket instanceof SSLSocket) { // skip the fix if server doesn't provide there TLS version
             SSLSocket sslSocket = (SSLSocket) socket;
-            boolean isTlsServer =isTLSServerEnabled(sslSocket);
-            Log.i(Log.TAG_APP,"is tls enable:"+isTlsServer+ " getEnabledProtocols:" + Arrays.toString(sslSocket.getEnabledProtocols())
-                    +"\ngetSupportedCipherSuites:"+Arrays.toString(sslSocket.getSupportedCipherSuites()));
-            if(isTlsServer){
+            boolean isTlsServer = isTLSServerEnabled(sslSocket);
+            if (isTlsServer) {
                 sslSocket.setEnabledProtocols(new String[]{"TLSv1.2"});
                 sslSocket.setEnabledCipherSuites(new String[]{CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256.javaName()});
-                Log.i(Log.TAG_APP,"2 getEnabledProtocols:" + Arrays.toString(sslSocket.getEnabledProtocols()));
             }
         }
         return socket;
     }
 
     private static boolean isTLSServerEnabled(SSLSocket sslSocket) {
-        Log.i(Log.TAG_APP, "__prova__ :: " + Arrays.toString(sslSocket.getSupportedProtocols()));
         for (String protocol : sslSocket.getSupportedProtocols()) {
             if (protocol.equals(TLS_v1_1) || protocol.equals(TLS_v1_2)) {
                 return true;
@@ -93,7 +86,7 @@ public class TLSSocketFactory extends SSLSocketFactory {
         return false;
     }
 
-    public static X509TrustManager getTrustManger(){
+    public static X509TrustManager getTrustManger() {
         return new X509TrustManager() {
             @Override
             public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
