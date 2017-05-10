@@ -29,10 +29,10 @@ import okhttp3.TlsVersion;
  */
 public class ClientUtil {
 
-    private static OkHttpClient mHttp1Client;
-    private static OkHttpClient mHttp2Client;
+    private static volatile OkHttpClient mHttp1Client;
+    private static volatile OkHttpClient mHttp2Client;
 
-    public static OkHttpClient getHttp2Client(){
+    public static synchronized OkHttpClient getHttp2Client(){
         if(mHttp2Client == null) {
             OkHttpClient.Builder client = new OkHttpClient.Builder();
             if (Build.VERSION.SDK_INT >= 16 && Build.VERSION.SDK_INT < 25) {
@@ -99,7 +99,7 @@ public class ClientUtil {
         return mHttp2Client;
     }
 
-    public static OkHttpClient getHttp1Client(){
+    public static synchronized OkHttpClient getHttp1Client(){
         if(mHttp1Client == null) {
             OkHttpClient.Builder client = new OkHttpClient.Builder();
             if (Build.VERSION.SDK_INT >= 16 && Build.VERSION.SDK_INT < 25) {
