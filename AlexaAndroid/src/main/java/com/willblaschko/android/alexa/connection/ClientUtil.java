@@ -105,6 +105,7 @@ public class ClientUtil {
             if (Build.VERSION.SDK_INT >= 16 && Build.VERSION.SDK_INT < 25) {
                 try {
                     SSLContext sc = SSLContext.getInstance("TLSv1.2");
+                    sc.init(null, null, null);
                     client.sslSocketFactory(new TLSSocketFactory(sc.getSocketFactory()), TLSSocketFactory.getTrustManger());
 
                 } catch (Exception exc) {

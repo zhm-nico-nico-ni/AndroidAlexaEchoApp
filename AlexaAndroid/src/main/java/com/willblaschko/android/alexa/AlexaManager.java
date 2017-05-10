@@ -65,6 +65,7 @@ public class AlexaManager {
     private boolean mIsRecording = false;
     private long mLastUserActivityElapsedTime;
     private String mEndPoint;
+    private Handler mMainHandler = new Handler(Looper.getMainLooper());
 
     private AlexaManager(Context context, String productId) {
         resetUserInactivityTime();
@@ -184,8 +185,10 @@ public class AlexaManager {
                         callback.onSuccess();
                     }
                 } else {
-                    //otherwise start the authorization process
-                    mAuthorizationManager.authorizeUser(callback);
+                    if(BuildConfig.ENABLE_LOCAL_AUTH) {
+                        //otherwise start the authorization process
+                        mAuthorizationManager.authorizeUser(callback);
+                    }
                 }
             }
 
@@ -224,14 +227,21 @@ public class AlexaManager {
     }
 
     private volatile boolean isSendingOpenDownchannelDirective;
+    private volatile AsyncCallback<AvsResponse, Exception> pOpenDownChannelCallback;
+    private Runnable retryOpenDownChannel = new Runnable() {
+        @Override
+        public void run() {
+            sendOpenDownchannelDirective(pOpenDownChannelCallback);
+        }
+    };
     /**
      * Send a get {@link com.willblaschko.android.alexa.data.Directive} request to the Alexa server to open a persistent connection
      */
-    public void sendOpenDownchannelDirective(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
+    public void sendOpenDownchannelDirective(@Nullable AsyncCallback<AvsResponse, Exception> callback) {
         if (openDownchannel != null || isSendingOpenDownchannelDirective) {
             return;
         }
-
+        pOpenDownChannelCallback = callback;
         isSendingOpenDownchannelDirective = true;
         Log.d(TAG, "sendOpenDownchannelDirective begin");
         //check if the user is already logged in
@@ -239,9 +249,10 @@ public class AlexaManager {
 
             @Override
             public void success(Boolean result) {
+
                 if (result) {
                     //if the user is logged in
-                    openDownchannel = new OpenDownchannel(getDirectivesUrl(), callback);
+                    openDownchannel = new OpenDownchannel(getDirectivesUrl(), pOpenDownChannelCallback);
                     isSendingOpenDownchannelDirective = false;
                     //get our access token
                     TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
@@ -274,31 +285,10 @@ public class AlexaManager {
                         public void onFailure(Throwable e) {
                             reconnect(false);
                         }
-
-                        private void reconnect(boolean canceled){
-                            isSendingOpenDownchannelDirective = false;
-                            openDownchannel = null;
-                            Log.d(TAG, "onPostExecute sendOpenDownchannel Directive :"+canceled);
-                            if(!Util.isNetworkAvailable(mContext)){
-                                canceled = true;
-                            }
-                            if (!canceled) {
-                                try {
-                                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            sendOpenDownchannelDirective(callback);
-                                        }
-                                    }, 5000);
-                                } catch (RuntimeException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
                     });
                 } else {
                     //if the user is not logged in, log them in and then call the function again
-                    logIn(new ImplAuthorizationCallback<AvsResponse>(null) {
+                    logIn(new ImplAuthorizationCallback<AvsResponse>(pOpenDownChannelCallback) {
                         @Override
                         public void onSuccess() {
                             isSendingOpenDownchannelDirective = false;
@@ -314,6 +304,23 @@ public class AlexaManager {
                 }
             }
 
+            @Override
+            public void failure(Throwable error) {
+                if(!BuildConfig.ENABLE_LOCAL_AUTH) reconnect(false);
+            }
+
+            private void reconnect(boolean canceled){
+                isSendingOpenDownchannelDirective = false;
+                openDownchannel = null;
+                Log.d(TAG, "onPostExecute sendOpenDownchannel Directive :"+canceled);
+                if(!Util.isNetworkAvailable(mContext)){
+                    canceled = true;
+                }
+                if (!canceled) {
+                    mMainHandler.removeCallbacks(retryOpenDownChannel);
+                    mMainHandler.postDelayed(retryOpenDownChannel, 5000);
+                }
+            }
         });
     }
 

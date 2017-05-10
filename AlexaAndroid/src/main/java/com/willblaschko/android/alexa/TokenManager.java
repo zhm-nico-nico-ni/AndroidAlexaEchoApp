@@ -140,7 +140,8 @@ public class TokenManager {
             }else{
                 //if it is expired but we have a refresh token, get a new token
                 if(preferences.contains(PREF_REFRESH_TOKEN)){
-                    getRefreshToken(authorizationManager, context, callback, preferences.getString(PREF_REFRESH_TOKEN, ""));
+                    String clientId = BuildConfig.ENABLE_LOCAL_AUTH ? authorizationManager.getClientId() : preferences.getString(PREF_CLIENT_ID, "");
+                    getRefreshToken(clientId, context, callback, preferences.getString(PREF_REFRESH_TOKEN, ""));
                     return;
                 }
             }
@@ -154,18 +155,19 @@ public class TokenManager {
         SharedPreferences preferences = Util.getPreferences(context.getApplicationContext());
         String refreshToken = preferences.getString(PREF_REFRESH_TOKEN, "");
         if (!TextUtils.isEmpty(refreshToken)){
-            getRefreshToken(authorizationManager, context, callback, refreshToken);
+            String clientId = BuildConfig.ENABLE_LOCAL_AUTH ? authorizationManager.getClientId() : preferences.getString(PREF_CLIENT_ID, "");
+            getRefreshToken(clientId, context, callback, refreshToken);
         }
     }
 
     /**
      * Get a new refresh token from the Amazon server to replace the expired access token that we currently have
-     * @param authorizationManager
+     * @param clientId
      * @param context
      * @param callback
      * @param refreshToken the refresh token we have stored in local cache (sharedPreferences)
      */
-    private static void getRefreshToken(@NotNull AmazonAuthorizationManager authorizationManager, @NotNull final Context context, @NotNull final TokenCallback callback, String refreshToken){
+    private static void getRefreshToken(@NotNull String clientId, @NotNull final Context context, @NotNull final TokenCallback callback, String refreshToken){
         //this url shouldn't be hardcoded, but it is, it's the Amazon auth access token endpoint
         String url = "https://api.amazon.com/auth/O2/token";
 
@@ -174,7 +176,7 @@ public class TokenManager {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(ARG_GRANT_TYPE, "refresh_token")
                 .add(ARG_REFRESH_TOKEN, refreshToken);
-            builder.add(ARG_CLIENT_ID, authorizationManager.getClientId());
+            builder.add(ARG_CLIENT_ID, clientId);
 
 
         OkHttpClient client = ClientUtil.getHttp1Client();
