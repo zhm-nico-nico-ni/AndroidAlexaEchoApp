@@ -25,6 +25,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.IOException;
@@ -48,9 +49,9 @@ public class BluetoothChatService {
 
     // Unique UUID for this application
     private static final UUID MY_UUID_SECURE =
-            UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+            UUID.fromString("fa87c0d0-afab-12de-8a39-0800200c9a76");
     private static final UUID MY_UUID_INSECURE =
-            UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
+            UUID.fromString("8ce255c0-400a-1ae0-ac64-0800200c9a67");
 
     // Member fields
     private final BluetoothAdapter mAdapter;
@@ -100,17 +101,25 @@ public class BluetoothChatService {
         return mState;
     }
 
+    @SuppressLint("MissingPermission")
+    public void setDeviceName(String bluetoothDeviceName){
+        if (mAdapter != null && !TextUtils.isEmpty(bluetoothDeviceName)) {
+            boolean setNameRes = mAdapter.setName("GGEC_MEDIA_BOX");
+            Log.d(TAG, "set blue tooth dev name (" + bluetoothDeviceName + ") res: " + setNameRes);
+        }
+    }
+
     /**
      * Start the chat service. Specifically start AcceptThread to begin a
      * session in listening (server) mode. Called by the Activity onResume()
      */
     public synchronized void start() {
-        if(mAdapter==null){
+        if (mAdapter == null) {
             Log.e(TAG, "no blue tooth");
             return;
         }
-        Log.d(TAG, "start");
 
+        Log.d(TAG, "start");
         // Cancel any thread attempting to make a connection
         if (mConnectThread != null) {
             mConnectThread.cancel();
@@ -261,7 +270,7 @@ public class BluetoothChatService {
         return r.write(out);
     }
 
-    public synchronized boolean isConnected(){
+    public synchronized boolean isConnected() {
         return mState == STATE_CONNECTED;
     }
 
@@ -339,7 +348,7 @@ public class BluetoothChatService {
                     "BEGIN mAcceptThread" + this);
             setName("AcceptThread" + mSocketType);
 
-            BluetoothSocket socket = null;
+            BluetoothSocket socket;
 
             // Listen to the server socket if we're not connected
             while (mState != STATE_CONNECTED) {
