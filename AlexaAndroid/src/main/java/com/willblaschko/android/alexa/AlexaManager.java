@@ -54,7 +54,7 @@ public class AlexaManager {
 
     private static final String TAG = "AlexaManager";
 
-    private static AlexaManager mInstance;
+    private static volatile AlexaManager mInstance;
     private AuthorizationManager mAuthorizationManager;
     private SpeechSendVoice mSpeechSendVoice;
     private SpeechSendText mSpeechSendText;
@@ -93,7 +93,7 @@ public class AlexaManager {
 //        }
 //    };
 
-    public static AlexaManager getInstance(Context context, String productId) {
+    public static synchronized AlexaManager getInstance(Context context, String productId) {
         if (mInstance == null) {
             mInstance = new AlexaManager(context, productId);
         }

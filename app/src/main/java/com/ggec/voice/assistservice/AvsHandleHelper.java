@@ -36,7 +36,7 @@ import java.util.List;
 
 public class AvsHandleHelper {
     private static final String TAG = "com.ggec.voice.assistservice.AvsHandleHelper";
-    private static AvsHandleHelper sAvsHandleHelper;
+    private static volatile AvsHandleHelper sAvsHandleHelper;
     private GGECMediaManager audioManager;
     private NearTalkVoiceRecord myNearTalkVoiceRecord;
 
