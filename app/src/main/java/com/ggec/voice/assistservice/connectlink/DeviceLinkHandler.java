@@ -16,6 +16,7 @@ import com.ggec.voice.bluetoothconnect.proto.impl.SendAuth2DeviceAck;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendAuth2DeviceReq;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceAck;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceReq;
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.SharedPreferenceUtil;
 
 import java.nio.ByteBuffer;
@@ -77,23 +78,30 @@ public class DeviceLinkHandler extends LinkHandler {
             GetDeviceWifiScanRes ack = new GetDeviceWifiScanRes();
             ack.seqId = received.seqId;
             ack.resCode = ProtoResult.SUCCESS;
-//            ack.data.add();
+            ack.data.addAll(WifiControl.getInstance(MyApplication.getContext()).getScanResult());
 
             sendData(ack);
         } else if (uri == ProtoURI.SendWifiConfig2DeviceReqURI) {
-            SendWifiConfig2DeviceReq req = new SendWifiConfig2DeviceReq();
+            final SendWifiConfig2DeviceReq req = new SendWifiConfig2DeviceReq();
             try {
                 req.unMarshall(data);
 
             } catch (InvalidProtocolData invalidProtocolData) {
                 invalidProtocolData.printStackTrace();
+                return;
             }
-
-            SendWifiConfig2DeviceAck ack = new SendWifiConfig2DeviceAck();
-            ack.resCode = ProtoResult.SUCCESS;
-            ack.seqId = req.seqId;
-
-            sendData(ack);
+            Log.d(TAG, "recv SendWifiConfig2DeviceReq, try connect Wifi");
+            WifiControl.getInstance(MyApplication.getContext()).addNetwork(req.ssid, req.password,
+                    req.capabilities, new WifiControl.IAddNetWorkCallBack() {
+                @Override
+                public void onConnect(byte result, String msg) {
+                    SendWifiConfig2DeviceAck ack = new SendWifiConfig2DeviceAck();
+                    ack.resCode = result;
+                    ack.seqId = req.seqId;
+                    ack.message = msg;
+                    sendData(ack);
+                }
+            });
         }
     }
 

@@ -19,6 +19,7 @@ public class SendWifiConfig2DeviceReq implements IProtocol {
     public int seqId;
     public String ssid;
     public String password;
+    public String capabilities; //
 
     @Override
     public int uri() {
@@ -35,6 +36,7 @@ public class SendWifiConfig2DeviceReq implements IProtocol {
         return 4 +
                 ProtoHelper.calcMarshallSize(ssid)
                 + ProtoHelper.calcMarshallSize(password)
+                + ProtoHelper.calcMarshallSize(capabilities)
                 ;
     }
 
@@ -43,6 +45,7 @@ public class SendWifiConfig2DeviceReq implements IProtocol {
         out.putInt(seqId);
         ProtoHelper.marshall(out, ssid);
         ProtoHelper.marshall(out, password);
+        ProtoHelper.marshall(out, capabilities);
         return out;
     }
 
@@ -52,6 +55,7 @@ public class SendWifiConfig2DeviceReq implements IProtocol {
             seqId = in.getInt();
             ssid = ProtoHelper.unMarshallShortString(in);
             password = ProtoHelper.unMarshallShortString(in);
+            capabilities = ProtoHelper.unMarshallShortString(in);
         } catch (BufferUnderflowException e) {
             throw new InvalidProtocolData(e);
         }

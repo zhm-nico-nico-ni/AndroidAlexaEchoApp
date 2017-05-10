@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 public class WifiScanInfo implements Marshallable {
 
     public String ssid;
-    public int db;
+    public int level; //The detected signal level in dBm, also known as the RSSI
     public String authtype;
 
     @Override
@@ -25,7 +25,7 @@ public class WifiScanInfo implements Marshallable {
     @Override
     public ByteBuffer marshall(ByteBuffer out) {
         ProtoHelper.marshall(out, ssid);
-        out.putInt(db);
+        out.putInt(level);
         ProtoHelper.marshall(out, authtype);
         return out;
     }
@@ -34,7 +34,7 @@ public class WifiScanInfo implements Marshallable {
     public void unMarshall(ByteBuffer in) throws InvalidProtocolData {
         try{
             ssid = ProtoHelper.unMarshallShortString(in);
-            db = in.getInt();
+            level = in.getInt();
             authtype = ProtoHelper.unMarshallShortString(in);
         } catch (BufferUnderflowException e){
             throw new InvalidProtocolData(e);
