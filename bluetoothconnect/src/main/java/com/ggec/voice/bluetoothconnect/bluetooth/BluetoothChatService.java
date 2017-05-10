@@ -16,6 +16,7 @@
 
 package com.ggec.voice.bluetoothconnect.bluetooth;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
@@ -104,6 +105,10 @@ public class BluetoothChatService {
      * session in listening (server) mode. Called by the Activity onResume()
      */
     public synchronized void start() {
+        if(mAdapter==null){
+            Log.e(TAG, "no blue tooth");
+            return;
+        }
         Log.d(TAG, "start");
 
         // Cancel any thread attempting to make a connection
@@ -167,6 +172,7 @@ public class BluetoothChatService {
      * @param socket The BluetoothSocket on which the connection was made
      * @param device The BluetoothDevice that has been connected
      */
+    @SuppressLint("MissingPermission")
     public synchronized void connected(BluetoothSocket socket, BluetoothDevice
             device, final String socketType) {
         Log.d(TAG, "connected, Socket Type:" + socketType);
@@ -307,6 +313,7 @@ public class BluetoothChatService {
         private final BluetoothServerSocket mmServerSocket;
         private String mSocketType;
 
+        @SuppressLint("MissingPermission")
         public AcceptThread(boolean secure) {
             BluetoothServerSocket tmp = null;
             mSocketType = secure ? "Secure" : "Insecure";
@@ -393,6 +400,7 @@ public class BluetoothChatService {
         private final BluetoothDevice mmDevice;
         private String mSocketType;
 
+        @SuppressLint("MissingPermission")
         public ConnectThread(BluetoothDevice device, boolean secure) {
             mmDevice = device;
             BluetoothSocket tmp = null;
@@ -415,6 +423,7 @@ public class BluetoothChatService {
             mState = STATE_CONNECTING;
         }
 
+        @SuppressLint("MissingPermission")
         public void run() {
             Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
             setName("ConnectThread" + mSocketType);

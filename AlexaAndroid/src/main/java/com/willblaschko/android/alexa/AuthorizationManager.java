@@ -14,6 +14,7 @@ import com.amazon.identity.auth.device.authorization.api.AuthzConstants;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
+import com.willblaschko.android.alexa.keep.TokenResponse;
 import com.willblaschko.android.alexa.utility.Util;
 
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +40,7 @@ public class AuthorizationManager {
     private AuthorizationCallback mCallback;
 
 
-    private static final String CODE_VERIFIER = "code_verifier";
+    public static final String CODE_VERIFIER = "code_verifier";
 
     /**
      * Create a new Auth Manager based on the supplied product id
@@ -69,22 +70,6 @@ public class AuthorizationManager {
      * @param callback
      */
     public void checkLoggedIn(Context context, final AsyncCallback<Boolean, Throwable> callback){
-//TODO
-//        Scope[] scopes = {ProfileScope.profile(), ProfileScope.postalCode()};
-//        com.amazon.identity.auth.device.api.authorization.AuthorizationManager.getToken(context, scopes, new Listener<AuthorizeResult, AuthError>() {
-//            @Override
-//            public void onSuccess(AuthorizeResult result) {
-//                callback.success(result.getAccessToken() != null);
-//            }
-//
-//            @Override
-//            public void onError(AuthError ae) {
-//                /* The user is not signed in */
-//                Log.i(TAG, "on getToken error", ae);
-//                callback.success(false);
-//                callback.failure(ae);
-//            }
-//        });
 
         TokenManager.getAccessToken(mAuthManager, context, new ImplTokenCallback() {
             @Override
@@ -133,6 +118,11 @@ public class AuthorizationManager {
         options.putString(AuthzConstants.BUNDLE_KEY.CODE_CHALLENGE.val, getCodeChallenge());
         options.putString(AuthzConstants.BUNDLE_KEY.CODE_CHALLENGE_METHOD.val, "S256");
 
+        try {
+            Log.d(TAG,"client 1 id:"+mAuthManager.getClientId() + "\n redirecturi:"+mAuthManager.getRedirectUri());
+        } catch (AuthError authError) {
+            authError.printStackTrace();
+        }
         mAuthManager.authorize(APP_SCOPES, options, authListener);
     }
 
@@ -154,7 +144,7 @@ public class AuthorizationManager {
 
             TokenManager.getAccessToken(mContext, authCode, getCodeVerifier(), mAuthManager, new TokenManager.TokenResponseCallback() {
                 @Override
-                public void onSuccess(TokenManager.TokenResponse response) {
+                public void onSuccess(TokenResponse response) {
                     if(mCallback != null){
                         mCallback.onSuccess();
                     }
@@ -211,8 +201,8 @@ public class AuthorizationManager {
      * @return the String code verifier
      */
     private String getCodeVerifier(){
-        if(Util.getPreferences(mContext).contains(CODE_VERIFIER)){
-            return Util.getPreferences(mContext).getString(CODE_VERIFIER, "");
+        if(SharedPreferenceUtil.contains(mContext, CODE_VERIFIER)){
+            return SharedPreferenceUtil.getStringByKey(mContext, CODE_VERIFIER, "");
         }
 
         //no verifier found, make and store the new one

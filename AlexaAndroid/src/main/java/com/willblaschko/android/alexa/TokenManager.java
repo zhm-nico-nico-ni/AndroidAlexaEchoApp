@@ -11,6 +11,7 @@ import com.amazon.identity.auth.device.AuthError;
 import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationManager;
 import com.google.gson.Gson;
 import com.willblaschko.android.alexa.connection.ClientUtil;
+import com.willblaschko.android.alexa.keep.TokenResponse;
 import com.willblaschko.android.alexa.utility.Util;
 
 import org.jetbrains.annotations.NotNull;
@@ -34,9 +35,6 @@ public class TokenManager {
 
     private final static String TAG = "TokenManager";
 
-    private static String REFRESH_TOKEN;
-    private static String ACCESS_TOKEN;
-
     private final static String ARG_GRANT_TYPE = "grant_type";
     private final static String ARG_CODE = "code";
     private final static String ARG_REDIRECT_URI = "redirect_uri";
@@ -45,6 +43,7 @@ public class TokenManager {
     private final static String ARG_REFRESH_TOKEN = "refresh_token";
 
 
+    public final static String PREF_CLIENT_ID = "pref_client_id";
     public final static String PREF_ACCESS_TOKEN = "access_token";
     public final static String PREF_REFRESH_TOKEN = "refresh_token";
     public final static String PREF_TOKEN_EXPIRES = "token_expires";
@@ -231,29 +230,14 @@ public class TokenManager {
      * @param tokenResponse
      */
     private static void saveTokens(Context context, TokenResponse tokenResponse){
-        REFRESH_TOKEN = tokenResponse.refresh_token;
-        ACCESS_TOKEN = tokenResponse.access_token;
         Log.d(TAG, "saveTokens " + tokenResponse.expires_in);
-
-        SharedPreferences.Editor preferences = Util.getPreferences(context.getApplicationContext()).edit();
-        preferences.putString(PREF_ACCESS_TOKEN, ACCESS_TOKEN);
-        preferences.putString(PREF_REFRESH_TOKEN, REFRESH_TOKEN);
-        //comes back in seconds, needs to be milis
-        preferences.putLong(PREF_TOKEN_EXPIRES, (System.currentTimeMillis() + tokenResponse.expires_in * 1000));
-        preferences.commit();
+        SharedPreferenceUtil.putAuthToken(context, tokenResponse.access_token, tokenResponse.refresh_token,
+                (System.currentTimeMillis() + tokenResponse.expires_in * 1000));
     }
 
     public interface TokenResponseCallback {
         void onSuccess(TokenResponse response);
         void onFailure(Exception error);
-    }
-
-    //for JSON parsing of our token responses
-    public static class TokenResponse{
-        public String access_token;
-        public String refresh_token;
-        public String token_type;
-        public long expires_in;
     }
 
     public interface TokenCallback{

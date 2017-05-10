@@ -16,6 +16,7 @@ import com.ggec.voice.bluetoothconnect.proto.impl.SendAuth2DeviceAck;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendAuth2DeviceReq;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceAck;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceReq;
+import com.willblaschko.android.alexa.SharedPreferenceUtil;
 
 import java.nio.ByteBuffer;
 
@@ -25,14 +26,14 @@ import java.nio.ByteBuffer;
 
 public class DeviceLinkHandler extends LinkHandler {
 
-    public DeviceLinkHandler(){
+    public DeviceLinkHandler() {
         super();
         mChannel.start();
     }
 
     @Override
     public void onDataImpl(int uri, ByteBuffer data, boolean skipHead) {
-        if(uri == ProtoURI.GetDeviceInfoReqURI){
+        if (uri == ProtoURI.GetDeviceInfoReqURI) {
             GetDeviceInfoReq received = new GetDeviceInfoReq();
             try {
                 received.unMarshall(data);
@@ -48,8 +49,8 @@ public class DeviceLinkHandler extends LinkHandler {
             ack.productId = Settings.Secure.getString(MyApplication.getContext().getContentResolver(),
                     Settings.Secure.ANDROID_ID);
             sendData(ack);
-        } else if(uri == ProtoURI.SendAuth2DeviceReqURI){
-            SendAuth2DeviceReq received  = new SendAuth2DeviceReq();
+        } else if (uri == ProtoURI.SendAuth2DeviceReqURI) {
+            SendAuth2DeviceReq received = new SendAuth2DeviceReq();
             try {
                 received.unMarshall(data);
             } catch (InvalidProtocolData invalidProtocolData) {
@@ -57,12 +58,14 @@ public class DeviceLinkHandler extends LinkHandler {
                 return;
             }
 
-            //TODO record to sp
+            boolean res = SharedPreferenceUtil.putAuthToken2(MyApplication.getContext(), received.clientId,
+                    received.codeVerify, received.accessToken, received.refreshToken, 0);
+
             SendAuth2DeviceAck ack = new SendAuth2DeviceAck();
             ack.seqId = received.seqId;
-            ack.resCode = ProtoResult.SUCCESS;
+            ack.resCode = res ? ProtoResult.SUCCESS : ProtoResult.FAIL;
             sendData(ack);
-        } else if(uri == ProtoURI.GetDeviceWifiScansReqURI){
+        } else if (uri == ProtoURI.GetDeviceWifiScansReqURI) {
             GetDeviceWifiScanReq received = new GetDeviceWifiScanReq();
             try {
                 received.unMarshall(data);
@@ -75,8 +78,9 @@ public class DeviceLinkHandler extends LinkHandler {
             ack.seqId = received.seqId;
             ack.resCode = ProtoResult.SUCCESS;
 //            ack.data.add();
+
             sendData(ack);
-        } else if(uri == ProtoURI.SendWifiConfig2DeviceReqURI){
+        } else if (uri == ProtoURI.SendWifiConfig2DeviceReqURI) {
             SendWifiConfig2DeviceReq req = new SendWifiConfig2DeviceReq();
             try {
                 req.unMarshall(data);

@@ -16,7 +16,11 @@ public class SendAuth2DeviceReq implements IProtocol {
     public final static int URI = ProtoURI.SendAuth2DeviceReqURI;
 
     public int seqId;
-    public String authCode;
+
+    public String accessToken;
+    public String refreshToken;
+    public String codeVerify;
+    public String clientId;
 
     @Override
     public int uri() {
@@ -30,13 +34,20 @@ public class SendAuth2DeviceReq implements IProtocol {
 
     @Override
     public int size() {
-        return 4 + ProtoHelper.calcMarshallSize(authCode);
+        return 4
+                + ProtoHelper.calcMarshallSize(accessToken)
+                + ProtoHelper.calcMarshallSize(refreshToken)
+                + ProtoHelper.calcMarshallSize(clientId)
+                + ProtoHelper.calcMarshallSize(codeVerify);
     }
 
     @Override
     public ByteBuffer marshall(ByteBuffer out) {
         out.putInt(seqId);
-        ProtoHelper.marshall(out, authCode);
+        ProtoHelper.marshall(out, accessToken);
+        ProtoHelper.marshall(out, refreshToken);
+        ProtoHelper.marshall(out, codeVerify);
+        ProtoHelper.marshall(out, clientId);
         return out;
     }
 
@@ -44,7 +55,10 @@ public class SendAuth2DeviceReq implements IProtocol {
     public void unMarshall(ByteBuffer in) throws InvalidProtocolData {
         try {
             seqId = in.getInt();
-            authCode = ProtoHelper.unMarshallShortString(in);
+            accessToken = ProtoHelper.unMarshallShortString(in);
+            refreshToken = ProtoHelper.unMarshallShortString(in);
+            codeVerify = ProtoHelper.unMarshallShortString(in);
+            clientId = ProtoHelper.unMarshallShortString(in);
         } catch (BufferUnderflowException e) {
             throw new InvalidProtocolData(e);
         }

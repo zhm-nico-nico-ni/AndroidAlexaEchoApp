@@ -1,7 +1,6 @@
 package com.willblaschko.android.alexa;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,7 +9,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.ggec.voice.toollibrary.Util;
-import com.google.android.gms.security.ProviderInstaller;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
@@ -74,25 +72,25 @@ public class AlexaManager {
         mAuthorizationManager = new AuthorizationManager(mContext, productId);
         mVoiceHelper = VoiceHelper.getInstance(mContext);
         mEndPoint = SharedPreferenceUtil.getEndPointUrl(mContext);
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                ProviderInstaller.installIfNeededAsync(mContext, providerInstallListener);
-            }
-        });
+//        new Handler(Looper.getMainLooper()).post(new Runnable() {
+//            @Override
+//            public void run() {
+//                ProviderInstaller.installIfNeededAsync(mContext, providerInstallListener);
+//            }
+//        });
     }
 
-    private ProviderInstaller.ProviderInstallListener providerInstallListener = new ProviderInstaller.ProviderInstallListener() {
-        @Override
-        public void onProviderInstalled() {
-            // Provider installed
-        }
-
-        @Override
-        public void onProviderInstallFailed(int errorCode, Intent recoveryIntent) {
-            // Provider installation failed
-        }
-    };
+//    private ProviderInstaller.ProviderInstallListener providerInstallListener = new ProviderInstaller.ProviderInstallListener() {
+//        @Override
+//        public void onProviderInstalled() {
+//            // Provider installed
+//        }
+//
+//        @Override
+//        public void onProviderInstallFailed(int errorCode, Intent recoveryIntent) {
+//            // Provider installation failed
+//        }
+//    };
 
     public static AlexaManager getInstance(Context context, String productId) {
         if (mInstance == null) {
