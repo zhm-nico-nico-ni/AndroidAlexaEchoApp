@@ -10,4 +10,5 @@ public class ProtoResult {
     public static final byte SUCCESS = 0;
     public static final byte FAIL = 1;
     public static final byte TIME_OUT = 2;
+    public static final byte NOT_CONNECTED = 3;
 }
