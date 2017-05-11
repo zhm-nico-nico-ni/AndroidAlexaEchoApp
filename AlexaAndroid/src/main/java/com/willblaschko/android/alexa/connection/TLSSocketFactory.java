@@ -13,7 +13,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 
-import okhttp3.CipherSuite;
 import okhttp3.TlsVersion;
 
 public class TLSSocketFactory extends SSLSocketFactory {
@@ -71,7 +70,6 @@ public class TLSSocketFactory extends SSLSocketFactory {
             boolean isTlsServer = isTLSServerEnabled(sslSocket);
             if (isTlsServer) {
                 sslSocket.setEnabledProtocols(new String[]{"TLSv1.2"});
-                sslSocket.setEnabledCipherSuites(new String[]{CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256.javaName()});
             }
         }
         return socket;
