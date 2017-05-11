@@ -186,36 +186,43 @@ public class TokenManager {
             @Override
             public void onFailure(Call call, final IOException e) {
                 e.printStackTrace();
-                if(callback != null){
-                    //bubble up error
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            callback.onFailure(e);
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String s = response.body().string();
-                if(BuildConfig.DEBUG) {
-                    Log.i(TAG, s);
-                }
-
-                //get our tokens back
-                final TokenResponse tokenResponse = new Gson().fromJson(s, TokenResponse.class);
-                //save our tokens
-                saveTokens(context, tokenResponse);
-                //we have new tokens!
+                //bubble up error
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        callback.onSuccess(tokenResponse.access_token);
-                        callback.beginRefreshTokenEvent(context, tokenResponse.expires_in - 60000 );
+                        callback.onFailure(e);
                     }
                 });
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                String s = response.body().string();
+                if (BuildConfig.DEBUG) {
+                    Log.i(TAG, s);
+                }
+                if (response.isSuccessful()) {
+
+                    //get our tokens back
+                    final TokenResponse tokenResponse = new Gson().fromJson(s, TokenResponse.class);
+                    //save our tokens
+                    saveTokens(context, tokenResponse);
+                    //we have new tokens!
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onSuccess(tokenResponse.access_token);
+                            callback.beginRefreshTokenEvent(context, tokenResponse.expires_in - 60000);
+                        }
+                    });
+                } else {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onFailure(new Exception("http response unexcept code:" + response.code()));
+                        }
+                    });
+                }
             }
         });
     }

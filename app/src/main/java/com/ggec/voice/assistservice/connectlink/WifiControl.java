@@ -63,6 +63,7 @@ public class WifiControl {
             mIAddNetWorkCallBack = null;
             return;
         }
+        if(authAlgorithm == null) authAlgorithm = "";
         mIAddNetWorkCallBack = callBack;
 
         // 配置网络信息类

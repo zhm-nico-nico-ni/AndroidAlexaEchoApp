@@ -1,5 +1,7 @@
 package com.ggec.voice.assistservice.connectlink;
 
+import android.bluetooth.BluetoothAdapter;
+import android.content.Intent;
 import android.provider.Settings;
 
 import com.ggec.voice.assistservice.BuildConfig;
@@ -29,6 +31,13 @@ public class DeviceLinkHandler extends LinkHandler {
 
     public DeviceLinkHandler() {
         super();
+        if (BluetoothAdapter.getDefaultAdapter()!=null&& BluetoothAdapter.getDefaultAdapter().getScanMode() !=
+                BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) { // FIXME remove ! because system will do this
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
+            discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            MyApplication.getContext().startActivity(discoverableIntent);
+        }
         mChannel.start();
     }
 
@@ -43,12 +52,13 @@ public class DeviceLinkHandler extends LinkHandler {
                 return;
             }
 
+            Log.d(TAG, "receive GetDeviceInfoReq:"+ received.seqId);
             GetDeviceInfoRes ack = new GetDeviceInfoRes();
             ack.seqId = received.seqId;
             ack.resCode = ProtoResult.SUCCESS;
-            ack.deviceSerialNumber = BuildConfig.PRODUCT_ID;
-            ack.productId = Settings.Secure.getString(MyApplication.getContext().getContentResolver(),
+            ack.deviceSerialNumber = Settings.Secure.getString(MyApplication.getContext().getContentResolver(),
                     Settings.Secure.ANDROID_ID);
+            ack.productId = BuildConfig.PRODUCT_ID;
             sendData(ack);
         } else if (uri == ProtoURI.SendAuth2DeviceReqURI) {
             SendAuth2DeviceReq received = new SendAuth2DeviceReq();
@@ -59,6 +69,7 @@ public class DeviceLinkHandler extends LinkHandler {
                 return;
             }
 
+            Log.d(TAG, "receive SendAuth2DeviceReq:"+ received.seqId + "\naccess:"+received.accessToken+ "\nrefresh:"+received.refreshToken+"\nverify:"+received.codeVerify);
             boolean res = SharedPreferenceUtil.putAuthToken2(MyApplication.getContext(), received.clientId,
                     received.codeVerify, received.accessToken, received.refreshToken, 0);
 
@@ -80,6 +91,7 @@ public class DeviceLinkHandler extends LinkHandler {
             ack.resCode = ProtoResult.SUCCESS;
             ack.data.addAll(WifiControl.getInstance(MyApplication.getContext()).getScanResult());
 
+            Log.d(TAG, "Scan size:"+ack.data);
             sendData(ack);
         } else if (uri == ProtoURI.SendWifiConfig2DeviceReqURI) {
             final SendWifiConfig2DeviceReq req = new SendWifiConfig2DeviceReq();

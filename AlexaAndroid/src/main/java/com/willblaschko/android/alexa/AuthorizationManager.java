@@ -115,7 +115,7 @@ public class AuthorizationManager {
         options.putString(AuthzConstants.BUNDLE_KEY.SCOPE_DATA.val, scope_data);
 
         options.putBoolean(AuthzConstants.BUNDLE_KEY.GET_AUTH_CODE.val, true);
-        options.putString(AuthzConstants.BUNDLE_KEY.CODE_CHALLENGE.val, getCodeChallenge());
+        options.putString(AuthzConstants.BUNDLE_KEY.CODE_CHALLENGE.val, getCodeChallenge(mContext));
         options.putString(AuthzConstants.BUNDLE_KEY.CODE_CHALLENGE_METHOD.val, "S256");
 
         try {
@@ -143,7 +143,7 @@ public class AuthorizationManager {
             }
 
             try {
-                TokenManager.getAccessToken(mContext, authCode, getCodeVerifier(), mAuthManager.getRedirectUri() ,mAuthManager.getClientId(), new TokenManager.TokenResponseCallback() {
+                TokenManager.getAccessToken(mContext, authCode, getCodeVerifier(mContext), mAuthManager.getRedirectUri() ,mAuthManager.getClientId(), new TokenManager.TokenResponseCallback() {
                     @Override
                     public void onSuccess(TokenResponse response) {
                         if(mCallback != null){
@@ -204,14 +204,14 @@ public class AuthorizationManager {
      * Return our stored code verifier, which needs to be consistent, if this doesn't exist, we create a new one and store the new result
      * @return the String code verifier
      */
-    private String getCodeVerifier(){
-        if(SharedPreferenceUtil.contains(mContext, CODE_VERIFIER)){
-            return SharedPreferenceUtil.getStringByKey(mContext, CODE_VERIFIER, "");
+    private static String getCodeVerifier(Context context){
+        if(SharedPreferenceUtil.contains(context, CODE_VERIFIER)){
+            return SharedPreferenceUtil.getStringByKey(context, CODE_VERIFIER, "");
         }
 
         //no verifier found, make and store the new one
         String verifier = createCodeVerifier();
-        Util.getPreferences(mContext).edit().putString(CODE_VERIFIER, verifier).apply();
+        Util.getPreferences(context).edit().putString(CODE_VERIFIER, verifier).apply();
         return verifier;
     }
 
@@ -219,8 +219,8 @@ public class AuthorizationManager {
      * Create a String hash based on the code verifier, this is used to verify the Token exchanges
      * @return
      */
-    private String getCodeChallenge(){
-        String verifier = getCodeVerifier();
+    public static String getCodeChallenge(Context context){
+        String verifier = getCodeVerifier(context);
         return base64UrlEncode(getHash(verifier));
     }
 

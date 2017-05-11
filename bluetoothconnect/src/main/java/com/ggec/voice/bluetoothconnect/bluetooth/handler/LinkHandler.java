@@ -182,18 +182,20 @@ public abstract class LinkHandler extends Handler {
             handleRawData((byte[]) msg.obj, msg.arg1);
         } else if(msg.what == Constants.MESSAGE_STATE_CHANGE){
             Log.d(TAG, "MESSAGE_STATE_CHANGE, state:" + msg.arg1);
-
+            if(BluetoothChatService.STATE_CONNECTED==msg.arg1) setBuffer();
         } else if(msg.what == Constants.MESSAGE_DEVICE_NAME){
             Bundle bundle = msg.getData();
             if(bundle!=null) {
                 String name = bundle.getString(Constants.DEVICE_NAME);
                 Log.d(TAG, "MESSAGE_DEVICE_NAME, name:" + name);
+                handleConnect(name);
             }
         } else if(msg.what == Constants.MESSAGE_TOAST){
             Bundle bundle = msg.getData();
             if(bundle!=null) {
                 String name = bundle.getString(Constants.TOAST);
                 Log.d(TAG, "MESSAGE_TOAST, msg:" + name);
+                handleToastMessage(name);
             }
         } else {
 
@@ -244,5 +246,20 @@ public abstract class LinkHandler extends Handler {
             onData(data);
         }
 
+    }
+
+    protected void handleToastMessage(String msg){
+
+    }
+
+    protected void handleConnect(String deviceName){
+
+    }
+
+    private void setBuffer(){
+        int baseSize = 1034;
+        this.mOutBuf = ByteBuffer.allocate(baseSize);
+        this.mProtoBuf = ByteBuffer.allocate(2* baseSize);
+        mBytesBuf = new byte[2* baseSize];
     }
 }
