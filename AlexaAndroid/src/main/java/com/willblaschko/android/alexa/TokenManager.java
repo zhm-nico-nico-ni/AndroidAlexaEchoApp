@@ -7,7 +7,6 @@ import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.amazon.identity.auth.device.AuthError;
 import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationManager;
 import com.google.gson.Gson;
 import com.willblaschko.android.alexa.connection.ClientUtil;
@@ -48,15 +47,18 @@ public class TokenManager {
     public final static String PREF_REFRESH_TOKEN = "refresh_token";
     public final static String PREF_TOKEN_EXPIRES = "token_expires";
 
+    final static Handler handler = new Handler(Looper.getMainLooper());
     /**
      * Get an access token from the Amazon servers for the current user
      * @param context local/application level context
      * @param authCode the authorization code supplied by the Authorization Manager
      * @param codeVerifier a randomly generated verifier, must be the same every time
-     * @param authorizationManager the AuthorizationManager class calling this function
+     * @param redirectUri generate by auth manager
+     * @param clientId generate by auth manager
      * @param callback the callback for state changes
      */
-    public static void getAccessToken(final Context context, @NotNull String authCode, @NotNull String codeVerifier, AmazonAuthorizationManager authorizationManager, @Nullable final TokenResponseCallback callback){
+    public static void getAccessToken(final Context context, @NotNull String authCode, @NotNull String codeVerifier,
+            String redirectUri, String clientId, @Nullable final TokenResponseCallback callback){
         //this url shouldn't be hardcoded, but it is, it's the Amazon auth access token endpoint
         String url = "https://api.amazon.com/auth/O2/token";
 
@@ -64,12 +66,8 @@ public class TokenManager {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(ARG_GRANT_TYPE, "authorization_code")
                 .add(ARG_CODE, authCode);
-        try {
-            builder.add(ARG_REDIRECT_URI, authorizationManager.getRedirectUri());
-            builder.add(ARG_CLIENT_ID, authorizationManager.getClientId());
-        } catch (AuthError authError) {
-            authError.printStackTrace();
-        }
+        builder.add(ARG_REDIRECT_URI, redirectUri);
+        builder.add(ARG_CLIENT_ID, clientId);
         builder.add(ARG_CODE_VERIFIER, codeVerifier);
 
         OkHttpClient client = ClientUtil.getHttp1Client();
@@ -78,8 +76,6 @@ public class TokenManager {
                 .url(url)
                 .post(builder.build())
                 .build();
-
-        final Handler handler = new Handler(Looper.getMainLooper());
 
 
         client.newCall(request).enqueue(new Callback() {
@@ -167,7 +163,7 @@ public class TokenManager {
      * @param callback
      * @param refreshToken the refresh token we have stored in local cache (sharedPreferences)
      */
-    private static void getRefreshToken(@NotNull String clientId, @NotNull final Context context, @NotNull final TokenCallback callback, String refreshToken){
+    public static void getRefreshToken(@NotNull String clientId, @NotNull final Context context, @NotNull final TokenCallback callback, String refreshToken){
         //this url shouldn't be hardcoded, but it is, it's the Amazon auth access token endpoint
         String url = "https://api.amazon.com/auth/O2/token";
 
@@ -185,8 +181,6 @@ public class TokenManager {
                 .url(url)
                 .post(builder.build())
                 .build();
-
-        final Handler handler = new Handler(Looper.getMainLooper());
 
         client.newCall(request).enqueue(new Callback() {
             @Override

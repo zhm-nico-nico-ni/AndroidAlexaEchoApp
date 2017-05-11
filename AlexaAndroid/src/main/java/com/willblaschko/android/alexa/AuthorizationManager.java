@@ -142,21 +142,25 @@ public class AuthorizationManager {
                 Util.showAuthToast(mContext, "Authorization successful.");
             }
 
-            TokenManager.getAccessToken(mContext, authCode, getCodeVerifier(), mAuthManager, new TokenManager.TokenResponseCallback() {
-                @Override
-                public void onSuccess(TokenResponse response) {
-                    if(mCallback != null){
-                        mCallback.onSuccess();
+            try {
+                TokenManager.getAccessToken(mContext, authCode, getCodeVerifier(), mAuthManager.getRedirectUri() ,mAuthManager.getClientId(), new TokenManager.TokenResponseCallback() {
+                    @Override
+                    public void onSuccess(TokenResponse response) {
+                        if(mCallback != null){
+                            mCallback.onSuccess();
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(Exception error) {
-                    if(mCallback != null){
-                        mCallback.onError(error);
+                    @Override
+                    public void onFailure(Exception error) {
+                        if(mCallback != null){
+                            mCallback.onError(error);
+                        }
                     }
-                }
-            });
+                });
+            } catch (AuthError authError) {
+                authError.printStackTrace();
+            }
 
         }
 

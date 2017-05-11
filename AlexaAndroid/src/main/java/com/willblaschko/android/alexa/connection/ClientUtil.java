@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 
+import java.io.IOException;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,8 +18,11 @@ import javax.net.ssl.X509TrustManager;
 
 import okhttp3.CipherSuite;
 import okhttp3.ConnectionSpec;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.TlsVersion;
 
 /**
@@ -112,13 +116,13 @@ public class ClientUtil {
                     Log.e("OkHttpTLSCompat", "Error while setting TLS 1.2", exc);
                 }
             }
-//            client.addNetworkInterceptor(new Interceptor() {
-//                @Override
-//                public Response intercept(Chain chain) throws IOException {
-//                    Request request = chain.request().newBuilder().addHeader("Connection", "close").build();
-//                    return chain.proceed(request);
-//                }
-//            });
+            client.addNetworkInterceptor(new Interceptor() {
+                @Override
+                public Response intercept(Chain chain) throws IOException {
+                    Request request = chain.request().newBuilder().addHeader("Connection", "close").build();
+                    return chain.proceed(request);
+                }
+            });
             mHttp1Client = client
                     .readTimeout(8000, TimeUnit.MILLISECONDS)
                     .writeTimeout(8000, TimeUnit.MILLISECONDS)
