@@ -255,6 +255,13 @@ public class BgProcessIntentService extends IntentService {
             }
         });
         if (audio != null) audio.cancelRequest();
+        if(!Util.isNetworkAvailable(this)){
+            //TODO play no net work
+            Log.e(TAG, "return because no net work");
+            playError();
+            continueWakeWordDetect();
+            return;
+        }
         playStart(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
@@ -460,10 +467,12 @@ public class BgProcessIntentService extends IntentService {
                     Log.w(TAG, "Not delete cache file p:" + fp);
                 }
             }
-            private void continueWakeWordDetect(){
-                sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
-            }
+
         };
+    }
+
+    private void continueWakeWordDetect(){
+        sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
     }
 
     private void playStart(final MediaPlayer.OnCompletionListener listener) {
