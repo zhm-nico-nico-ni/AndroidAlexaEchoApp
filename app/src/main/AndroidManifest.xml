@@ -61,6 +61,12 @@
             </intent-filter>
         </receiver>
 
+        <provider
+            android:name="com.willblaschko.android.alexa.datepersisted.MultiprocessSharedPreferences"
+            android:authorities="${applicationId}.provider.MultiprocessSharedPreferences"
+            android:exported="false"
+            />
+
         <!--<activity android:name=".UITestActivity">-->
 
         <!--</activity>-->

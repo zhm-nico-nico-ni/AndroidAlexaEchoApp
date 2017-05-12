@@ -71,7 +71,7 @@ public class DeviceLinkHandler extends LinkHandler {
 
             Log.d(TAG, "receive SendAuth2DeviceReq:"+ received.seqId + "\naccess:"+received.accessToken+ "\nrefresh:"+received.refreshToken+"\nverify:"+received.codeVerify);
             boolean res = SharedPreferenceUtil.putAuthToken2(MyApplication.getContext(), received.clientId,
-                    received.codeVerify, received.accessToken, received.refreshToken, 0);
+                    received.codeVerify, received.accessToken, received.refreshToken, 300);
 
             SendAuth2DeviceAck ack = new SendAuth2DeviceAck();
             ack.seqId = received.seqId;
@@ -91,7 +91,7 @@ public class DeviceLinkHandler extends LinkHandler {
             ack.resCode = ProtoResult.SUCCESS;
             ack.data.addAll(WifiControl.getInstance(MyApplication.getContext()).getScanResult());
 
-            Log.d(TAG, "Scan size:"+ack.data);
+            Log.d(TAG, "Scan size:"+ack.data.size());
             sendData(ack);
         } else if (uri == ProtoURI.SendWifiConfig2DeviceReqURI) {
             final SendWifiConfig2DeviceReq req = new SendWifiConfig2DeviceReq();
@@ -102,7 +102,7 @@ public class DeviceLinkHandler extends LinkHandler {
                 invalidProtocolData.printStackTrace();
                 return;
             }
-            Log.d(TAG, "recv SendWifiConfig2DeviceReq, try connect Wifi");
+            Log.d(TAG, "recv SendWifiConfig2DeviceReq, try connect Wifi ssid:"+req.ssid + " psw:"+req.password+" ca:"+req.capabilities );
             WifiControl.getInstance(MyApplication.getContext()).addNetwork(req.ssid, req.password,
                     req.capabilities, new WifiControl.IAddNetWorkCallBack() {
                 @Override

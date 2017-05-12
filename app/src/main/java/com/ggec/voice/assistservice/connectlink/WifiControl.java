@@ -237,7 +237,7 @@ public class WifiControl {
     }
 
     public List<WifiScanInfo> getScanResult() {
-        mWifiManager.startScan();
+//        mWifiManager.startScan();
         List<ScanResult> scanResultList = mWifiManager.getScanResults();
         ArrayList<WifiScanInfo> result = new ArrayList<>(scanResultList.size());
 

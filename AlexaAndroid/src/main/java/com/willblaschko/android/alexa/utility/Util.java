@@ -4,8 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
-import android.preference.PreferenceManager;
 import android.widget.Toast;
+
+import com.willblaschko.android.alexa.datepersisted.MultiprocessSharedPreferences;
 
 import java.util.UUID;
 
@@ -40,7 +41,7 @@ public class Util {
      */
     public static SharedPreferences getPreferences(Context context) {
         if (mPreferences == null) {
-            mPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+            mPreferences = MultiprocessSharedPreferences.getSharedPreferences(context, "PREF_DATA", Context.MODE_PRIVATE);
         }
         return mPreferences;
     }
