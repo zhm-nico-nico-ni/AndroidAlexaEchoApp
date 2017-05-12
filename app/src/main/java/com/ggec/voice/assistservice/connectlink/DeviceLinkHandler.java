@@ -28,9 +28,10 @@ import java.nio.ByteBuffer;
  */
 
 public class DeviceLinkHandler extends LinkHandler {
-
-    public DeviceLinkHandler() {
+    private final IDeviceLinkCallback mIDeviceLinkCallback;
+    public DeviceLinkHandler(IDeviceLinkCallback callback) {
         super();
+        mIDeviceLinkCallback = callback;
         if (BluetoothAdapter.getDefaultAdapter()!=null&& BluetoothAdapter.getDefaultAdapter().getScanMode() !=
                 BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) { // FIXME remove ! because system will do this
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -38,6 +39,9 @@ public class DeviceLinkHandler extends LinkHandler {
             discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             MyApplication.getContext().startActivity(discoverableIntent);
         }
+        String id = Settings.Secure.getString(MyApplication.getContext().getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+        mChannel.setDeviceName("GGEC_BOX_"+id);
         mChannel.start();
     }
 
@@ -114,8 +118,11 @@ public class DeviceLinkHandler extends LinkHandler {
                     sendData(ack);
                 }
             });
+            mIDeviceLinkCallback.onConnectingWifi();
         }
     }
 
-
+    public interface IDeviceLinkCallback{
+        void onConnectingWifi();
+    }
 }

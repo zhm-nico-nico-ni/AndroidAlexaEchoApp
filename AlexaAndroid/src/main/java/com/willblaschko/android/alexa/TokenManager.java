@@ -136,7 +136,10 @@ public class TokenManager {
             }else{
                 //if it is expired but we have a refresh token, get a new token
                 if(preferences.contains(PREF_REFRESH_TOKEN)){
-                    String clientId = BuildConfig.ENABLE_LOCAL_AUTH ? authorizationManager.getClientId() : preferences.getString(PREF_CLIENT_ID, "");
+                    String clientId = preferences.getString(PREF_CLIENT_ID, "");
+                    if(BuildConfig.ENABLE_LOCAL_AUTH && TextUtils.isEmpty(clientId)){
+                        clientId = authorizationManager.getClientId() ;
+                    }
                     getRefreshToken(clientId, context, callback, preferences.getString(PREF_REFRESH_TOKEN, ""));
                     return;
                 }
@@ -151,7 +154,10 @@ public class TokenManager {
         SharedPreferences preferences = Util.getPreferences(context.getApplicationContext());
         String refreshToken = preferences.getString(PREF_REFRESH_TOKEN, "");
         if (!TextUtils.isEmpty(refreshToken)){
-            String clientId = BuildConfig.ENABLE_LOCAL_AUTH ? authorizationManager.getClientId() : preferences.getString(PREF_CLIENT_ID, "");
+            String clientId = preferences.getString(PREF_CLIENT_ID, "");
+            if(BuildConfig.ENABLE_LOCAL_AUTH && TextUtils.isEmpty(clientId)){
+                clientId = authorizationManager.getClientId() ;
+            }
             getRefreshToken(clientId, context, callback, refreshToken);
         }
     }

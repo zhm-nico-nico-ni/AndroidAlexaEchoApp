@@ -104,7 +104,7 @@ public class BluetoothChatService {
     @SuppressLint("MissingPermission")
     public void setDeviceName(String bluetoothDeviceName){
         if (mAdapter != null && !TextUtils.isEmpty(bluetoothDeviceName)) {
-            boolean setNameRes = mAdapter.setName("GGEC_MEDIA_BOX");
+            boolean setNameRes = mAdapter.setName(bluetoothDeviceName);
             Log.d(TAG, "set blue tooth dev name (" + bluetoothDeviceName + ") res: " + setNameRes);
         }
     }
