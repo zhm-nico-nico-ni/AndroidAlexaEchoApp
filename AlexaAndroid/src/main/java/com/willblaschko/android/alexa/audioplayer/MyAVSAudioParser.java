@@ -27,7 +27,8 @@ import okhttp3.Response;
 public class MyAVSAudioParser {
     private final static String TAG = "MyAVSAudioParser";
     private static final Pattern FILE_PATTERN = Pattern.compile("pls|m3u", Pattern.CASE_INSENSITIVE);
-    private final static int MAX_REDIRECT_TIMES = 2;
+    private static final Pattern PLAY_LIST_PATTERN = Pattern.compile("audio/x-scpls|audio/x-mpegurl", Pattern.CASE_INSENSITIVE);
+    private final static int MAX_REDIRECT_TIMES = 3;
 
     private AvsPlayRemoteItem mAvsPlayRemoteItem;
     private Call mAvsRemoteCall;
@@ -89,13 +90,13 @@ public class MyAVSAudioParser {
                         .url(urll)
                         .build());
 
+        Log.d(TAG, "requestImpl:"+url);
         return parseResponse(mAvsRemoteCall.execute());
     }
 
     private String parseResponse(Response response) throws IOException {
         String playUri = response.request().url().toString();
-        if ("audio/x-mpegurl; charset=utf-8".equalsIgnoreCase(response.header("Content-Type"))
-                || "audio/x-scpls".equalsIgnoreCase(response.header("Content-Type"))) {
+        if (PLAY_LIST_PATTERN.matcher(response.header("Content-Type")).find()) {
             // audio/x-mpegurl 是声明文件了，解析
             BufferedReader bufferedReader = new BufferedReader(response.body().charStream());
             String responseFirstLine = bufferedReader.readLine();

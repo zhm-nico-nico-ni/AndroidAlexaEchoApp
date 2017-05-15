@@ -84,7 +84,7 @@ public final class Playlist {
                     "file='" + file + '\'' +
                     ", title='" + title + '\'' +
                     ", length=" + length +
-                    '}';
+                    '}'+"\n";
         }
     }
 }
