@@ -4,9 +4,8 @@ import android.content.Context;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
-import android.util.Log;
 
-import com.facebook.stetho.okhttp3.StethoInterceptor;
+import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -19,7 +18,6 @@ import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
-import com.willblaschko.android.alexa.connection.ClientUtil;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
@@ -36,16 +34,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
-import okhttp3.Call;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * A class that abstracts the Android MediaPlayer and adds additional functionality to handle AvsItems
@@ -59,7 +51,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private final static int STATE_PLAYING = 1;
     private final static int STATE_STOPPED = 2;
     private final static int STATE_PAUSED = 3;
-    private final static int STATE_BUFFER_UNDERRUN = 4;
+    private final static int STATE_BUFFER_UNDER_RUN = 4;
     private final static int STATE_FINISHED = 5;
 
     private MyExoPlayer mMediaPlayer;
@@ -67,7 +59,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private AvsItem mItem;
     private final List<Callback> mCallbacks = new ArrayList<>();
     private int mMediaState = STATE_IDLE;
-    private Call mAvsRemoteCall;
+    private MyAVSAudioParser myAVSAudioParser;
 
     /**
      * Create our new AlexaAudioPlayer
@@ -195,7 +187,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @param item
      */
     private void play(@NonNull AvsItem item) {
-        if (mItem == item && mAvsRemoteCall != null && mAvsRemoteCall.isExecuted()) {
+        if (mItem == item && myAVSAudioParser != null && myAVSAudioParser.isExecuted()) {
             Log.w(TAG, "play the same item");
             return;
         }
@@ -208,82 +200,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
             getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///start.mp3"), "mp3"));
         } else if (mItem instanceof AvsPlayRemoteItem) {
-            cancelAvsRemoteCallRequest();
-            final AvsPlayRemoteItem playItem = (AvsPlayRemoteItem) item;
-            final long startOffset = playItem.pausePosition > playItem.getStartOffset()
-                    ? playItem.pausePosition : playItem.getStartOffset();
-            //play new url
-//            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getUrl()), null), null, startOffset);
-            Log.d(TAG, "play remote item, url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
-            if(TextUtils.isEmpty(playItem.getConvertUrl())) {
-                Flowable.fromCallable(new Callable<String>() {
-                    @Override
-                    public String call() throws Exception {
-                        String playUri;
-                        final HttpUrl urll = HttpUrl.parse(playItem.getUrl());
-                        OkHttpClient okHttpClient;
-                        if(urll.isHttps()){
-                            okHttpClient = ClientUtil.getHttp2Client();
-                        } else {
-                            okHttpClient = new OkHttpClient.Builder()
-                                    .readTimeout(12, TimeUnit.SECONDS)
-                                    .writeTimeout(12, TimeUnit.SECONDS)
-                                    .connectTimeout(15, TimeUnit.SECONDS)
-                                    .retryOnConnectionFailure(true)
-                                    .addNetworkInterceptor(new StethoInterceptor()).build();
-                        }
-
-                        try {
-                            mAvsRemoteCall = okHttpClient
-                                    .newCall(new Request.Builder()
-                                            .url(urll)
-                                            .build());
-                            Response response = mAvsRemoteCall.execute();
-                            long responseLong = response.body().contentLength();
-                            if (responseLong > 0 && responseLong < 1024 * 3) {
-                                String bodyString = response.body().string();
-                                Log.i(TAG, "get remote result: " + bodyString);
-                                HttpUrl maybeUrl = HttpUrl.parse(bodyString.trim());
-                                if(maybeUrl!= null && !TextUtils.isEmpty(maybeUrl.scheme()) && maybeUrl.scheme().contains("http")){
-                                    playItem.setConvertUrl(bodyString.trim());
-                                    playUri = playItem.getConvertUrl();
-                                } else {
-                                    playUri = playItem.getUrl();
-                                }
-                            } else {
-                                playUri = playItem.getUrl();
-                            }
-                        } catch (Exception ex){
-                            ex.printStackTrace();
-                            playUri = playItem.getUrl();
-                        }
-
-                        if(playUri==null) playUri = "";
-                        if(mAvsRemoteCall!= null) {
-                            return !mAvsRemoteCall.isCanceled() ? playUri : "";
-                        } else {
-                            return "";
-                        }
-                    }
-                }).subscribeOn(Schedulers.io())
-                        .observeOn(Schedulers.single())
-                        .subscribe(new Consumer<String>() {
-                            @Override
-                            public void accept(@io.reactivex.annotations.NonNull String s) throws Exception {
-                                if (!TextUtils.isEmpty(s)) {
-                                    getMediaPlayer().prepare(buildMediaSource(Uri.parse(s), null), null, startOffset);
-                                }
-                            }
-                        }, new Consumer<Throwable>() {
-                            @Override
-                            public void accept(@io.reactivex.annotations.NonNull Throwable throwable) throws Exception {
-                                bubbleUpError((Exception) throwable);
-                            }
-                        });
-            } else {
-                getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getConvertUrl()), null), null, startOffset);
-            }
-
+            handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
         } else if (mItem instanceof AvsPlayContentItem) {
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
             getMediaPlayer().prepare(buildMediaSource(playItem.getUri(), null));
@@ -453,7 +370,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     @Override
     public void onBuffering(long offset) {
-        mMediaState = STATE_BUFFER_UNDERRUN;
+        mMediaState = STATE_BUFFER_UNDER_RUN;
         for (Callback callback : mCallbacks) {
             callback.onBuffering(getCurrentItem(), offset);
         }
@@ -503,7 +420,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
                 return "PLAYING";
             case STATE_PAUSED:
                 return "PAUSED";
-            case STATE_BUFFER_UNDERRUN:
+            case STATE_BUFFER_UNDER_RUN:
                 return "BUFFER_UNDERRUN";
             case STATE_FINISHED:
                 return "FINISHED";
@@ -513,11 +430,59 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     }
 
     private void cancelAvsRemoteCallRequest(){
-        if(mAvsRemoteCall!=null){
-            if(!mAvsRemoteCall.isCanceled()){
-                mAvsRemoteCall.cancel();
-            }
-            mAvsRemoteCall = null;
+        if(myAVSAudioParser != null){
+            myAVSAudioParser.cancelRequest();
         }
     }
+
+    private void handleRemoteAVSItem(final AvsPlayRemoteItem playItem) {
+        cancelAvsRemoteCallRequest();
+        final long startOffset = playItem.pausePosition > playItem.getStartOffset()
+                ? playItem.pausePosition : playItem.getStartOffset();
+
+        Log.d(TAG, "play remote item, url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
+        if (TextUtils.isEmpty(playItem.getConvertUrl())) {
+            Flowable.fromCallable(new Callable<ConvertAudioItem>() {
+                @Override
+                public ConvertAudioItem call() throws Exception {
+                    String playUri = null;
+
+                    try {
+                        myAVSAudioParser = new MyAVSAudioParser(playItem);
+                        playUri = myAVSAudioParser.request(playItem.getUrl());
+                    } catch (Exception ex) {
+                        Log.e(TAG, "handleRemoteAVSItem exception", ex);
+                        playUri = playItem.getUrl();
+                    }
+
+                    if (myAVSAudioParser != null) {
+                        return new ConvertAudioItem(!myAVSAudioParser.isCanceled() ? playUri : "", playItem.extension);
+                    } else {
+                        return new ConvertAudioItem(null, null);
+                    }
+                }
+            }).subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.single())
+                    .subscribe(new Consumer<ConvertAudioItem>() {
+                        @Override
+                        public void accept(@io.reactivex.annotations.NonNull ConvertAudioItem s) throws Exception {
+                            if (!TextUtils.isEmpty(s.convertUrl)) {
+                                Log.d(TAG, "final play "+ s.convertUrl+ " extension:"+s.overrideExtension);
+                                getMediaPlayer().prepare(buildMediaSource(Uri.parse(s.convertUrl), s.overrideExtension), null, startOffset);
+                            } else {
+                                Log.w(TAG, "handleRemoteAVSItem end, may cancel or error :" + s.convertUrl);
+                            }
+                        }
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(@io.reactivex.annotations.NonNull Throwable throwable) throws Exception {
+                            bubbleUpError((Exception) throwable);
+                        }
+                    });
+        } else {
+            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getConvertUrl()), playItem.extension), null, startOffset);
+        }
+    }
+
+
 }

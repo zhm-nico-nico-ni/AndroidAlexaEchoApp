@@ -17,6 +17,7 @@ public class AvsPlayRemoteItem extends AvsAudioItem implements IAvsPlayDirective
 //    private String mStreamId;
     private long mStartOffset;
     public final Directive.Stream mStream;
+    public String extension;
 
     public AvsPlayRemoteItem(String token, String url, long startOffset,String messageID, Directive.Stream stream) {
         super(token,messageID);
