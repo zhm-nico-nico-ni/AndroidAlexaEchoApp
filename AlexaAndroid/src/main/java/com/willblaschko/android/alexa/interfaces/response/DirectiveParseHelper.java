@@ -3,7 +3,6 @@ package com.willblaschko.android.alexa.interfaces.response;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.willblaschko.android.alexa.AVSAPIConstants;
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -23,6 +22,7 @@ import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsStopCapture
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
+import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
 import java.io.IOException;
 import java.util.HashMap;

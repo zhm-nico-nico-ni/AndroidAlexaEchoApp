@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.willblaschko.android.alexa;
+package com.willblaschko.android.alexa.keep;
 
 public final class AVSAPIConstants {
 

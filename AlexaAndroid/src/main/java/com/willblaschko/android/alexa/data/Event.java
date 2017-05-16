@@ -1,10 +1,10 @@
 package com.willblaschko.android.alexa.data;
 
 import com.google.gson.Gson;
-import com.willblaschko.android.alexa.AVSAPIConstants;
 import com.willblaschko.android.alexa.data.message.Payload;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
 import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
+import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
 import java.util.ArrayList;
 import java.util.List;

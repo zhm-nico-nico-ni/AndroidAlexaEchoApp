@@ -10,20 +10,20 @@ android {
     defaultConfig {
         minSdkVersion Integer.parseInt(project.MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(project.TARGET_SDK_VERSION)
-//        applicationId "com.ggec.voice.assistservice"
+
         applicationId project.APPLICATION_ID
         versionCode 1
         versionName "1.0"
 
         buildConfigField "String", "PRODUCT_ID", "\"" + project.PRODUCT_ID + "\""
         buildConfigField "String", "APP_PACKAGE_NAME", "\"" + project.APPLICATION_ID + "\""
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+//        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true;
-        externalNativeBuild {
-            cmake {
-                cppFlags ""
-            }
-        }
+//        externalNativeBuild {
+//            cmake {
+//                cppFlags ""
+//            }
+//        }
 //        jackOptions {
 //            enabled true
 //        }
@@ -74,26 +74,26 @@ android {
 
         release {
             signingConfig signingConfigs.lwa
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg', 'proguard-rules.pro'
         }
     }
-    externalNativeBuild {
-        cmake {
-            path "CMakeLists.txt"
-        }
-    }
+//    externalNativeBuild {
+//        cmake {
+//            path "CMakeLists.txt"
+//        }
+//    }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+//    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+//        exclude group: 'com.android.support', module: 'support-annotations'
+//    })
     compile 'com.android.support:multidex:1.0.1'
     compile 'com.android.support:appcompat-v7:25.2.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    testCompile 'junit:junit:4.12'
+//    testCompile 'junit:junit:4.12'
     compile project(':auth')
     //    compile 'com.squareup.okhttp3:okhttp:3.6.0'
     //    compile 'com.intellij:annotations:+@jar'
