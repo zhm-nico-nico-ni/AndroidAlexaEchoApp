@@ -26,7 +26,7 @@ import okhttp3.Response;
 
 public class MyAVSAudioParser {
     private final static String TAG = "MyAVSAudioParser";
-    private static final Pattern FILE_PATTERN = Pattern.compile("pls|m3u", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FILE_PATTERN = Pattern.compile(".pls|.m3u", Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAY_LIST_PATTERN = Pattern.compile("audio/x-scpls|audio/x-mpegurl", Pattern.CASE_INSENSITIVE);
     private final static int MAX_REDIRECT_TIMES = 3;
 
