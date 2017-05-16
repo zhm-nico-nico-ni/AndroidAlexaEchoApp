@@ -17,17 +17,12 @@ import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.speechutil.RawAudioRecorder;
-import com.ggec.voice.assistservice.test.AudioCapture;
-import com.ggec.voice.assistservice.test.RecordingRMSListener;
-import com.ggec.voice.assistservice.test.RecordingStateListener;
 import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
-import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
-import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
@@ -36,15 +31,11 @@ import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
-import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-
-import okio.BufferedSink;
 
 /**
  * Created by ggec on 2017/3/29.
@@ -248,12 +239,7 @@ public class BgProcessIntentService extends IntentService {
     private void startNearTalkRecord(final long waitMicTimeOut) {
         AvsHandleHelper.getAvsHandleHelper().pauseSound();
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        SpeechSendAudio audio = alexaManager.getSpeechSendAudio(new IGetContextEventCallBack() {
-            @Override
-            public List<Event> getContextEvent() {
-                return ContextUtil.getContextList(MyApplication.getContext());
-            }
-        });
+        SpeechSendAudio audio = alexaManager.getSpeechSendAudio();
         if (audio != null) audio.cancelRequest();
         if(!Util.isNetworkAvailable(this)){
             //TODO play no net work
@@ -283,126 +269,6 @@ public class BgProcessIntentService extends IntentService {
                 }, getFileCallBack("record", path));
             }
         });
-    }
-
-    private void startRecord() throws IOException {
-//        RequestListener requestListener = new RequestListener() {
-//
-//            @Override
-//            public void onRequestSuccess() {
-//                Log.d(TAG, "startRecord# onRequestSuccess");
-//                finishProcessing();
-//            }
-//
-//            @Override
-//            public void onRequestError(Throwable e) {
-//                Log.e(TAG, "startRecord# onRequestError", e);
-//                finishProcessing();
-//            }
-//        };
-//
-//        //// TODO: 2017/3/29
-//        controller.startRecording(rmsListener, requestListener);
-
-
-        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        SpeechSendAudio audio = alexaManager.getSpeechSendAudio(new IGetContextEventCallBack() {
-            @Override
-            public List<Event> getContextEvent() {
-                return ContextUtil.getContextList(MyApplication.getContext());
-            }
-        });
-        if (audio != null) audio.cancelRequest(); // TODO 这里要cancel Http request
-        if (recorder != null) {
-            recorder.stop();
-            recorder.release();
-            recorder = null;
-        }
-        alexaManager.sendAudioRequest(getAudioSendRequestBody(), getCallBack(""));
-    }
-
-    private DataRequestBody getAudioSendRequestBody() {
-        if (recorder == null) {
-            recorder = new RawAudioRecorder(16000);
-        }
-        recorder.start();
-        android.util.Log.i("zhm", "writeTo 111");
-        DataRequestBody requestBody = new DataRequestBody() {
-            @Override
-            public void writeTo(BufferedSink sink) throws IOException {
-                android.util.Log.i("zhm", "writeTo 1");
-                while (recorder != null && !recorder.isPausing()) {
-                    if (sink != null && recorder != null) {
-//                        final float rmsdb = recorder.getRmsdb();
-                        sink.write(recorder.consumeRecording());
-//                        Log.d(TAG, "RMSDB: " + rmsdb);
-                    }
-                }
-                stopListening();
-                Log.i("zhm", "writeTo1 end");
-            }
-
-            private void stopListening() {
-                if (recorder != null) {
-                    recorder.stop();
-                    recorder.release();
-                    recorder = null;
-                }
-            }
-        };
-        return requestBody;
-    }
-
-    private DataRequestBody getInputRequestBody() throws IOException {
-        final AudioCapture audioCapture = AudioCapture.getAudioHardware(MyApplication.getContext(), 16000);
-        audioCapture.stopCapture();
-        final InputStream inputStream = audioCapture.getAudioInputStream(new RecordingStateListener() {
-            @Override
-            public void recordingStarted() {
-                Log.i("zhm", "recordingStarted ");
-            }
-
-            @Override
-            public void recordingCompleted() {
-                Log.i("zhm", "recordingCompleted ");
-            }
-        }, new RecordingRMSListener() {
-            @Override
-            public void rmsChanged(int rms) {
-                Log.i("zhm", "rmsChanged " + rms);
-            }
-        });
-
-        final byte[] buffer = new byte[1024];
-        DataRequestBody requestBody = new DataRequestBody() {
-            @Override
-            public void writeTo(BufferedSink sink) throws IOException {
-                android.util.Log.i("zhm", "writeTo ");
-                while (!audioCapture.isPausing()) {
-                    writeSink(sink);
-
-//                try {
-//                    Thread.sleep(25);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-                }
-                writeSink(sink);
-                inputStream.close();
-//                stopListening();
-                android.util.Log.i("zhm", "writeTo end");
-            }
-
-            private void writeSink(BufferedSink sink) throws IOException {
-                if (inputStream.available() > 0 && sink != null) {
-                    int available = inputStream.read(buffer);
-                    sink.write(buffer, 0, available);
-                    sink.flush();
-                }
-            }
-
-        };
-        return requestBody;
     }
 
     private void textTest() {

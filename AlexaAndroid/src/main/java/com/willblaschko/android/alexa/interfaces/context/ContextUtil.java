@@ -7,6 +7,7 @@ import android.util.Pair;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
+import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,15 +59,15 @@ public class ContextUtil {
         list.addAll(audioAndSpeech);
 
         Event.Builder alertsEventBuilder = new Event.Builder()
-                .setHeaderNamespace("Alerts")
-                .setHeaderName("AlertsState")
+                .setHeaderNamespace(AVSAPIConstants.Alerts.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.Alerts.Events.AlertsState.NAME)
                 .setPayload(PayloadFactory.createAlertsStatePayload(context));
         list.add(alertsEventBuilder.build().getEvent());
 
         Pair<Long, Boolean> p = SpeakerUtil.getConvertVolumeState(context);
         Event.Builder speakerEventBuilder = new Event.Builder()
-                .setHeaderNamespace("Speaker")
-                .setHeaderName("VolumeState")
+                .setHeaderNamespace(AVSAPIConstants.Speaker.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.Speaker.Events.VolumeState.NAME)
                 .setPayload(PayloadFactory.createVolumeStatePayload(p.first, p.second));
         list.add(speakerEventBuilder.build().getEvent());
 

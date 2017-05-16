@@ -126,8 +126,8 @@ public class Event {
 
     public static String getSpeechRecognizerEvent(String profile, List<Event> events){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("SpeechRecognizer")
-                .setHeaderName("Recognize")
+        builder.setHeaderNamespace(AVSAPIConstants.SpeechRecognizer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.SpeechRecognizer.Events.Recognize.NAME)
                 .setHeaderMessageId(getUuid())
                 .setHeaderDialogRequestId(getUuid())
                 .setPayload(PayloadFactory
@@ -152,7 +152,7 @@ public class Event {
     public static String getVolumeChangedEvent(long volume, boolean isMute){
         if(volume<0 || volume>100) throw new IllegalArgumentException("Any long value must between 0 and 100 ,current:"+volume);
         Builder builder = new Builder();
-        builder.setHeaderNamespace("Speaker")
+        builder.setHeaderNamespace(AVSAPIConstants.Speaker.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.Speaker.Events.VolumeChanged.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createVolumeChangedPayload(isMute, volume))
@@ -169,7 +169,7 @@ public class Event {
      */
     public static String getMuteChangeEvent(boolean isMuted, long volume){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("Speaker")
+        builder.setHeaderNamespace(AVSAPIConstants.Speaker.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.Speaker.Events.MuteChanged.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createSetMutePayload(isMuted, volume));
@@ -178,16 +178,16 @@ public class Event {
 
     public static String getExpectSpeechTimedOutEvent(){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("SpeechRecognizer")
-                .setHeaderName("ExpectSpeechTimedOut")
+        builder.setHeaderNamespace(AVSAPIConstants.SpeechRecognizer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.SpeechRecognizer.Events.ExpectSpeechTimedOut.NAME)
                 .setHeaderMessageId(getUuid());
         return builder.toJson();
     }
 
     public static String getPlaybackNearlyFinishedEvent(String token, long offsetInMilliseconds){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("AudioPlayer")
-                .setHeaderName("PlaybackNearlyFinished")
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackNearlyFinished.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory
                         .createAudioPlayerPayload(token, offsetInMilliseconds))
@@ -230,7 +230,7 @@ public class Event {
 
     private static String getAlertEvent(String token, String type) {
         Builder builder = new Builder();
-        builder.setHeaderNamespace("Alerts")
+        builder.setHeaderNamespace(AVSAPIConstants.Alerts.NAMESPACE)
                 .setHeaderName(type)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createPayload(token));
@@ -239,8 +239,8 @@ public class Event {
 
     public static String getSpeechStartedEvent(String token){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("SpeechSynthesizer")
-                .setHeaderName("SpeechStarted")
+        builder.setHeaderNamespace(AVSAPIConstants.SpeechSynthesizer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.SpeechSynthesizer.Events.SpeechStarted.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
@@ -248,8 +248,8 @@ public class Event {
 
     public static String getSpeechFinishedEvent(String token){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("SpeechSynthesizer")
-                .setHeaderName("SpeechFinished")
+        builder.setHeaderNamespace(AVSAPIConstants.SpeechSynthesizer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.SpeechSynthesizer.Events.SpeechFinished.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createPayload(token));
         return builder.toJson();
@@ -258,8 +258,8 @@ public class Event {
 
     public static String getPlaybackStartedEvent(String directiveToken, long offset){
         Builder builder = new Builder();
-        builder.setHeaderNamespace("AudioPlayer")
-                .setHeaderName("PlaybackStarted")
+        builder.setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackStarted.NAME)
                 .setHeaderMessageId(getUuid())
                 .setPayload(PayloadFactory.createAudioPlayerPayload(directiveToken, offset));
         return builder.toJson();
@@ -352,8 +352,8 @@ public class Event {
     public static String createSystemSynchronizeStateEvent(List<Event> contextList){
 
         Event.Builder builder = new Event.Builder();
-        builder.setHeaderNamespace("System")
-                .setHeaderName("SynchronizeState")
+        builder.setHeaderNamespace(AVSAPIConstants.System.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.System.Events.SynchronizeState.NAME)
                 .setHeaderMessageId(getUuid())
                 .setContext(contextList);
 
@@ -363,7 +363,7 @@ public class Event {
     public static String createExceptionEncounteredEvent(List<Event> contextList, String unparsedDirective, String type, String msg){
 
         Event.Builder builder = new Event.Builder();
-        builder.setHeaderNamespace("System")
+        builder.setHeaderNamespace(AVSAPIConstants.System.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.System.Events.ExceptionEncountered.NAME)
                 .setHeaderMessageId(getUuid())
                 .setContext(contextList)

@@ -36,6 +36,7 @@ import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsReplaceEnque
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsStopItem;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.AvsExpectSpeechItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
+import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -420,15 +421,15 @@ public class GGECMediaManager {
         String SpeakDirectiveToken = mSpeechSynthesizerPlayer.getCurrentToken();
         List<Event> list = new ArrayList<>();
         Event.Builder playbackEventBuilder = new Event.Builder()
-                .setHeaderNamespace("AudioPlayer")
-                .setHeaderName("PlaybackState")
+                .setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackState.NAME)
                 .setPayload(PayloadFactory.createPlaybackStatePayload(playDirectiveToken, mMediaAudioPlayer.getCurrentPosition(), getAudioState()))
                 ;
         list.add(playbackEventBuilder.build().getEvent());
 
         Event.Builder speechSynthesizerEventBuilder = new Event.Builder()
-                .setHeaderNamespace("SpeechSynthesizer")
-                .setHeaderName("SpeechState")
+                .setHeaderNamespace(AVSAPIConstants.SpeechSynthesizer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.SpeechSynthesizer.Events.SpeechState.NAME)
                 .setPayload(PayloadFactory.createSpeechStatePayload(SpeakDirectiveToken, mSpeechSynthesizerPlayer.getCurrentPosition(), getSpeechSynthesizerState()));
         list.add(speechSynthesizerEventBuilder.build().getEvent());
         return list;

@@ -131,6 +131,10 @@ public class AlexaManager {
         return mSpeechSendAudio;
     }
 
+    public SpeechSendAudio getSpeechSendAudio(){
+        return mSpeechSendAudio;
+    }
+
     public VoiceHelper getVoiceHelper() {
         return mVoiceHelper;
     }
@@ -208,22 +212,11 @@ public class AlexaManager {
     }
 
     public void closeOpenDownchannel(final boolean stop) {
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                if (openDownchannel != null) {
-                    Log.i(TAG, "closeOpenDownchannel");
-                    openDownchannel.closeConnection(stop);
-                    openDownchannel = null;
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Void v) {
-                super.onPostExecute(v);
-            }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        if (openDownchannel != null) {
+            Log.i(TAG, "closeOpenDownchannel");
+            openDownchannel.closeConnection(stop);
+            openDownchannel = null;
+        }
     }
 
     private volatile boolean isSendingOpenDownchannelDirective;
