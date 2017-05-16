@@ -22,6 +22,7 @@ import okhttp3.Response;
 
 /**
  * Created by ggec on 2017/5/15.
+ * pls m3u parse
  */
 
 public class MyAVSAudioParser {
@@ -35,7 +36,6 @@ public class MyAVSAudioParser {
     private int redirectCount;
 
     private OkHttpClient okHttpClient;
-    ;
 
     public MyAVSAudioParser(AvsPlayRemoteItem playItem) {
         mAvsPlayRemoteItem = playItem;

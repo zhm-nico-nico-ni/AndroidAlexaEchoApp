@@ -36,7 +36,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
 import java.util.List;
+import java.util.concurrent.Callable;
 
+import io.reactivex.Observable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
 
@@ -251,27 +256,25 @@ public class AlexaManager {
                     TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
-                            //do this off the main thread
-                            new AsyncTask<Void, Void, Boolean>() {
-                                @Override
-                                protected Boolean doInBackground(Void... params) {
-                                    try {
-                                        //create a new OpenDownchannel object and send our request
-                                        if (openDownchannel != null) {
-                                            return openDownchannel.connect(token);
+                            Observable
+                                    .fromCallable(new Callable<Boolean>() {
+                                        @Override
+                                        public Boolean call() throws Exception {
+                                            if (openDownchannel != null) {
+                                                return openDownchannel.connect(token);
+                                            }
+                                            return false;
                                         }
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                    return false;
-                                }
-
-                                @Override
-                                protected void onPostExecute(Boolean canceled) {
-                                    super.onPostExecute(canceled);
-                                    reconnect(canceled);
-                                }
-                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                                    })
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(Schedulers.single())
+                                    .subscribe(new Consumer<Boolean>() {
+                                        @Override
+                                        public void accept(Boolean aBoolean) throws Exception {
+                                            reconnect(aBoolean);
+                                        }
+                                    });
+                            //do this off the main thread
                         }
 
                         @Override
@@ -686,30 +689,32 @@ public class AlexaManager {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
-                            new AsyncTask<Void, Void, AvsResponse>() {
-                                @Override
-                                protected AvsResponse doInBackground(Void... params) {
-                                    mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
-                                    try {
-                                        getSpeechSendAudio(getContextEventCallBack).sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
-                                    } catch (AvsResponseException e){
-                                        if(e.isUnAuthorized()){
+                            Observable
+                                    .fromCallable(new Callable<Object>() {
+                                        @Override
+                                        public Object call() throws Exception {
+                                            mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
+                                            try {
+                                                getSpeechSendAudio(getContextEventCallBack).sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
+                                            } catch (AvsResponseException e) {
+                                                if (e.isUnAuthorized()) {
 //TODO handle UnAuthorized
+                                                }
+                                                if (callback != null) {
+                                                    callback.failure(e);
+                                                }
+                                            } catch (AvsException e) {
+                                                //bubble up the error
+                                                // report to avs
+                                                if (callback != null) {
+                                                    callback.failure(e);
+                                                }
+                                            }
+                                            return new Object();
                                         }
-                                        if (callback != null) {
-                                            callback.failure(e);
-                                        }
-                                    } catch (AvsException e) {
-                                        //bubble up the error
-                                        // report to avs
-                                        if (callback != null) {
-                                            callback.failure(e);
-                                        }
-                                    }
-                                    return null;
-                                }
-
-                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                                    })
+                                    .subscribeOn(Schedulers.io())
+                                    .subscribe();
                         }
 
                         @Override
@@ -794,14 +799,15 @@ public class AlexaManager {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
-                            new AsyncTask<Void, Void, AvsResponse>() {
+                            Observable.fromCallable(new Callable<Object>() {
                                 @Override
-                                protected AvsResponse doInBackground(Void... params) {
+                                public Object call() throws Exception {
                                     new GenericSendEvent(url, token, event, new AsyncEventHandler(AlexaManager.this, callback));
-                                    return null;
+                                    return new Object();
                                 }
-
-                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            })
+                                    .subscribeOn(Schedulers.io())
+                                    .subscribe();
                         }
 
                         @Override
@@ -840,12 +846,15 @@ public class AlexaManager {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
-                            new AsyncTask<Void, Void, AvsResponse>() {
-                                @Override
-                                protected AvsResponse doInBackground(Void... params) {
-                                    return new PingSendEvent(url, token, callback).doWork();
-                                }
-                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            Observable
+                                    .fromCallable(new Callable<AvsResponse>() {
+                                        @Override
+                                        public AvsResponse call() throws Exception {
+                                            return new PingSendEvent(url, token, callback).doWork();
+                                        }
+                                    }).onErrorReturn(getErrorConsumer("sendPingEvent", callback))
+                                    .subscribeOn(Schedulers.io())
+                                    .subscribe();
                         }
 
                         @Override
@@ -918,17 +927,17 @@ public class AlexaManager {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
-                            new AsyncTask<Void, Void, AvsResponse>() {
+                            Observable.fromCallable(new Callable<Object>() {
                                 @Override
-                                protected AvsResponse doInBackground(Void... params) {
+                                public Object call() throws Exception {
                                     Log.d(TAG, "sendUserInactivityReport");
                                     new GenericSendEvent(url, token
                                             , Event.createUserInactivityReportEvent(second)
                                             , null);
-                                    return null;
+                                    return new Object();
                                 }
-
-                            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            }).subscribeOn(Schedulers.io())
+                                    .subscribe();
                         }
 
                         @Override
@@ -944,6 +953,18 @@ public class AlexaManager {
 
     public void tryRefreshToken(TokenManager.TokenCallback callback){
         TokenManager.tryRefreshToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, callback);
+    }
+
+    private Function<Throwable, AvsResponse> getErrorConsumer(final String method, final AsyncCallback<AvsResponse, Exception> callback){
+        return new Function<Throwable, AvsResponse>() {
+            @Override
+            public AvsResponse apply(Throwable throwable) throws Exception {
+                if(null != callback) callback.failure((Exception) throwable);
+                else Log.e(TAG, "call method <"+method+"> encounter err", throwable);
+
+                return new AvsResponse();
+            }
+        };
     }
 
     private static class AsyncEventHandler implements AsyncCallback<AvsResponse, Exception> {

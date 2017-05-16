@@ -47,7 +47,7 @@ public class TokenManager {
     public final static String PREF_REFRESH_TOKEN = "refresh_token";
     public final static String PREF_TOKEN_EXPIRES = "token_expires";
 
-    final static Handler handler = new Handler(Looper.getMainLooper());
+    private final static Handler handler = new Handler(Looper.getMainLooper());
     /**
      * Get an access token from the Amazon servers for the current user
      * @param context local/application level context
