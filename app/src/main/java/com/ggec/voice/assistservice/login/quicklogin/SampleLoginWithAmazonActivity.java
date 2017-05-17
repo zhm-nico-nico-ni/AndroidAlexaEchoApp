@@ -2,13 +2,9 @@ package com.ggec.voice.assistservice.login.quicklogin;
 
 import android.Manifest;
 import android.app.Activity;
-
-
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
@@ -28,18 +24,12 @@ import com.amazon.identity.auth.device.api.authorization.AuthorizeRequest;
 import com.amazon.identity.auth.device.api.authorization.AuthorizeResult;
 import com.amazon.identity.auth.device.api.authorization.ProfileScope;
 import com.amazon.identity.auth.device.api.authorization.Scope;
-import com.amazon.identity.auth.device.api.authorization.ScopeFactory;
 import com.amazon.identity.auth.device.api.authorization.User;
 import com.amazon.identity.auth.device.api.workflow.RequestContext;
 import com.ggec.voice.assistservice.AssistService;
-import com.ggec.voice.assistservice.BgProcessIntentService;
-import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.R;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.auth.DefaultScope;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import static android.Manifest.permission.RECORD_AUDIO;
 
@@ -116,9 +106,7 @@ public class SampleLoginWithAmazonActivity extends Activity {
         findViewById(R.id.btn_start_record).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent it = new Intent(v.getContext(), BgProcessIntentService.class);
-                BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(1);
-                it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+                Intent it = BackGroundProcessServiceControlCommand.createIntentByType(v.getContext(), 1);
                 startService(it);
 
 //                cmd.type = 2;
@@ -129,9 +117,7 @@ public class SampleLoginWithAmazonActivity extends Activity {
         findViewById(R.id.btn_start_record_t).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent it = new Intent(v.getContext(), BgProcessIntentService.class);
-                BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(2);
-                it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+                Intent it = BackGroundProcessServiceControlCommand.createIntentByType(v.getContext(), 2);
                 startService(it);
 
 //                cmd.type = 2;
@@ -143,9 +129,7 @@ public class SampleLoginWithAmazonActivity extends Activity {
         findViewById(R.id.btn_start_record_file).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent it = new Intent(v.getContext(), BgProcessIntentService.class);
-                BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(3);
-                it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+                Intent it = BackGroundProcessServiceControlCommand.createIntentByType(v.getContext(), 3);
                 startService(it);
 
 //                cmd.type = 2;
@@ -368,7 +352,10 @@ public class SampleLoginWithAmazonActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        startAssistIfGetPermission();
+        if(requestCode ==3001) {
+            startAssistIfGetPermission();
+        }
+
     }
 
     private void startAssistIfGetPermission(){
@@ -378,5 +365,8 @@ public class SampleLoginWithAmazonActivity extends Activity {
         } else {
             ActivityCompat.requestPermissions(this, new String[]{RECORD_AUDIO}, 3001);
         }
+
+        if(PackageManager.PERMISSION_GRANTED != ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION))
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 3002);
     }
 }
