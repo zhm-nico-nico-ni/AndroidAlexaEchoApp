@@ -6,6 +6,7 @@ import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.connection.ClientUtil;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.SendEvent;
+import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.response.ResponseParser;
 
 import org.jetbrains.annotations.NotNull;
@@ -74,6 +75,13 @@ public class OpenDownchannel extends SendEvent {
 
                 try {
                     val = ResponseParser.parseResponse(buffer.readByteArray(), boundary, true);
+                } catch (AvsResponseException ex){
+                    if(ex.isUnAuthorized()) {
+                        onError(callback, ex);
+                        break;
+                    } else {
+                        Log.e(TAG, "on response parseResponse error: " + ex.getMessage(), ex);
+                    }
                 } catch (Exception exp) {
                     Log.e(TAG, "on response parseResponse error: " + exp.getMessage(), exp);
                 }

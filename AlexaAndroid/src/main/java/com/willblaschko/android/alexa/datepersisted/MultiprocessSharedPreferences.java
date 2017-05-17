@@ -104,6 +104,8 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
                 r.put(entry.getKey(), (Float) entry.getValue());
             } else if (entry.getValue() instanceof Boolean) {
                 r.put(entry.getKey(), (Boolean) entry.getValue());
+            } else {
+                r.put(entry.getKey(), (short) 22);
             }
         }
         return r;
@@ -441,6 +443,7 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
                     bundle.putSerializable(KEY, (HashSet<String>) getSystemSharedPreferences(name, mode).getStringSet(key, set));
                 }
             }
+            break;
             default:
 //                if (!YYDebug.RELEASE_VER) {
 //                    throw new IllegalArgumentException("At query, This is Unknown Uri：" + uri + ", AUTHORITY = " + AUTHORITY);
@@ -507,6 +510,8 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
                         editor.putFloat(k, (Float) v);
                     } else if (v instanceof Boolean) {
                         editor.putBoolean(k, (Boolean) v);
+                    } else if(v instanceof Short){
+                        editor.remove(k);
                     }
                 }
                 if (hasListeners && keysModified.isEmpty()) {

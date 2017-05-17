@@ -21,6 +21,7 @@ import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
+import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
@@ -28,6 +29,7 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
+import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
@@ -399,6 +401,9 @@ public class BgProcessIntentService extends IntentService {
                 @Override
                 public void failure(Exception error) {
                     super.failure(error);
+                    if(error instanceof AvsResponseException){
+                        com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).commit();
+                    }
                     cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
                     cancelTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN);
                 }

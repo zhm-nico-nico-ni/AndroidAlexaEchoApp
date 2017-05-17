@@ -698,7 +698,7 @@ public class AlexaManager {
                                                 getSpeechSendAudio(getContextEventCallBack).sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
                                             } catch (AvsResponseException e) {
                                                 if (e.isUnAuthorized()) {
-//TODO handle UnAuthorized
+                                                    com.willblaschko.android.alexa.utility.Util.getPreferences(mContext).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).apply();
                                                 }
                                                 if (callback != null) {
                                                     callback.failure(e);
