@@ -57,8 +57,8 @@ public class TokenManager {
      * @param clientId generate by auth manager
      * @param callback the callback for state changes
      */
-    public static void getAccessToken(final Context context, @NotNull String authCode, @NotNull String codeVerifier,
-            String redirectUri, String clientId, @Nullable final TokenResponseCallback callback){
+    public static void getAccessToken(final Context context, @NotNull String authCode, final @NotNull String codeVerifier,
+                                      String redirectUri, final String clientId, @Nullable final TokenResponseCallback callback){
         //this url shouldn't be hardcoded, but it is, it's the Amazon auth access token endpoint
         String url = "https://api.amazon.com/auth/O2/token";
 
@@ -93,23 +93,35 @@ public class TokenManager {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String s = response.body().string();
+            public void onResponse(Call call, final Response response) throws IOException {
+                final String s = response.body().string();
                 if(BuildConfig.DEBUG) {
                     Log.i(TAG, s);
                 }
-                final TokenResponse tokenResponse = new Gson().fromJson(s, TokenResponse.class);
-                //save our tokens to local shared preferences
-                saveTokens(context, tokenResponse);
+                if (response.isSuccessful()) {
+                    final TokenResponse tokenResponse = new Gson().fromJson(s, TokenResponse.class);
+                    //save our tokens to local shared preferences
+                    SharedPreferenceUtil.putAuthToken2(context, clientId, codeVerifier, tokenResponse.access_token, tokenResponse.refresh_token,
+                            tokenResponse.expires_in);
 
-                if(callback != null){
-                    //bubble up success
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            callback.onSuccess(tokenResponse);
-                        }
-                    });
+                    if (callback != null) {
+                        //bubble up success
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onSuccess(tokenResponse);
+                            }
+                        });
+                    }
+                } else {
+                    if (callback != null) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onFailure(new Exception("http response "+response.code() + " " + s));
+                            }
+                        });
+                    }
                 }
             }
         });
@@ -127,7 +139,6 @@ public class TokenManager {
         SharedPreferences preferences = Util.getPreferences(context.getApplicationContext());
         //if we have an access token
         if(preferences.contains(PREF_ACCESS_TOKEN)){
-
             if(preferences.getLong(PREF_TOKEN_EXPIRES, 0) > System.currentTimeMillis()){
                 //if it's not expired, return the existing token
                 callback.onSuccess(preferences.getString(PREF_ACCESS_TOKEN, null));
@@ -216,7 +227,7 @@ public class TokenManager {
                         @Override
                         public void run() {
                             callback.onSuccess(tokenResponse.access_token);
-                            callback.beginRefreshTokenEvent(context, tokenResponse.expires_in - 60000);
+                            callback.beginRefreshTokenEvent(context, (tokenResponse.expires_in - 60)*1000);
                         }
                     });
                 } else {
@@ -239,7 +250,7 @@ public class TokenManager {
     private static void saveTokens(Context context, TokenResponse tokenResponse){
         Log.d(TAG, "saveTokens " + tokenResponse.expires_in);
         SharedPreferenceUtil.putAuthToken(context, tokenResponse.access_token, tokenResponse.refresh_token,
-                (System.currentTimeMillis() + tokenResponse.expires_in * 1000));
+                tokenResponse.expires_in * 1000);
     }
 
     public interface TokenResponseCallback {
