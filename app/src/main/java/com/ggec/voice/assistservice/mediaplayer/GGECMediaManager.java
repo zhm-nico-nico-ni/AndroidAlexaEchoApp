@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
 
-import com.ggec.voice.assistservice.BgProcessIntentService;
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
@@ -316,12 +315,8 @@ public class GGECMediaManager {
     };
 
     private void startListening(long waitMicMillseconds) {
-        Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
-
-        BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
-//        BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.START_VOICE_RECORD)
-        cmd.waitMicDelayMillSecond = waitMicMillseconds;
-        it.putExtra(BgProcessIntentService.EXTRA_CMD, cmd);
+        Intent it = BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
+        it.putExtra("waitMicDelayMillSecond", waitMicMillseconds);
         MyApplication.getContext().startService(it);
     }
 

@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -21,7 +22,6 @@ import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
-import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
@@ -82,16 +82,21 @@ public class BgProcessIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {// TODO 修改接入OpenDownChannel ，简化这段代码
-        final BackGroundProcessServiceControlCommand cmd = intent.getParcelableExtra(EXTRA_CMD);
+        final BackGroundProcessServiceControlCommand cmd = new BackGroundProcessServiceControlCommand(intent.getIntExtra(EXTRA_CMD, -1));
+        Bundle b = intent.getBundleExtra("cmd_bundle");
+        if (b != null) {
+            cmd.bundle = b;
+        }
         AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
 
         if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
+            final long waitMicDelayMillSecond = intent.getLongExtra("waitMicDelayMillSecond", 0);
             //start
 //            startRecord1(cmd.waitMicDelayMillSecond);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    startNearTalkRecord(cmd.waitMicDelayMillSecond);
+                    startNearTalkRecord(waitMicDelayMillSecond);
                 }
             });
 
@@ -102,7 +107,7 @@ public class BgProcessIntentService extends IntentService {
         } else if (cmd.type == 3) {
 //            alexaManager.closeOpenDownchannel(false);
 //            search();
-            startRecord1(cmd.waitMicDelayMillSecond);
+            startRecord1(0);
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
             final String messageId = intent.getStringExtra("messageId");
@@ -272,7 +277,9 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Set a timer after 15 seconds from now", getCallBack("textTest"));//Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
+        alexaManager.sendTextRequest("Set an alarm for 9:49 morning on everyday", getCallBack("textTest"));
+        //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
+        // "Set an alarm for 9:49 morning on everyday"
     }
 
     private void search() {
@@ -402,7 +409,7 @@ public class BgProcessIntentService extends IntentService {
                 public void failure(Exception error) {
                     super.failure(error);
                     if(error instanceof AvsResponseException){
-                        com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).commit();
+//        TODO open after test                com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).commit();
                     }
                     cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
                     cancelTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN);
