@@ -32,6 +32,8 @@
         <service
             android:name=".AssistService"
             android:process=":interactor"
+            android:enabled="true"
+            android:exported="false"
             android:singleUser="true" />
 
         <service

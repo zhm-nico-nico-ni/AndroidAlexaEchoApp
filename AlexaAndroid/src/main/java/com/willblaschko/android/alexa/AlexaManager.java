@@ -64,7 +64,7 @@ public class AlexaManager {
     private SpeechSendVoice mSpeechSendVoice;
     private SpeechSendText mSpeechSendText;
     private SpeechSendAudio mSpeechSendAudio;
-    private OpenDownchannel openDownchannel;
+    private volatile OpenDownchannel openDownchannel;
     private VoiceHelper mVoiceHelper;
     private Context mContext;
     private boolean mIsRecording = false;

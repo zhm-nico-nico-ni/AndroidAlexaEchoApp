@@ -81,7 +81,6 @@ public class TokenManager {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, final IOException e) {
-                e.printStackTrace();
                 if(callback != null){
                     //bubble up error
                     handler.post(new Runnable() {
@@ -191,7 +190,6 @@ public class TokenManager {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, final IOException e) {
-                e.printStackTrace();
                 //bubble up error
                 handler.post(new Runnable() {
                     @Override
