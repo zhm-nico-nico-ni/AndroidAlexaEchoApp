@@ -40,8 +40,6 @@ public class AvsHandleHelper {
     private GGECMediaManager audioManager;
     private NearTalkVoiceRecord myNearTalkVoiceRecord;
 
-//    private AlexaAudioExoPlayer exoPlayer;
-    //TODO 這裏把microphone 的控制加上
 
     private AvsHandleHelper() {
         audioManager = new GGECMediaManager();
@@ -158,12 +156,16 @@ public class AvsHandleHelper {
                         , current.getToken(), new ImplAsyncCallback("SetAlertFail"));
             }
         } else if (current instanceof AvsDeleteAlertItem) {
-            AvsDeleteAlertItem deleteAlertItem = (AvsDeleteAlertItem) current;
-            SetAlertHelper.cancelOrDeleteAlert(MyApplication.getContext(), deleteAlertItem.getMessageID()
+            boolean res = SetAlertHelper.cancelOrDeleteAlert(MyApplication.getContext(), current.getToken()
                     , BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.BEGIN_ALARM));
-            SetAlertHelper.sendDeleteAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                    , deleteAlertItem.getToken()
-                    , new ImplAsyncCallback("DeleteAlertSucceeded"));
+            Log.d(TAG, "Delete Alert res:" + res);
+            if (res) {
+                SetAlertHelper.sendDeleteAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        , current.getToken(), new ImplAsyncCallback("DeleteAlertSucceeded"));
+            } else {
+                SetAlertHelper.sendDeleteAlertFail(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        , current.getToken(), new ImplAsyncCallback("DeleteAlertFail"));
+            }
         } else {
             return false;
         }

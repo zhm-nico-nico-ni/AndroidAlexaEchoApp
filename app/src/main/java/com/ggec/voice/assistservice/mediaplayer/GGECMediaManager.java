@@ -21,6 +21,8 @@ import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackE
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
+import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
@@ -71,11 +73,17 @@ public class GGECMediaManager {
     }
 
 
-    private void appendAllAtBegin(AvsItem other) {
-        LinkedHashMap<String, AvsItem> to = new LinkedHashMap<>(1 + avsQueue1.size());
-        to.put(other.messageID, other);
-        to.putAll(avsQueue1);
-        avsQueue1 = to;
+    private boolean appendAllAtBegin(AvsItem other) {
+        if (!avsQueue1.isEmpty()) {
+            LinkedHashMap<String, AvsItem> to = new LinkedHashMap<>(1 + avsQueue1.size());
+            to.put(other.messageID, other);
+            to.putAll(avsQueue1);
+            avsQueue1 = to;
+            return true;
+        } else {
+            avsQueue1.put(other.messageID, other);
+            return false;
+        }
     }
 
     public void clear(boolean stopCurrent) {
@@ -135,6 +143,9 @@ public class GGECMediaManager {
                 Log.i(TAG, "Sending SpeechStartedEvent");
                 AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                         .sendEvent(Event.getSpeechStartedEvent(pendingItem.getToken()), null);
+            } else if(pendingItem instanceof AvsAlertPlayItem){
+                SetAlertHelper.sendAlertEnteredForeground(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        , pendingItem.getToken(), new ImplAsyncCallback("sendAlertEnteredForeground"));
             }
         }
 
@@ -152,6 +163,8 @@ public class GGECMediaManager {
             if (completedItem instanceof AvsSpeakItem) {
                 AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                         .sendEvent(Event.getSpeechFinishedEvent(completedItem.getToken()), null);
+            } else if(completedItem instanceof AvsAlertPlayItem) {
+                sendStopAlertEvent(completedItem.getToken());
             }
 
             checkQueue();
@@ -314,10 +327,16 @@ public class GGECMediaManager {
 
     public boolean addAvsItemToQueue(AvsItem response) {
 
-        if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理
-            Log.d(TAG, "stop alarm right now :" + response.messageID);
-            avsQueue1.remove(response.messageID);
-            mSpeechSynthesizerPlayer.release(false);
+        if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理, 暂时不需要先不管
+            Log.d(TAG, "stop alarm right now :" + response.getToken());
+            AvsSetAlertItem item = SetAlertHelper.getAlertItemByToken(MyApplication.getContext(), response.getToken());
+            if(item != null) {
+                sendStopAlertEvent(response.getToken());
+                avsQueue1.remove(item.messageID);
+                if(TextUtils.equals(response.getToken(), mSpeechSynthesizerPlayer.getCurrentToken())) {
+                    mSpeechSynthesizerPlayer.release(false);
+                }
+            }
         } else if(response instanceof AvsClearQueueItem){
             if(((AvsClearQueueItem) response).isClearAll()){
                 Log.w(TAG, "ClearQueue Directive, and replace current and enqueued streams");
@@ -359,7 +378,10 @@ public class GGECMediaManager {
                 || response instanceof AvsExpectSpeechItem){
             avsQueue1.put(response.messageID, response);
         } else if(response instanceof AvsAlertPlayItem) {
-            appendAllAtBegin(response);
+            if(appendAllAtBegin(response)){ // 队列不为空时才报告进入background
+                SetAlertHelper.sendAlertEnteredBackground(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        , response.getToken(), new ImplAsyncCallback("sendAlertEnteredBackground"));
+            }
         } else if (response instanceof AvsStopItem) {
             // The Stop directive is sent to your client to stop playback of an audio stream.
             // Your client may receive a Stop directive as the result of a voice request, a physical button press or GUI affordance.
@@ -408,6 +430,12 @@ public class GGECMediaManager {
         AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).sendEvent(event, null);
     }
 
+    private void sendStopAlertEvent(String token){
+        SetAlertHelper.sendAlertStopped(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                , token, new ImplAsyncCallback("sendAlertStopped"));
+        SetAlertHelper.deleteAlertSP(MyApplication.getContext(), token);
+    }
+
     private String getSpeechSynthesizerState(){
         return "PLAYING".equals(mSpeechSynthesizerPlayer.getStateString())? "PLAYING" : "FINISHED";
     }
@@ -438,8 +466,11 @@ public class GGECMediaManager {
     public void pauseSound(){
         tryPauseMediaAudio();
         mSpeechSynthesizerPlayer.stop(false);
-//        mMediaAudioPlayer.release(false);
-//                avsQueue1.remove(current.messageID);
+        AvsItem currentItem = mSpeechSynthesizerPlayer.getCurrentItem();
+        if(currentItem instanceof AvsAlertPlayItem){
+            sendStopAlertEvent(currentItem.getToken());
+        }
+
         avsQueue1.clear();
         mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_PAUSE);
     }

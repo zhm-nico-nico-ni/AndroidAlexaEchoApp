@@ -26,7 +26,6 @@ import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
-import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
@@ -107,7 +106,6 @@ public class BgProcessIntentService extends IntentService {
             final String messageId = intent.getStringExtra("messageId");
             Log.d(TAG, "BEGIN_ALARM: "+ messageId+ " ,token:"+token);
             SetAlertHelper.sendAlertStarted(alexaManager, token, getCallBack("sendAlertStarted"));
-            SetAlertHelper.sendAlertEnteredForeground(alexaManager, token, getCallBack("sendAlertEnteredForeground"));
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -115,29 +113,28 @@ public class BgProcessIntentService extends IntentService {
                 }
             });
 
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
-                    it.putExtra(EXTRA_CMD, new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.STOP_ALARM));
-                    it.putExtra("token", token);
-                    it.putExtra("messageId", messageId);
-                    startService(it);
-
-                }
-            }, 15000);
-        } else if (cmd.type == BackGroundProcessServiceControlCommand.STOP_ALARM) {
-            final String token = intent.getStringExtra("token");
-            final String messageId = intent.getStringExtra("messageId");
-            Log.d(TAG, "STOP_ALARM: "+ messageId+ " ,token:"+token);
-            SetAlertHelper.sendAlertStopped(alexaManager, token, getCallBack("sendAlertStopped"));
-            SetAlertHelper.deleteAlertSP(MyApplication.getContext(), token);
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token));
-                }
-            });
+//            handler.postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//                    Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
+//                    it.putExtra(EXTRA_CMD, new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.STOP_ALARM));
+//                    it.putExtra("token", token);
+//                    it.putExtra("messageId", messageId);
+//                    startService(it);
+//
+//                }
+//            }, 15000);
+//        } else if (cmd.type == BackGroundProcessServiceControlCommand.STOP_ALARM) {
+//            final String token = intent.getStringExtra("token");
+//            final String messageId = intent.getStringExtra("messageId");
+//            Log.d(TAG, "STOP_ALARM: "+ messageId+ " ,token:"+token);
+//
+//            handler.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token));
+//                }
+//            });
         } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
             SpeakerUtil.setMute(MyApplication.getContext()
                     , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
@@ -273,7 +270,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Play TuneIn music radio", getCallBack("textTest"));//Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
+        alexaManager.sendTextRequest("Set a timer after 15 seconds from now", getCallBack("textTest"));//Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
     }
 
     private void search() {

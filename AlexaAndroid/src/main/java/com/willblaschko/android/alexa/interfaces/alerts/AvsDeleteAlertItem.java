@@ -8,7 +8,4 @@ public class AvsDeleteAlertItem extends AvsItem {
         super(token, messageId);
     }
 
-    public String getMessageID(){
-        return messageID;
-    }
 }
