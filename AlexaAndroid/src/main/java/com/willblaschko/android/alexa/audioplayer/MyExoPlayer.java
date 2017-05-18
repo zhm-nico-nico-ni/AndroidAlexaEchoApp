@@ -79,8 +79,10 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         if (ExoPlayer.STATE_READY == playbackState) {
             if (beginOffset > 0 && beginOffset < mMediaPlayer.getDuration()) {
                 mMediaPlayer.seekTo(beginOffset);
+                beginOffset = 0;
+            } else {
+                mMediaPlayer.setPlayWhenReady(true);
             }
-            mMediaPlayer.setPlayWhenReady(true);
         }
 
         if (ExoPlayer.STATE_ENDED == playbackState) {
@@ -179,11 +181,11 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     public long getCurrentPosition() {
         long position = 0;
-        try {
+//        try {
             position = mMediaPlayer.getCurrentPosition();
-        } catch (Exception ex) {
-            Log.e(Log.TAG_APP, "!!!!! error when get media position");
-        }
+//        } catch (Exception ex) {
+//            Log.e(Log.TAG_APP, "!!!!! error when get media position");
+//        }
         return position;
     }
 

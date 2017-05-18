@@ -440,7 +440,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
         final long startOffset = playItem.pausePosition > playItem.getStartOffset()
                 ? playItem.pausePosition : playItem.getStartOffset();
 
-        Log.d(TAG, "play remote item, url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
+        Log.d(TAG, "play remote item offset:"+startOffset+" , url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
         if (TextUtils.isEmpty(playItem.getConvertUrl())) {
             Flowable.fromCallable(new Callable<ConvertAudioItem>() {
                 @Override
