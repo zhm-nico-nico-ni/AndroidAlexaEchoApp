@@ -462,7 +462,7 @@ public class GGECMediaManager {
         tryPauseMediaAudio();
         mSpeechSynthesizerPlayer.stop(false);
         AvsItem currentItem = mSpeechSynthesizerPlayer.getCurrentItem();
-        if(currentItem instanceof AvsAlertPlayItem){
+        if(mMediaAudioPlayer.isPlaying() && currentItem instanceof AvsAlertPlayItem){
             sendStopAlertEvent(currentItem.getToken());
         }
 
