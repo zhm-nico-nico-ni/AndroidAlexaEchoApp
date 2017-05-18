@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 
+import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent;
@@ -57,16 +58,27 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
 
         mDeviceLinkHandler = new DeviceLinkHandler(this);
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+
+        startService(
+                BackGroundProcessServiceControlCommand.createIntentByType(this,
+                        BackGroundProcessServiceControlCommand.LOAD_ALARM)
+        );
     }
 
     @Override
     public void onDetectWakeWord() {
         Log.w(TAG, "onDetectWakeWord");
 
-        startService(
-                BackGroundProcessServiceControlCommand.createIntentByType(this,
-                        BackGroundProcessServiceControlCommand.START_VOICE_RECORD)
-        );
+        playStart(new MyShortAudioPlayer2.IOnCompletionListener() {
+            @Override
+            public void onCompletion() {
+                startService(
+                        BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
+                                BackGroundProcessServiceControlCommand.START_VOICE_RECORD)
+                );
+            }
+        });
+
     }
 
 
@@ -76,5 +88,9 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
             mWakeWordAgent = new CumSphinxWakeWordAgent(this, this);
 //        mWakeWordAgent = new SnowboyWakeWordAgent(this, this);
         }
+    }
+
+    private void playStart(final MyShortAudioPlayer2.IOnCompletionListener listener) {
+        new MyShortAudioPlayer2("asset:///start.mp3", listener);
     }
 }

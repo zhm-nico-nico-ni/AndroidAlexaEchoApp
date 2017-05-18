@@ -5,7 +5,6 @@ import android.app.IntentService;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -95,7 +94,7 @@ public class BgProcessIntentService extends IntentService {
             final long waitMicDelayMillSecond = intent.getLongExtra("waitMicDelayMillSecond", 0);
             //start
 //            startRecord1(cmd.waitMicDelayMillSecond);
-            handler.post(new Runnable() {
+            handler.postAtFrontOfQueue(new Runnable() {
                 @Override
                 public void run() {
                     startNearTalkRecord(waitMicDelayMillSecond);
@@ -193,6 +192,8 @@ public class BgProcessIntentService extends IntentService {
             for(AvsSetAlertItem item : alertItems) {
                 if(SetAlertHelper.isScheduledTimeAvailable(item.getScheduledTime(), currentTime)){
                     AvsHandleHelper.getAvsHandleHelper().handleAvsItem(item);
+                } else {
+                    SetAlertHelper.sendAlertStopped(alexaManager, item.getToken(), null);
                 }
             }
         } else {
@@ -222,9 +223,9 @@ public class BgProcessIntentService extends IntentService {
             handler.postDelayed(waitMicTimeoutRunnable, waitMicTimeOut);
         }
 
-        playStart(new MediaPlayer.OnCompletionListener() {
+        playStart(new MyShortAudioPlayer2.IOnCompletionListener() {
             @Override
-            public void onCompletion(MediaPlayer mp) {
+            public void onCompletion() {
                 if (myVoiceRecord != null && !myVoiceRecord.isInterrupted()) {
                     myVoiceRecord.doActuallyInterrupt();
                 }
@@ -262,27 +263,24 @@ public class BgProcessIntentService extends IntentService {
             continueWakeWordDetect();
             return;
         }
-        playStart(new MediaPlayer.OnCompletionListener() {
+
+        String path = MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
+
+        AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, new IMyVoiceRecordListener() {
             @Override
-            public void onCompletion(MediaPlayer mp) {
-                String path = MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
+            public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
+                if (recordSuccess) {
 
-                AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, new IMyVoiceRecordListener() {
-                    @Override
-                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
-                        if (recordSuccess) {
-
-                        } else {
-                            if (waitMicTimeOut > 0 && actuallyLong == -1) {
-                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
-                            }
-                            playError();
-                        }
+                } else {
+                    if (waitMicTimeOut > 0 && actuallyLong == -1) {
+                        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                        alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
                     }
-                }, getFileCallBack("record", path));
+//                            playError();
+                }
             }
-        });
+        }, getFileCallBack("record", path));
+
     }
 
     private void textTest() {
@@ -357,14 +355,19 @@ public class BgProcessIntentService extends IntentService {
         sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
     }
 
-    private void playStart(final MediaPlayer.OnCompletionListener listener) {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
-                new MyShortAudioPlayer2("asset:///start.mp3", listener);
-            }
-        });
+    /*
+     * 这个由于ready性能太慢，因此不在这里调用了，提示音放在assistant server中播放
+     */
+    @Deprecated
+    private void playStart(final MyShortAudioPlayer2.IOnCompletionListener listener) {
+        new MyShortAudioPlayer2("asset:///start.mp3", listener);
+//        handler.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
+//
+//            }
+//        });
 
     }
 
