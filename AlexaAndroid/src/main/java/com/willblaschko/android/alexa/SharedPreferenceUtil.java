@@ -77,4 +77,11 @@ public class SharedPreferenceUtil {
         preferences.putLong(TokenManager.PREF_TOKEN_EXPIRES, (System.currentTimeMillis() + expires_in * 1000));
         return preferences.commit();
     }
+
+    public static void clearUtcTimeKey(Context context){
+        SharedPreferences.Editor preferences = Util.getPreferences(context.getApplicationContext()).edit();
+        //comes back in seconds, needs to be milis
+        preferences.remove(TokenManager.PREF_TOKEN_EXPIRES);
+        preferences.apply();
+    }
 }

@@ -22,6 +22,7 @@ public class BackGroundProcessServiceControlCommand {
     public final static int NETWORK_CONNECT = 10; // 处理网络恢复,连接open down channel
     public final static int USER_INACTIVITY_REPORT = 11; // inactiveTimeInSeconds
     public final static int REFRESH_TOKEN = 12;
+    public final static int LOAD_ALARM = 13;
 
     public int type; // 控制类型， 1 启动 2 停止 3 取消
     public Bundle bundle = new Bundle();

@@ -27,6 +27,7 @@ import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
+import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
@@ -37,6 +38,7 @@ import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * Created by ggec on 2017/3/29.
@@ -185,7 +187,15 @@ public class BgProcessIntentService extends IntentService {
                     setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
                 }
             });
-        }else {
+        } else if(cmd.type == BackGroundProcessServiceControlCommand.LOAD_ALARM){
+            List<AvsSetAlertItem> alertItems = SetAlertHelper.getAllAlerts(this);
+            long currentTime = System.currentTimeMillis();
+            for(AvsSetAlertItem item : alertItems) {
+                if(SetAlertHelper.isScheduledTimeAvailable(item.getScheduledTime(), currentTime)){
+                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(item);
+                }
+            }
+        } else {
             //cancel
             Log.d(TAG, "unknow cmd:" + cmd.type);
         }
@@ -277,7 +287,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Set an alarm for 9:49 morning on everyday", getCallBack("textTest"));
+        alexaManager.sendTextRequest("Set an alarm for 4:03 morning on everyday", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
         // "Set an alarm for 9:49 morning on everyday"
     }
