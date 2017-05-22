@@ -111,7 +111,8 @@ public class GGECMediaManager {
     }
 
     private final AvsAudioItem pauseMediaAudio() {
-        long lastPosition = mMediaAudioPlayer.stop(true);
+        mMediaAudioPlayer.pause();
+        long lastPosition = mMediaAudioPlayer.getCurrentPosition();
         AvsItem item = mMediaAudioPlayer.getCurrentItem();
         if (item instanceof AvsAudioItem) {
             ((AvsAudioItem) item).pausePosition = lastPosition;

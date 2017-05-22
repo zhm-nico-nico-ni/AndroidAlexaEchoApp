@@ -43,7 +43,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         eventLogger = new EventLogger(trackSelector);
 
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mMediaPlayer.setPlayWhenReady(false);
+        setPlayWhenReady(false);
         mMediaPlayer.addListener(this);
 
         mMediaPlayer.addListener(eventLogger);
@@ -81,9 +81,9 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
                 mMediaPlayer.seekTo(beginOffset);
                 beginOffset = 0;
             } else {
-                mMediaPlayer.setPlayWhenReady(true);
                 // 加上正式准备好的提示
                 if (!mFiredPrepareEvent) {
+                    setPlayWhenReady(true);
                     mFiredPrepareEvent = true;
                     if (mAsyncTask != null) {
                         mAsyncTask.cancel();
@@ -167,6 +167,10 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         mMediaPlayer.setPlayWhenReady(playWhenReady);
     }
 
+    public boolean getPlayWhenReady(){
+        return mMediaPlayer.getPlayWhenReady();
+    }
+
     public void release() {
         eventLogger = null;
         mMediaPlayer.release();
@@ -189,7 +193,10 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     public boolean isPlaying() {
         int state = mMediaPlayer.getPlaybackState();
-        return ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state;
+        if(ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state) {
+            return mMediaPlayer.getPlayWhenReady();
+        }
+        return false;
     }
 
     private Handler handler = new Handler();
@@ -199,10 +206,13 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
         @Override
         public void run() {
-            if (!isTaskFinish && mMediaPlayer != null && isPlaying()) {
-                long pos = mMediaPlayer.getCurrentPosition();
-                final float percent = (float) pos / (float) mMediaPlayer.getDuration();
-                if (mListener != null) mListener.onProgress(percent);
+            if (!isTaskFinish && mMediaPlayer != null ) {
+
+                if(isPlaying()) {
+                    long pos = mMediaPlayer.getCurrentPosition();
+                    final float percent = (float) pos / (float) mMediaPlayer.getDuration();
+                    if (mListener != null) mListener.onProgress(percent);
+                }
 
                 handler.postDelayed(this, 100);
             }

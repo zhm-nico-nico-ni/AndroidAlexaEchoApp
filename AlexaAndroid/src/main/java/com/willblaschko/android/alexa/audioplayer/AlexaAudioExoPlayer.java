@@ -188,8 +188,9 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     private void play(@NonNull AvsItem item) {
         if (item.equals(mItem)) {
-            if(item instanceof AvsPlayRemoteItem && isPlaying()) {
+            if(item instanceof AvsPlayRemoteItem && !getMediaPlayer().getPlayWhenReady()) {
                 Log.w(TAG, "play the same item");
+                play();
                 return;
             }
         }
@@ -259,7 +260,9 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * A helper function to pause the MediaPlayer
      */
     public void pause() {
+        mMediaState = STATE_PAUSED;
         getMediaPlayer().setPlayWhenReady(false);
+        Log.d(TAG, "pause ");
     }
 
     /**
