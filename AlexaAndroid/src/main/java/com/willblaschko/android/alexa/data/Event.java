@@ -197,35 +197,35 @@ public class Event {
     }
 
     public static String getSetAlertSucceededEvent(String token) {
-        return getAlertEvent(token, "SetAlertSucceeded");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.SetAlertSucceeded.NAME);
     }
 
     public static String getSetAlertFailedEvent(String token) {
-        return getAlertEvent(token, "SetAlertFailed");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.SetAlertFailed.NAME);
     }
 
     public static String getDeleteAlertSucceededEvent(String token) {
-        return getAlertEvent(token, "DeleteAlertSucceeded");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.DeleteAlertSucceeded.NAME);
     }
 
     public static String getDeleteAlertFailedEvent(String token) {
-        return getAlertEvent(token, "DeleteAlertFailed");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.DeleteAlertFailed.NAME);
     }
 
     public static String getAlertStartedEvent(String token) {
-        return getAlertEvent(token, "AlertStarted");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.AlertStarted.NAME);
     }
 
     public static String getAlertStoppedEvent(String token) {
-        return getAlertEvent(token, "AlertStopped");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.AlertStopped.NAME);
     }
 
     public static String getAlertEnteredForegroundEvent(String token) {
-        return getAlertEvent(token, "AlertEnteredForeground");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.AlertEnteredForeground.NAME);
     }
 
     public static String getAlertEnteredBackgroundEvent(String token) {
-        return getAlertEvent(token, "AlertEnteredBackground");
+        return getAlertEvent(token, AVSAPIConstants.Alerts.Events.AlertEnteredBackground.NAME);
     }
 
     private static String getAlertEvent(String token, String type) {
@@ -385,6 +385,24 @@ public class Event {
                 .setPayload(PayloadFactory.createUserInactivityReportPayload(inactiveTimeInSeconds));
 
         return builder.toJson();
+    }
+
+    public static String createProgressReportDelayElapsedEvent(String token, long offsetInMilliseconds){
+        return new Event.Builder()
+                .setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.ProgressReportDelayElapsed.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offsetInMilliseconds))
+        .toJson();
+    }
+
+    public static String createProgressReportIntervalElapsedEvent(String token, long offsetInMilliseconds){
+        return new Event.Builder()
+                .setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
+                .setHeaderName(AVSAPIConstants.AudioPlayer.Events.ProgressReportIntervalElapsed.NAME)
+                .setHeaderMessageId(getUuid())
+                .setPayload(PayloadFactory.createAudioPlayerPayload(token, offsetInMilliseconds))
+                .toJson();
     }
 }
 
