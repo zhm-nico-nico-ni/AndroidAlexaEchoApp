@@ -52,6 +52,7 @@ public class GGECMediaManager {
     private final static int QUEUE_STATE_START = 1;
     private final static int QUEUE_STATE_PAUSE = 2;
     private final static int QUEUE_STATE_DO_WORK = 3;
+    private final static int QUEUE_STATE_SET_RUN_STOP = 4;
 
     private volatile LinkedHashMap<String, AvsItem> avsQueue1 = new LinkedHashMap<>();
     private volatile LinkedHashMap<String, AvsItem> avsQueue2 = new LinkedHashMap<>();
@@ -97,7 +98,9 @@ public class GGECMediaManager {
                 mMediaAudioPlayer.release(false);
             }
         }
-//        checkQueue();
+
+        doWhenMediaPauseOrStop();
+
     }
 
     //For each URL that AVS sends,
@@ -130,6 +133,8 @@ public class GGECMediaManager {
             AvsAudioItem item = pauseMediaAudio();
             sendPlaybackPauseOrResumeEvent(true, item);
         }
+
+        doWhenMediaPauseOrStop();
     }
 
 
@@ -196,6 +201,11 @@ public class GGECMediaManager {
         public void playerPrepared(AvsItem pendingItem) {
             almostDoneFired = false;
             playbackStartedFired = false;
+            if(pendingItem instanceof AvsPlayRemoteItem){
+                mCurrentPlayMediaRemoteItem = (AvsPlayRemoteItem) pendingItem;
+                beginReportDelayElapsedEvent(mCurrentPlayMediaRemoteItem);
+                beginReportIntervalElapsedEvent(mCurrentPlayMediaRemoteItem);
+            }
         }
 
         @Override
@@ -314,6 +324,45 @@ public class GGECMediaManager {
         }
     };
 
+    private AvsPlayRemoteItem mCurrentPlayMediaRemoteItem;
+    private Runnable mRunReportDelayElapsedEvent = new Runnable() {
+        @Override
+        public void run() {
+            if(mCurrentPlayMediaRemoteItem!=null
+                    && mCurrentPlayMediaRemoteItem.equals(mMediaAudioPlayer.getCurrentItem())
+                    && mMediaAudioPlayer.isPlaying()) {
+                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        .sendEvent(Event.createProgressReportDelayElapsedEvent(mCurrentPlayMediaRemoteItem.getToken(), mMediaAudioPlayer.getCurrentPosition()),
+                                new ImplAsyncCallback("ReportDelayElapsedEvent"));
+            }
+        }
+    };
+    private void beginReportDelayElapsedEvent(AvsPlayRemoteItem item){
+        if(item.getProgressReportDelayInMilliseconds() > 0){
+            mMediaPlayHandler.postDelayed(mRunReportDelayElapsedEvent, item.getProgressReportDelayInMilliseconds());
+        }
+    }
+    private Runnable mRunReportIntervalElapsedEvent = new Runnable() {
+        @Override
+        public void run() {
+            if(mCurrentPlayMediaRemoteItem!=null
+                    && mCurrentPlayMediaRemoteItem.equals(mMediaAudioPlayer.getCurrentItem())
+                    && mMediaAudioPlayer.isPlaying()) {
+                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                        .sendEvent(Event.createProgressReportIntervalElapsedEvent(mCurrentPlayMediaRemoteItem.getToken()
+                                , mMediaAudioPlayer.getCurrentPosition()),
+                                new ImplAsyncCallback("ReportDelayElapsedEvent"));
+
+                beginReportIntervalElapsedEvent(mCurrentPlayMediaRemoteItem);
+            }
+        }
+    };
+    private void beginReportIntervalElapsedEvent(AvsPlayRemoteItem item){
+        if(item.getProgressReportIntervalInMilliseconds() > 0){
+            mMediaPlayHandler.postDelayed(mRunReportIntervalElapsedEvent, item.getProgressReportIntervalInMilliseconds());
+        }
+    }
+
     private void startListening(long waitMicMillseconds) {
         Intent it = BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
         it.putExtra("waitMicDelayMillSecond", waitMicMillseconds);
@@ -378,6 +427,7 @@ public class GGECMediaManager {
                 SetAlertHelper.sendAlertEnteredBackground(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                         , response.getToken(), new ImplAsyncCallback("sendAlertEnteredBackground"));
             }
+            mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_SET_RUN_STOP);
         } else if (response instanceof AvsStopItem) {
             // The Stop directive is sent to your client to stop playback of an audio stream.
             // Your client may receive a Stop directive as the result of a voice request, a physical button press or GUI affordance.
@@ -480,6 +530,10 @@ public class GGECMediaManager {
         mMediaPlayHandler.sendEmptyMessageDelayed(QUEUE_STATE_START, 2000);
     }
 
+    private void doWhenMediaPauseOrStop(){
+        mMediaPlayHandler.removeCallbacks(mRunReportDelayElapsedEvent);
+        mMediaPlayHandler.removeCallbacks(mRunReportIntervalElapsedEvent);
+    }
 
     private volatile boolean canPlayMedia = true;
     private Handler mMediaPlayHandler = new Handler(Looper.getMainLooper()) {
@@ -508,6 +562,8 @@ public class GGECMediaManager {
                 if (running) {
                     checkQueueImpl();
                 }
+            } else if(msg.what == QUEUE_STATE_SET_RUN_STOP) {
+                running = false;
             }
         }
 

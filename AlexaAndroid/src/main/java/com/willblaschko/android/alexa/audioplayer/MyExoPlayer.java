@@ -82,22 +82,22 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
                 beginOffset = 0;
             } else {
                 mMediaPlayer.setPlayWhenReady(true);
+                // 加上正式准备好的提示
+                if (!mFiredPrepareEvent) {
+                    mFiredPrepareEvent = true;
+                    if (mAsyncTask != null) {
+                        mAsyncTask.cancel();
+                        mAsyncTask = null;
+                    }
+                    if (mListener != null) mListener.onPrepare();
+                    mAsyncTask = new TaskRunnar();
+                    handler.postDelayed(mAsyncTask, 100);
+                }
             }
-        }
-
-        if (ExoPlayer.STATE_ENDED == playbackState) {
+        } else if (ExoPlayer.STATE_ENDED == playbackState) {
             long duration = mMediaPlayer.getDuration();
             deletePlayFile();
             if (mListener != null) mListener.onComplete(duration);
-        } else if (ExoPlayer.STATE_READY == playbackState && !mFiredPrepareEvent) {
-            mFiredPrepareEvent = true;
-            if (mAsyncTask != null) {
-                mAsyncTask.cancel();
-                mAsyncTask = null;
-            }
-            if (mListener != null) mListener.onPrepare();
-            mAsyncTask = new TaskRunnar();
-            handler.postDelayed(mAsyncTask, 100);
         } else if (ExoPlayer.STATE_BUFFERING == playbackState) {
             long current = SystemClock.elapsedRealtime();
             if (bufferBeginTime > 0 && current - bufferBeginTime > 2000) {
@@ -180,13 +180,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     public long getCurrentPosition() {
-        long position = 0;
-//        try {
-            position = mMediaPlayer.getCurrentPosition();
-//        } catch (Exception ex) {
-//            Log.e(Log.TAG_APP, "!!!!! error when get media position");
-//        }
-        return position;
+        return mMediaPlayer.getCurrentPosition();
     }
 
     public long getDuration() {

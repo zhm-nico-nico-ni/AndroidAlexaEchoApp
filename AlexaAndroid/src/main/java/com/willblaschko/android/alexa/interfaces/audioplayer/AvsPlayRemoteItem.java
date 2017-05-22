@@ -15,7 +15,7 @@ import com.willblaschko.android.alexa.data.Directive;
 public class AvsPlayRemoteItem extends AvsAudioItem implements IAvsPlayDirectiveBaseItem {
     private String mUrl, mConvertUrl;
 
-    private long mStartOffset;
+    private final long mStartOffset;
     public final Directive.Stream mStream;
     public String extension;
 
@@ -60,5 +60,13 @@ public class AvsPlayRemoteItem extends AvsAudioItem implements IAvsPlayDirective
         } else {
             return false;
         }
+    }
+
+    public long getProgressReportIntervalInMilliseconds(){
+        return mStream.progressReport != null ? mStream.progressReport.getProgressReportIntervalInMilliseconds() : 0;
+    }
+
+    public long getProgressReportDelayInMilliseconds(){
+        return mStream.progressReport != null ? mStream.progressReport.getProgressReportDelayInMilliseconds() : 0;
     }
 }
