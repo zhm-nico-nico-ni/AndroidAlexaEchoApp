@@ -4,8 +4,10 @@ import com.willblaschko.android.alexa.interfaces.AvsItem;
 
 public class AvsDeleteAlertItem extends AvsItem {
 
-    public AvsDeleteAlertItem(String token, String messageId) {
+    public final String dialogRequestId;
+    public AvsDeleteAlertItem(String token, String messageId, String dialogRequestId) {
         super(token, messageId);
+        this.dialogRequestId = dialogRequestId;
     }
 
 }

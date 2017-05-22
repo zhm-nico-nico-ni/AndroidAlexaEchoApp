@@ -97,7 +97,7 @@ public class GGECMediaManager {
                 mMediaAudioPlayer.release(false);
             }
         }
-        checkQueue();
+//        checkQueue();
     }
 
     //For each URL that AVS sends,
@@ -321,7 +321,7 @@ public class GGECMediaManager {
     }
 
     public boolean addAvsItemToQueue(AvsItem response) {
-
+        Log.d(TAG, "addAvsItemToQueue "+response.getClass());
         if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理, 暂时不需要先不管
             Log.d(TAG, "stop alarm right now :" + response.getToken());
             AvsSetAlertItem item = SetAlertHelper.getAlertItemByToken(MyApplication.getContext(), response.getToken());
@@ -350,6 +350,7 @@ public class GGECMediaManager {
             long position = mMediaAudioPlayer.getCurrentPosition();
             clear(true);
             sendPlaybackStoppedEvent(mMediaAudioPlayer.getCurrentItem(), position);
+            return true;
         } else if (response instanceof AvsReplaceEnqueuedItem) {
             //Replace all streams in the queue.
             // This does not impact the currently playing stream.
@@ -480,12 +481,12 @@ public class GGECMediaManager {
     }
 
 
-    private boolean canPlayMedia = true;
+    private volatile boolean canPlayMedia = true;
     private Handler mMediaPlayHandler = new Handler(Looper.getMainLooper()) {
-        private boolean running;
+        private volatile boolean running;
 
         @Override
-        public void handleMessage(Message msg) {
+        public synchronized void handleMessage(Message msg) {
             if (msg.what == QUEUE_STATE_START) {
                 checkIsFinish();
 
@@ -510,7 +511,7 @@ public class GGECMediaManager {
             }
         }
 
-        private boolean checkIsFinish() {
+        private synchronized boolean checkIsFinish() {
             if (canPlayMedia) {
                 if (avsQueue1.size() == 0 && (avsQueue2.size() == 0)) {
                     running = false;

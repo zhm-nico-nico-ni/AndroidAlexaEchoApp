@@ -65,6 +65,7 @@ public class ResponseParser {
         byte[] bytes = stream;
         String responseString = string(bytes);
         if (checkBoundary) {
+            Log.d(TAG, ""+responseString);
             final String responseTrim = responseString.trim();
             final String testBoundary = "--" + boundary;
             if (!StringUtils.isEmpty(responseTrim) && StringUtils.endsWith(responseTrim, testBoundary) && !StringUtils.startsWith(responseTrim, testBoundary)) {

@@ -56,7 +56,7 @@ public class DirectiveParseHelper {
                         , directive.getPayload().getType(), directive.getPayload().getScheduledTime()
                         , directive.getHeaderMessageId());
             } else if (AVSAPIConstants.Alerts.Directives.DeleteAlert.NAME.equals(headName)) {
-                item = new AvsDeleteAlertItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                item = new AvsDeleteAlertItem(directive.getPayload().getToken(), directive.getHeaderMessageId(), directive.getHeaderDialogRequestId());
             }
         } else if (AVSAPIConstants.Speaker.NAMESPACE.equals(headNameSpace)) {
             if (AVSAPIConstants.Speaker.Directives.SetVolume.NAME.equals(headName)) {

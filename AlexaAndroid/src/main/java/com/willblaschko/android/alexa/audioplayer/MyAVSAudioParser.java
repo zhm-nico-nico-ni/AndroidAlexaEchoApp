@@ -28,6 +28,7 @@ import okhttp3.Response;
 public class MyAVSAudioParser {
     private final static String TAG = "MyAVSAudioParser";
     private static final Pattern FILE_PATTERN = Pattern.compile(".pls|.m3u", Pattern.CASE_INSENSITIVE);
+    private static final Pattern M3U8_PATTERN = Pattern.compile(".m3u8", Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAY_LIST_PATTERN = Pattern.compile("audio/x-scpls|audio/x-mpegurl", Pattern.CASE_INSENSITIVE);
     private final static int MAX_REDIRECT_TIMES = 3;
 
@@ -36,6 +37,7 @@ public class MyAVSAudioParser {
     private int redirectCount;
 
     private OkHttpClient okHttpClient;
+    private boolean isCancel;
 
     public MyAVSAudioParser(AvsPlayRemoteItem playItem) {
         mAvsPlayRemoteItem = playItem;
@@ -46,6 +48,7 @@ public class MyAVSAudioParser {
             if (!mAvsRemoteCall.isCanceled()) {
                 mAvsRemoteCall.cancel();
             }
+            isCancel = true;
             mAvsRemoteCall = null;
         }
     }
@@ -55,7 +58,7 @@ public class MyAVSAudioParser {
     }
 
     public boolean isCanceled(){
-        return mAvsRemoteCall == null || mAvsRemoteCall.isCanceled();
+        return isCancel;
     }
 
     private OkHttpClient getHttpClient() {
@@ -73,7 +76,11 @@ public class MyAVSAudioParser {
 
     public String request(String url) throws IOException {
         redirectCount = MAX_REDIRECT_TIMES;
-        return requestImpl(url);
+        isCancel = false;
+        if(M3U8_PATTERN.matcher(url).find()){
+            return url;
+        }else
+            return requestImpl(url);
     }
 
     private String requestImpl(String url) throws IOException {

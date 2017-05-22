@@ -187,9 +187,11 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @param item
      */
     private void play(@NonNull AvsItem item) {
-        if (mItem == item && myAVSAudioParser != null && myAVSAudioParser.isExecuted()) {
-            Log.w(TAG, "play the same item");
-            return;
+        if (item.equals(mItem)) {
+            if(item instanceof AvsPlayRemoteItem && isPlaying()) {
+                Log.w(TAG, "play the same item");
+                return;
+            }
         }
         mItem = item;
         //if we're playing, stop playing before we continue
@@ -198,7 +200,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
             Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
-            getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///start.mp3"), "mp3"));
+            getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"));
         } else if (mItem instanceof AvsPlayRemoteItem) {
             handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
         } else if (mItem instanceof AvsPlayContentItem) {
@@ -445,7 +447,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             Flowable.fromCallable(new Callable<ConvertAudioItem>() {
                 @Override
                 public ConvertAudioItem call() throws Exception {
-                    String playUri = null;
+                    String playUri;
 
                     try {
                         myAVSAudioParser = new MyAVSAudioParser(playItem);
