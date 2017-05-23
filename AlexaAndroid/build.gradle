@@ -12,10 +12,10 @@ dependencies {
     compile 'com.facebook.stetho:stetho-okhttp3:1.5.0'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
     compile 'org.apache.commons:commons-lang3:3.0'
-    compile 'com.madgag.spongycastle:core:1.56.0.0'
-    compile 'com.madgag.spongycastle:prov:1.56.0.0'
-    compile 'com.madgag.spongycastle:pkix:1.54.0.0'
-    compile 'com.madgag.spongycastle:pg:1.54.0.0'
+//    compile 'com.madgag.spongycastle:core:1.56.0.0'
+//    compile 'com.madgag.spongycastle:prov:1.56.0.0'
+//    compile 'com.madgag.spongycastle:pkix:1.54.0.0'
+//    compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.google.android.gms:play-services-base:9.6.1'
     compile 'io.reactivex.rxjava2:rxjava:2.1.0'
     compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
@@ -37,7 +37,7 @@ android {
 
         buildConfigField "String", "PRODUCT_ID", "\"" + project.PRODUCT_ID + "\""
         buildConfigField "String", "APP_PACKAGE_NAME", "\"" + project.APPLICATION_ID + "\""
-        buildConfigField "boolean", "ENABLE_LOCAL_AUTH", "" + true + ""
+        buildConfigField "boolean", "ENABLE_LOCAL_AUTH", "" + false + ""
     }
 
 

@@ -34,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.Security;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -53,9 +52,9 @@ import okio.BufferedSink;
  */
 public class AlexaManager {
 
-    static {
-        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
-    }
+//    static {
+//        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+//    }
 
     private static final String TAG = "AlexaManager";
 
