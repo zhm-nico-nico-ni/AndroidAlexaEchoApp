@@ -1,4 +1,4 @@
-package com.willblaschko.android.alexa.audioplayer;
+package com.willblaschko.android.alexa.audioplayer.player;
 
 import android.content.Context;
 import android.net.Uri;
@@ -9,9 +9,10 @@ import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.willblaschko.android.alexa.audioplayer.player.ConvertAudioItem;
+import com.willblaschko.android.alexa.audioplayer.Callback;
+import com.willblaschko.android.alexa.audioplayer.MyAVSAudioParser;
+import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
-import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
@@ -32,13 +33,12 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 /**
- * A class that abstracts the Android MediaPlayer and adds additional functionality to handle AvsItems
- * as well as properly handle multiple callbacks--be care not to leak Activities by not removing the callback
+ * Created by ggec on 2017/5/23.
  */
-@Deprecated
-public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
-    public static final String TAG = "AlexaAudioExoPlayer";
+public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
+
+    public static final String TAG = "GGECMediaAudioPlayer";
 
     private final static int STATE_IDLE = 0;
     private final static int STATE_PLAYING = 1;
@@ -59,37 +59,9 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
      *
      * @param context any context, we will get the application level to store locally
      */
-    public AlexaAudioExoPlayer(Context context) {
+    public GGECMediaAudioPlayer(Context context) {
         mContext = context.getApplicationContext();
-        trimCache(context);
-    }
-
-    private static void trimCache(Context context) {
-        try {
-            File dir = context.getCacheDir();
-            if (dir != null && dir.isDirectory()) {
-                deleteDir(dir);
-            }
-        } catch (Exception e) {
-            // TODO: handle exception
-        }
-    }
-
-    private static boolean deleteDir(File dir) {
-        if (dir != null && dir.isDirectory()) {
-            String[] children = dir.list();
-            for (int i = 0; i < children.length; i++) {
-                boolean success = deleteDir(new File(dir, children[i]));
-                if (!success) {
-                    return false;
-                }
-            }
-        }
-        if (dir != null) {
-            // The directory is now empty so delete it
-            return dir.delete();
-        }
-        return false;
+        com.ggec.voice.toollibrary.Util.trimCache(context);
     }
 
     /**
@@ -142,21 +114,21 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
 //        }
 //    }
 
-    /**
-     * A helper function to play an AvsPlayContentItem, this is passed to play() and handled accordingly,
-     *
-     * @param item a speak type item
-     */
-    public void playItem(AvsPlayContentItem item) {
-        play(item);
-    }
-
+//    /**
+//     * A helper function to play an AvsPlayContentItem, this is passed to play() and handled accordingly,
+//     *
+//     * @param item a speak type item
+//     */
+//    public void playItem(AvsPlayContentItem item) {
+//        play(item);
+//    }
+//
     /**
      * A helper function to play an AvsSpeakItem, this is passed to play() and handled accordingly,
      *
-     * @param item a speak type item
+     * @param item a AvsPlayAudioItem type item
      */
-    public void playItem(AvsSpeakItem item) {
+    public void playItem(AvsPlayAudioItem item) {
         play(item);
     }
 
@@ -169,9 +141,6 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
         play(item);
     }
 
-    public void playItem(AvsAlertPlayItem item) {
-        play(item);
-    }
 
     /**
      * Request our MediaPlayer to play an item, if it's an AvsPlayRemoteItem (url, usually), we set that url as our data source for the MediaPlayer
@@ -206,11 +175,6 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             long startOffset = playAudioItem.pausePosition > offset
                     ? playAudioItem.pausePosition : offset;
             playitem(playAudioItem, startOffset);
-        } else if (mItem instanceof AvsSpeakItem) {
-            playitem((AvsSpeakItem) mItem, 0);
-        } else if (mItem instanceof AvsAlertPlayItem) {
-            Uri path = Uri.parse("asset:///alarm.mp3");
-            getMediaPlayer().prepare(buildMediaSource(path, "mp3"));
         } else {
 
             bubbleUpError(new Exception("not suitable process"));
@@ -322,7 +286,7 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
     public void onComplete(long duration) {
         mMediaState = STATE_FINISHED;
         for (Callback callback : mCallbacks) {
-            callback.playerProgress(mItem, 1, 1, 1);
+            callback.playerProgress(mItem, 1, 1, 0);
             callback.itemComplete(mItem, true, duration);
         }
     }
@@ -340,7 +304,6 @@ public class AlexaAudioExoPlayer implements MyExoPlayer.IMyExoPlayerListener {
             callback.playerPrepared(mItem);
             callback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0, 0);
         }
-        mMediaPlayer.setPlayWhenReady(true);
     }
 
     @Override

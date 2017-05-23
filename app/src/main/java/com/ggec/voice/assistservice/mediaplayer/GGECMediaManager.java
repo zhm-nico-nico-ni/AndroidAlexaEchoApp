@@ -12,8 +12,9 @@ import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
-import com.willblaschko.android.alexa.audioplayer.AlexaAudioExoPlayer;
 import com.willblaschko.android.alexa.audioplayer.Callback;
+import com.willblaschko.android.alexa.audioplayer.player.GGECMediaAudioPlayer;
+import com.willblaschko.android.alexa.audioplayer.player.GGECSpeechSynthesizerPlayer;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
 import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
@@ -57,15 +58,15 @@ public class GGECMediaManager {
     private volatile LinkedHashMap<String, AvsItem> avsQueue1 = new LinkedHashMap<>();
     private volatile LinkedHashMap<String, AvsItem> avsQueue2 = new LinkedHashMap<>();
 
-    private AlexaAudioExoPlayer mSpeechSynthesizerPlayer;
-    private AlexaAudioExoPlayer mMediaAudioPlayer;
+    private GGECSpeechSynthesizerPlayer mSpeechSynthesizerPlayer;
+    private GGECMediaAudioPlayer mMediaAudioPlayer;
     private boolean needSendPlaybackStartEvent;
 
 
     public GGECMediaManager() {
         //instantiate our audio player
-        mSpeechSynthesizerPlayer = new AlexaAudioExoPlayer(MyApplication.getContext());
-        mMediaAudioPlayer = new AlexaAudioExoPlayer(MyApplication.getContext());
+        mSpeechSynthesizerPlayer = new GGECSpeechSynthesizerPlayer(MyApplication.getContext());
+        mMediaAudioPlayer = new GGECMediaAudioPlayer(MyApplication.getContext());
 
         //Remove the current item and check for more items once we've finished playing
         mSpeechSynthesizerPlayer.addCallback(mSpeechSynthesizerCallback);
@@ -155,7 +156,7 @@ public class GGECMediaManager {
         }
 
         @Override
-        public void playerProgress(AvsItem item, long offsetInMilliseconds, float percent) {
+        public void playerProgress(AvsItem item, long offsetInMilliseconds, float percent, long remaining) {
         }
 
         @Override
@@ -210,21 +211,21 @@ public class GGECMediaManager {
         }
 
         @Override
-        public void playerProgress(AvsItem item, long offsetInMilliseconds, float percent) {
+        public void playerProgress(AvsItem item, long offsetInMilliseconds, float percent, long remaining) {
             if (item instanceof AvsPlayContentItem || item == null) {
                 return;
             }
             if (!playbackStartedFired) {
                 playbackStartedFired = true;
                 if(item instanceof AvsAudioItem){
-                    AvsAudioItem audioItem = (AvsAudioItem) item;
-                    if(audioItem.pausePosition > 0){
-                        sendPlaybackPauseOrResumeEvent(false, audioItem);
-                    }
+//                    AvsAudioItem audioItem = (AvsAudioItem) item;
+//                    if(audioItem.pausePosition > 0){
+//                        sendPlaybackPauseOrResumeEvent(false, audioItem);
+//                    }
                     sendPlaybackStartedEvent(item, offsetInMilliseconds);
                 }
             }
-            if (!almostDoneFired && percent > .8f) {
+            if (!almostDoneFired && (percent >= 1 || (percent > .8f && remaining < 15000))) {
                 Log.d(TAG, "AlmostDone " + item.getToken() + " fired: " + percent);
                 almostDoneFired = true;
                 if (item instanceof AvsPlayAudioItem) {
@@ -602,7 +603,11 @@ public class GGECMediaManager {
             if (current instanceof AvsPlayRemoteItem) {
                 //play a URL
                 if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
-                    mMediaAudioPlayer.playItem((AvsPlayRemoteItem) current);
+                    AvsPlayRemoteItem audioItem = (AvsPlayRemoteItem) current;
+                    mMediaAudioPlayer.playItem(audioItem);
+                    if(audioItem.pausePosition > 0){
+                        sendPlaybackPauseOrResumeEvent(false, audioItem);
+                    }
                 }
 //        } else if (current instanceof AvsPlayContentItem) {
 //            //play a URL
@@ -611,7 +616,11 @@ public class GGECMediaManager {
 //            }
             } else if (current instanceof AvsPlayAudioItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
-                    mMediaAudioPlayer.playItem((AvsPlayAudioItem) current);
+                    AvsPlayAudioItem audioItem = (AvsPlayAudioItem) current;
+                    mMediaAudioPlayer.playItem(audioItem);
+                    if(audioItem.pausePosition > 0){
+                        sendPlaybackPauseOrResumeEvent(false, audioItem);
+                    }
                 }
             } else if (current instanceof AvsSpeakItem) {
                 //play a sound file

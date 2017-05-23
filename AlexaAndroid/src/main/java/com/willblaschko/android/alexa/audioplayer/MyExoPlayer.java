@@ -34,22 +34,24 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     private long bufferBeginTime;
     private EventLogger eventLogger;
 
-    public MyExoPlayer(Context context, IMyExoPlayerListener listener) {
+    public MyExoPlayer(Context context, IMyExoPlayerListener listener, boolean needLogger) {
         mListener = listener;
         DefaultTrackSelector trackSelector = new DefaultTrackSelector();
         mMediaPlayer = ExoPlayerFactory.newSimpleInstance(context
                 , trackSelector, new DefaultLoadControl(),
                 null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER);
-        eventLogger = new EventLogger(trackSelector);
 
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         setPlayWhenReady(false);
         mMediaPlayer.addListener(this);
 
-        mMediaPlayer.addListener(eventLogger);
-        mMediaPlayer.setAudioDebugListener(eventLogger);
-        mMediaPlayer.setVideoDebugListener(eventLogger);
-        mMediaPlayer.setMetadataOutput(eventLogger);
+        if(needLogger) {
+            eventLogger = new EventLogger(trackSelector);
+            mMediaPlayer.addListener(eventLogger);
+            mMediaPlayer.setAudioDebugListener(eventLogger);
+            mMediaPlayer.setVideoDebugListener(eventLogger);
+            mMediaPlayer.setMetadataOutput(eventLogger);
+        }
     }
 
     @Override
@@ -191,6 +193,11 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         return mMediaPlayer.getDuration();
     }
 
+    public boolean isMediaReadyToPlay() {
+        int state = mMediaPlayer.getPlaybackState();
+        return ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state;
+    }
+
     public boolean isPlaying() {
         int state = mMediaPlayer.getPlaybackState();
         if(ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state) {
@@ -210,8 +217,10 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
                 if(isPlaying()) {
                     long pos = mMediaPlayer.getCurrentPosition();
-                    final float percent = (float) pos / (float) mMediaPlayer.getDuration();
-                    if (mListener != null) mListener.onProgress(percent);
+                    long duration = mMediaPlayer.getDuration();
+                    final float percent = (float) pos / (float) duration;
+
+                    if (mListener != null) mListener.onProgress(percent, duration - pos);
                 }
 
                 handler.postDelayed(this, 100);
@@ -231,7 +240,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
         void onPrepare();
 
-        void onProgress(float percent);
+        void onProgress(float percent, long remaining);
 
         void onBuffering(long offsetInMilliseconds);
 
