@@ -2,10 +2,22 @@ package com.willblaschko.android.alexa.utility;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.widget.Toast;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
+import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.willblaschko.android.alexa.datepersisted.MultiprocessSharedPreferences;
 
 import java.util.UUID;
@@ -48,5 +60,27 @@ public class Util {
 
     public static String getUuid(){
         return UUID.randomUUID().toString();
+    }
+
+    public static MediaSource buildMediaSource(Context mContext, Uri uri, String overrideExtension) {
+        int type = TextUtils.isEmpty(overrideExtension) ? com.google.android.exoplayer2.util.Util.inferContentType(uri)
+                : com.google.android.exoplayer2.util.Util.inferContentType("." + overrideExtension);
+        DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(mContext, "GGEC");
+        switch (type) {
+            case C.TYPE_SS:
+                return new SsMediaSource(uri, dataSourceFactory,
+                        new DefaultSsChunkSource.Factory(dataSourceFactory), null, null);
+            case C.TYPE_DASH:
+                return new DashMediaSource(uri, dataSourceFactory,
+                        new DefaultDashChunkSource.Factory(dataSourceFactory), null, null);
+            case C.TYPE_HLS:
+                return new HlsMediaSource(uri, dataSourceFactory, null, null);
+            case C.TYPE_OTHER:
+                return new ExtractorMediaSource(uri, dataSourceFactory, new DefaultExtractorsFactory(),
+                        null, null);
+            default: {
+                throw new IllegalStateException("Unsupported type: " + type);
+            }
+        }
     }
 }
