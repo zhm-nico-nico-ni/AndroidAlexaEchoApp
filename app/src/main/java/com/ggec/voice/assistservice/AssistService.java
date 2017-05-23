@@ -12,7 +12,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 
-import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
+import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent;
@@ -30,6 +30,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
 
     private WakeWordAgent mWakeWordAgent;
     private DeviceLinkHandler mDeviceLinkHandler;
+    private MyShortAudioPlayer mMyShortAudioPlayer;
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -58,6 +59,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
 
         mDeviceLinkHandler = new DeviceLinkHandler(this);
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+        mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.mp3");
 
         startService(
                 BackGroundProcessServiceControlCommand.createIntentByType(this,
@@ -69,7 +71,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
     public void onDetectWakeWord() {
         Log.w(TAG, "onDetectWakeWord");
 
-        playStart(new MyShortAudioPlayer2.IOnCompletionListener() {
+        playStart(new MyShortAudioPlayer.IOnCompletionListener() {
             @Override
             public void onCompletion() {
                 startService(
@@ -90,7 +92,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
         }
     }
 
-    private void playStart(final MyShortAudioPlayer2.IOnCompletionListener listener) {
-        new MyShortAudioPlayer2("asset:///start.mp3", listener);
+    private void playStart(final MyShortAudioPlayer.IOnCompletionListener listener) {
+        mMyShortAudioPlayer.play(listener);
     }
 }
