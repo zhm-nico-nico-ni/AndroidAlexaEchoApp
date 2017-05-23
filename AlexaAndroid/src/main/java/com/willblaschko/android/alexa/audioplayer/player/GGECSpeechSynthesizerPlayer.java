@@ -320,4 +320,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         }
     }
 
+    public void releaseAvsItem(){
+        mItem = null;
+    }
 }

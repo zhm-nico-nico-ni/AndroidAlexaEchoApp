@@ -166,13 +166,7 @@ public class GGECMediaManager {
                 Log.i(TAG, "SpeechSynthesizerCallback Complete " + completedItem.getToken() + " fired, remove old:" + isRemove);
             }
 
-            if (completedItem instanceof AvsSpeakItem) {
-                AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                        .sendEvent(Event.getSpeechFinishedEvent(completedItem.getToken()), null);
-            } else if(completedItem instanceof AvsAlertPlayItem) {
-                sendStopAlertEvent(completedItem.getToken());
-            }
-
+            doWhenSpeechSynthesizerEnd(completedItem);
             checkQueue();
         }
 
@@ -218,10 +212,6 @@ public class GGECMediaManager {
             if (!playbackStartedFired) {
                 playbackStartedFired = true;
                 if(item instanceof AvsAudioItem){
-//                    AvsAudioItem audioItem = (AvsAudioItem) item;
-//                    if(audioItem.pausePosition > 0){
-//                        sendPlaybackPauseOrResumeEvent(false, audioItem);
-//                    }
                     sendPlaybackStartedEvent(item, offsetInMilliseconds);
                 }
             }
@@ -267,9 +257,9 @@ public class GGECMediaManager {
 
         @Override
         public void onBufferReady(AvsItem item, long offsetInMilliseconds, long stutterDurationInMilliseconds) {
-//            send PlaybackStutterFinished Event
+
             if(item != null) {
-                Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
+                Log.i(TAG, "Sending getPlaybackStutterFinishEvent");
                 AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                         .sendEvent(Event.getPlaybackStutterFinishEvent(item.getToken(), offsetInMilliseconds, stutterDurationInMilliseconds), null);
             }
@@ -484,13 +474,6 @@ public class GGECMediaManager {
         SetAlertHelper.deleteAlertSP(MyApplication.getContext(), token);
     }
 
-    private String getSpeechSynthesizerState(){
-        return "PLAYING".equals(mSpeechSynthesizerPlayer.getStateString())? "PLAYING" : "FINISHED";
-    }
-
-    private String getAudioState(){
-        return mMediaAudioPlayer.getStateString();
-    }
 
     public List<Event> getAudioAndSpeechState(){
         String playDirectiveToken = mMediaAudioPlayer.getCurrentToken();
@@ -502,29 +485,33 @@ public class GGECMediaManager {
         Event.Builder playbackEventBuilder = new Event.Builder()
                 .setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.AudioPlayer.Events.PlaybackState.NAME)
-                .setPayload(PayloadFactory.createPlaybackStatePayload(playDirectiveToken, mMediaAudioPlayer.getCurrentPosition(), getAudioState()))
-                ;
+                .setPayload(PayloadFactory.createPlaybackStatePayload(playDirectiveToken,
+                        mMediaAudioPlayer.getCurrentPosition(), mMediaAudioPlayer.getStateString()));
         list.add(playbackEventBuilder.build().getEvent());
 
         Event.Builder speechSynthesizerEventBuilder = new Event.Builder()
                 .setHeaderNamespace(AVSAPIConstants.SpeechSynthesizer.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.SpeechSynthesizer.Events.SpeechState.NAME)
                 .setPayload(PayloadFactory.createSpeechStatePayload(speakDirectiveToken,
-                        isLastPlayAlert ? 0 : mSpeechSynthesizerPlayer.getCurrentPosition(), // 不要把Alert 的 Token 及 Offset 报上去
-                        getSpeechSynthesizerState()));
+                        // 不要把Alert 的 Token 及 Offset 报上去,否则会出现不合理的url导致请求失败
+                        isLastPlayAlert ? 0 : mSpeechSynthesizerPlayer.getCurrentPosition(),
+                        /////////////////////////////////////////////////////////////////////////
+                        mSpeechSynthesizerPlayer.getStateString()));
         list.add(speechSynthesizerEventBuilder.build().getEvent());
         return list;
     }
 
     public void pauseSound(){
+        avsQueue1.clear();
         tryPauseMediaAudio();
-        mSpeechSynthesizerPlayer.stop(false);
-        AvsItem currentItem = mSpeechSynthesizerPlayer.getCurrentItem();
-        if(mMediaAudioPlayer.isPlaying() && currentItem instanceof AvsAlertPlayItem){
-            sendStopAlertEvent(currentItem.getToken());
+        if(mSpeechSynthesizerPlayer.isPlaying()) {
+            mSpeechSynthesizerPlayer.release(false);
+            AvsItem currentItem = mSpeechSynthesizerPlayer.getCurrentItem();
+            if(currentItem instanceof AvsAlertPlayItem){
+                sendStopAlertEvent(currentItem.getToken());
+            }
         }
 
-        avsQueue1.clear();
         mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_PAUSE);
     }
 
@@ -535,6 +522,16 @@ public class GGECMediaManager {
     private void doWhenMediaPauseOrStop(){
         mMediaPlayHandler.removeCallbacks(mRunReportDelayElapsedEvent);
         mMediaPlayHandler.removeCallbacks(mRunReportIntervalElapsedEvent);
+    }
+
+    private void doWhenSpeechSynthesizerEnd(AvsItem completedItem){
+        if (completedItem instanceof AvsSpeakItem) {
+            AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    .sendEvent(Event.getSpeechFinishedEvent(completedItem.getToken()), null);
+        } else if(completedItem instanceof AvsAlertPlayItem) {
+            sendStopAlertEvent(completedItem.getToken());
+        }
+        mSpeechSynthesizerPlayer.releaseAvsItem();
     }
 
     private volatile boolean canPlayMedia = true;
