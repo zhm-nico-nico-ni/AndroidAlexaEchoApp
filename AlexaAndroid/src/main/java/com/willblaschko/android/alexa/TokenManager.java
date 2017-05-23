@@ -250,7 +250,7 @@ public class TokenManager {
     private static void saveTokens(Context context, TokenResponse tokenResponse){
         Log.d(TAG, "saveTokens " + tokenResponse.expires_in);
         SharedPreferenceUtil.putAuthToken(context, tokenResponse.access_token, tokenResponse.refresh_token,
-                tokenResponse.expires_in * 1000);
+                tokenResponse.expires_in);
     }
 
     public interface TokenResponseCallback {
