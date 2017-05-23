@@ -6,9 +6,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.ggec.voice.toollibrary.Util;
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;

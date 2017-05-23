@@ -1,9 +1,9 @@
 package com.willblaschko.android.alexa.connection;
 
 import android.os.Build;
-import android.util.Log;
 
 import com.facebook.stetho.okhttp3.StethoInterceptor;
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.security.KeyStore;
 import java.util.Arrays;

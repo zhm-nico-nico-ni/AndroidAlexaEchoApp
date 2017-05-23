@@ -5,9 +5,9 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.ggec.voice.assistservice.MyApplication;
+import com.ggec.voice.toollibrary.log.Log;
 
 import org.apache.commons.io.IOUtils;
 

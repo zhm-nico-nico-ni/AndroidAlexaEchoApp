@@ -67,7 +67,7 @@ public class MyApplication extends Application {
 
         //Log开关
         if (!BuildConfig.DEBUG) {
-            Log.LOG_LEVEL = (android.util.Log.ERROR);
+            Log.LOG_LEVEL = (android.util.Log.WARN);
         } else {
             Log.LOG_LEVEL = (android.util.Log.VERBOSE);
         }

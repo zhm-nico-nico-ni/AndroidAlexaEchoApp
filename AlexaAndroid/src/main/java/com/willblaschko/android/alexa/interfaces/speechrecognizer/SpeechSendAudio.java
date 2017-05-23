@@ -1,7 +1,6 @@
 package com.willblaschko.android.alexa.interfaces.speechrecognizer;
 
-import android.util.Log;
-
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsException;

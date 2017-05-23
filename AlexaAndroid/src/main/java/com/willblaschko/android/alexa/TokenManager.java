@@ -5,9 +5,9 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationManager;
+import com.ggec.voice.toollibrary.log.Log;
 import com.google.gson.Gson;
 import com.willblaschko.android.alexa.connection.ClientUtil;
 import com.willblaschko.android.alexa.keep.TokenResponse;

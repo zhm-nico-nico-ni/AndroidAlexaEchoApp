@@ -2,9 +2,9 @@ package com.willblaschko.android.alexa.interfaces.speaker;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.util.Log;
 import android.util.Pair;
 
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;

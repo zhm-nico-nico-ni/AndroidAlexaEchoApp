@@ -7,7 +7,8 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
-import android.util.Log;
+
+import com.ggec.voice.toollibrary.log.Log;
 
 import org.apache.commons.io.IOUtils;
 

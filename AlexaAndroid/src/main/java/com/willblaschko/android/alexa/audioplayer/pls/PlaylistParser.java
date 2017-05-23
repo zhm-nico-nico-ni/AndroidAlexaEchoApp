@@ -1,6 +1,6 @@
 package com.willblaschko.android.alexa.audioplayer.pls;
 
-import android.util.Log;
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

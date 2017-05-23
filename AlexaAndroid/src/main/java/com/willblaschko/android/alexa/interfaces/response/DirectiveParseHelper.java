@@ -1,8 +1,8 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
 import android.support.annotation.NonNull;
-import android.util.Log;
 
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;

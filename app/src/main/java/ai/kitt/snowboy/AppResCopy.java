@@ -1,7 +1,8 @@
 package ai.kitt.snowboy;
 
 import android.content.Context;
-import android.util.Log;
+
+import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;

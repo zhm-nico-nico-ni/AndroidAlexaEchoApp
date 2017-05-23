@@ -2,9 +2,9 @@ package com.ggec.voice.assistservice.data;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import com.ggec.voice.assistservice.AvsHandleHelper;
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 
