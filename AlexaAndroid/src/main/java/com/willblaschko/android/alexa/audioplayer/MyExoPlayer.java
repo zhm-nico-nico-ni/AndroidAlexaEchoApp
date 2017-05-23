@@ -6,10 +6,10 @@ import android.os.Handler;
 import android.os.SystemClock;
 
 import com.ggec.voice.toollibrary.log.Log;
-import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -37,9 +37,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     public MyExoPlayer(Context context, IMyExoPlayerListener listener, boolean needLogger) {
         mListener = listener;
         DefaultTrackSelector trackSelector = new DefaultTrackSelector();
-        mMediaPlayer = ExoPlayerFactory.newSimpleInstance(context
-                , trackSelector, new DefaultLoadControl(),
-                null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER);
+        mMediaPlayer = ExoPlayerFactory.newSimpleInstance(context, new DefaultTrackSelector());
 
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         setPlayWhenReady(false);
@@ -117,6 +115,11 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPositionDiscontinuity() {
+
+    }
+
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
 
     }
 

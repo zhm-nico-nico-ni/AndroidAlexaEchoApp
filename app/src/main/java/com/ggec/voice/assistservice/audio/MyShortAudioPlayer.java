@@ -8,10 +8,10 @@ import android.os.SystemClock;
 
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.toollibrary.log.Log;
-import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
@@ -35,9 +35,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
     public MyShortAudioPlayer(String path){
         begin = SystemClock.elapsedRealtime();
 
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(MyApplication.getContext()
-                , new DefaultTrackSelector(), new DefaultLoadControl(),
-                null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(MyApplication.getContext(), new DefaultTrackSelector());
 
         exoPlayer.addListener(this);
         exoPlayer.setPlayWhenReady(false);
@@ -103,6 +101,11 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPositionDiscontinuity() {
+
+    }
+
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
 
     }
 
