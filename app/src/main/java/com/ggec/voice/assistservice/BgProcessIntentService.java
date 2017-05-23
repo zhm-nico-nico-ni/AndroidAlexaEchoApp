@@ -16,11 +16,11 @@ import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
-import com.ggec.voice.assistservice.speechutil.RawAudioRecorder;
 import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
+import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
@@ -54,7 +54,6 @@ public class BgProcessIntentService extends IntentService {
     private final static int REFRESH_TOKEN_MIN_INTERVAL = 300 * 1000;
 
     private Handler handler = new Handler(Looper.getMainLooper());
-    private RawAudioRecorder recorder;
 
     public BgProcessIntentService() {
         this("test");
@@ -112,7 +111,7 @@ public class BgProcessIntentService extends IntentService {
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
             final String messageId = intent.getStringExtra("messageId");
-            Log.d(TAG, "BEGIN_ALARM: "+ messageId+ " ,token:"+token);
+            Log.i(TAG, "BEGIN_ALARM: "+ messageId+ " ,token:"+token);
             SetAlertHelper.sendAlertStarted(alexaManager, token, getCallBack("sendAlertStarted"));
             handler.post(new Runnable() {
                 @Override
@@ -260,7 +259,6 @@ public class BgProcessIntentService extends IntentService {
             //TODO play no net work
             Log.e(TAG, "return because no net work");
             playError();
-            continueWakeWordDetect();
             return;
         }
 
@@ -285,9 +283,9 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Set an alarm for 4:03 morning on everyday", getCallBack("textTest"));
+        alexaManager.sendTextRequest("read my audio book", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
-        // "Set an alarm for 9:49 morning on everyday"
+        // "Set an alarm for 9:49 morning on everyday" "How's my day look"
     }
 
     private void search() {
@@ -325,7 +323,6 @@ public class BgProcessIntentService extends IntentService {
                 super.failure(error);
                 playError();
                 deleteFile(filePath);
-                continueWakeWordDetect();
                 if(error instanceof AvsAudioException) {
                     Log.e(TAG, "Speech Recognize event send, but receive nothing, http response code = 204");
 //                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
@@ -377,7 +374,12 @@ public class BgProcessIntentService extends IntentService {
             @Override
             public void run() {
                 //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
-                new MyShortAudioPlayer2("asset:///error.mp3", null);
+                new MyShortAudioPlayer2("asset:///error.mp3", new MyShortAudioPlayer2.IOnCompletionListener() {
+                    @Override
+                    public void onCompletion() {
+                        continueWakeWordDetect();
+                    }
+                });
             }
         });
     }
@@ -422,7 +424,8 @@ public class BgProcessIntentService extends IntentService {
                 public void failure(Exception error) {
                     super.failure(error);
                     if(error instanceof AvsResponseException){
-//        TODO open after test                com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).commit();
+//        TODO open after test
+               com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).commit();
                     }
                     cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
                     cancelTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN);
