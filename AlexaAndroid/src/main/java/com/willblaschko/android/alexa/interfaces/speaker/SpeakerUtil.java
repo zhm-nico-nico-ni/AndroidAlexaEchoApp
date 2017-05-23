@@ -25,11 +25,10 @@ public class SpeakerUtil {
         } else {
             vol = volume * max / 100;
         }
-        am.setStreamVolume(AudioManager.STREAM_MUSIC, (int) vol, AudioManager.FLAG_SHOW_UI);
-
-        alexaManager.sendVolumeChangedEvent(volume, vol == 0, callback);
-
+        if(vol<0) vol = 0;
+        am.setStreamVolume(AudioManager.STREAM_MUSIC, (int) vol, 0);
         Log.d(TAG, "Volume set to : " + vol + "/" + max + " (" + volume + ") adjust:" + adjust);
+        alexaManager.sendVolumeChangedEvent(vol *100 / max, vol == 0, callback);
     }
 
     public static void setMute(Context context, AlexaManager alexaManager, final boolean isMute, AsyncCallback<AvsResponse, Exception> callback){
@@ -57,7 +56,7 @@ public class SpeakerUtil {
         final int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         long vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         long av = vol* 100 / max;
-        boolean ismute = am.isStreamMute(AudioManager.STREAM_MUSIC);
+        boolean ismute = am.getStreamVolume(AudioManager.STREAM_MUSIC) >= 0;
         Log.d(TAG, "getConvertVolumeState v:"+av +" mute:"+ismute);
         return new Pair<>(av, ismute) ;
     }
