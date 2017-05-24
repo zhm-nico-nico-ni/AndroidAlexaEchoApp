@@ -163,7 +163,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
      * @return true playing, false not
      */
     public boolean isPlaying() {
-        return getMediaPlayer().isMediaReadyToPlay();
+        return mMediaPlayer != null && mMediaPlayer.isMediaReadyToPlay();
     }
 
 //    /**

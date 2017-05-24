@@ -192,7 +192,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @return true playing, false not
      */
     public boolean isPlaying() {
-        return getMediaPlayer().isPlaying();
+        return mMediaPlayer != null && mMediaPlayer.isMediaReadyToPlay();
     }
 
     /**
