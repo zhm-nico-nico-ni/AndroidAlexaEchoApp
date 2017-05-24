@@ -1,8 +1,5 @@
 package com.ggec.voice.assistservice.audio.neartalk;
 
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 
@@ -10,6 +7,7 @@ import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyVoiceRecord;
+import com.ggec.voice.assistservice.audio.SingleAudioRecord;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
@@ -48,7 +46,6 @@ public class NearTalkVoiceRecord extends Thread {
     private static final int RECORDER_BPP = 16;
 
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
-    private final AudioRecord audioRecorder;
     private final int bufferSizeInBytes;
     private final SilenceDetector continuingSilenceDetector;
     private boolean mIsSilent;
@@ -60,19 +57,8 @@ public class NearTalkVoiceRecord extends Thread {
 
     public NearTalkVoiceRecord(String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) {
         mListener = listener;
-        int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
-        int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
-        bufferSizeInBytes = AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,
-                RECORDER_CHANNELS,
-                RECORDER_AUDIO_ENCODING
-        );
-        // Initialize Audio Recorder.
-        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
-                RECORDER_SAMPLERATE,
-                RECORDER_CHANNELS,
-                RECORDER_AUDIO_ENCODING,
-                bufferSizeInBytes);
+        bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
 
         tarsosDSPAudioFormat = new TarsosDSPAudioFormat(
                 RECORDER_SAMPLERATE
@@ -93,8 +79,9 @@ public class NearTalkVoiceRecord extends Thread {
         }
 
         recordState = MyVoiceRecord.RecordState.init;
-        // Start Recording.
-        audioRecorder.startRecording();
+        if(!SingleAudioRecord.getInstance().isRecording()) {
+            SingleAudioRecord.getInstance().getAudioRecorder().startRecording();
+        }
     }
 
     @Override
@@ -111,9 +98,9 @@ public class NearTalkVoiceRecord extends Thread {
         try {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
-            while (!isInterrupted()) {
+            while (SingleAudioRecord.getInstance().isRecording()) {
 //                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
-                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes);
+                numberOfReadFloat = SingleAudioRecord.getInstance().getAudioRecorder().read(audioBuffer, 0, bufferSizeInBytes);
 
                 if (numberOfReadFloat > 0) {
                     TarsosDSPAudioFloatConverter
@@ -198,7 +185,7 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     private void stopRecord(long actuallyLong) {
-        audioRecorder.release();
+        SingleAudioRecord.getInstance().getAudioRecorder().stop();
         Log.i(TAG, " record finish, success:" + (recordState != MyVoiceRecord.RecordState.interrupt)
                 + " file:" + mFilePath + " state:" + mState.toString());
         boolean success = recordState != MyVoiceRecord.RecordState.interrupt;
@@ -225,7 +212,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     public void interrupt(boolean stopAll) {
 //        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
-
+        SingleAudioRecord.getInstance().stop();
         if(stopAll) {
             Log.d(TAG, "NearTalkVoiceRecord # interrupt");
             recordState = MyVoiceRecord.RecordState.interrupt;

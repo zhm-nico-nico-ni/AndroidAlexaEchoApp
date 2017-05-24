@@ -2,16 +2,17 @@ package com.ggec.voice.assistservice.wakeword;
 
 import android.content.Context;
 
+import com.ggec.voice.assistservice.wakeword.sphinx.SpeechRecognizer;
 import com.ggec.voice.toollibrary.log.Log;
 
 import java.io.File;
 import java.io.IOException;
 
 import edu.cmu.pocketsphinx.Assets;
+import edu.cmu.pocketsphinx.Config;
+import edu.cmu.pocketsphinx.Decoder;
 import edu.cmu.pocketsphinx.Hypothesis;
 import edu.cmu.pocketsphinx.RecognitionListener;
-import edu.cmu.pocketsphinx.SpeechRecognizer;
-import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
 
 /**
  * Created by ggec on 2017/4/20.
@@ -58,14 +59,17 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
     private void setupRecognizer(File assetsDir) throws IOException {
         // The recognizer can be configured to perform multiple searches
         // of different kind and switch between them
-
-        recognizer = SpeechRecognizerSetup.defaultSetup()
-                .setAcousticModel(new File(assetsDir, "en-us-ptm"))
-                .setDictionary(new File(assetsDir, "cmudict-en-us.dict"))
+        Config config = Decoder.defaultConfig();
+        config.setString("-hmm", new File(assetsDir, "en-us-ptm").getPath());
+        config.setString("-dict", new File(assetsDir, "cmudict-en-us.dict").getPath());
+        recognizer = new SpeechRecognizer(config);
+//        recognizer = SpeechRecognizerSetup.defaultSetup()
+//                .setAcousticModel(new File(assetsDir, "en-us-ptm"))
+//                .setDictionary(new File(assetsDir, "cmudict-en-us.dict"))
 
 //                .setRawLogDir(assetsDir) // To disable logging of raw audio comment out this call (takes a lot of space on the device)
 
-                .getRecognizer();
+//                .getRecognizer();
         recognizer.addListener(this);
 
         /** In your application you might not need to add all those searches.
@@ -144,5 +148,9 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
     @Override
     public void onTimeout() {
 
+    }
+
+    static {
+        System.loadLibrary("pocketsphinx_jni");
     }
 }

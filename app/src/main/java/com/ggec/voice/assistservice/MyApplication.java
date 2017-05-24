@@ -2,6 +2,8 @@ package com.ggec.voice.assistservice;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.multidex.MultiDex;
 
 import com.facebook.stetho.Stetho;
@@ -50,6 +52,7 @@ import static org.acra.ReportField.USER_CRASH_DATE;
 public class MyApplication extends Application {
 
     private static Context sContext;
+    public static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     public void onCreate() {
