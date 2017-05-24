@@ -215,11 +215,12 @@ public class GGECMediaManager {
                     sendPlaybackStartedEvent(item, offsetInMilliseconds);
                 }
             }
-            if (!almostDoneFired && (percent >= 1 || (percent > .8f && remaining < 15000))) {
+
+            if (!almostDoneFired && (percent >= 1 || (percent > 0.8f && remaining < 8000))) {
                 Log.d(TAG, "AlmostDone " + item.getToken() + " fired: " + percent);
                 almostDoneFired = true;
-                if (item instanceof AvsPlayAudioItem) {
-                    sendPlaybackNearlyFinishedEvent((AvsPlayAudioItem) item, offsetInMilliseconds);
+                if (item instanceof AvsAudioItem ) {
+                    sendPlaybackNearlyFinishedEvent((AvsAudioItem) item, offsetInMilliseconds);
                 }
             }
         }
@@ -288,7 +289,7 @@ public class GGECMediaManager {
          * Send an event back to Alexa that we're nearly done with our current playback event, this should supply us with the next item
          * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
          */
-        private void sendPlaybackNearlyFinishedEvent(AvsPlayAudioItem item, long offsetInMilliseconds) {
+        private void sendPlaybackNearlyFinishedEvent(AvsAudioItem item, long offsetInMilliseconds) {
             if (item != null) {
                 Log.i(TAG, "Sending PlaybackNearlyFinishedEvent");
                 AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
@@ -298,7 +299,7 @@ public class GGECMediaManager {
 
         /**
          * Send an event back to Alexa that we're done with our current speech event, this should supply us with the next item
-         * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackNearlyFinished Event
+         * https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#PlaybackComplete Event
          */
         private void sendPlaybackCompleteEvent(AvsItem item, long offset, boolean success) {
             if (success) {
