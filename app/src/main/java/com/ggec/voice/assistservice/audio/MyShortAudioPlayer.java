@@ -73,12 +73,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
             Log.d("MyShortAudioPlayer", "ready use:"+ (SystemClock.elapsedRealtime() - begin));
         }
         if (playbackState == ExoPlayer.STATE_ENDED){
-//            if(exoPlayer != null){
-//                exoPlayer.release();
-//                exoPlayer = null;
-//            }
             exoPlayer.setPlayWhenReady(false);
-
 
             if (mOnCompleteListener != null) {
                 mOnCompleteListener.onCompletion();
@@ -88,7 +83,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
                     public void run() {
                         exoPlayer.seekToDefaultPosition(0);
                     }
-                }, 100);
+                }, 1000);
                 Log.d("MyShortAudioPlayer", "play and release use:"+ (SystemClock.elapsedRealtime() - begin));
             }
         }
