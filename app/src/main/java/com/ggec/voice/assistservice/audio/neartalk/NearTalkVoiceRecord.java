@@ -42,9 +42,6 @@ public class NearTalkVoiceRecord extends Thread {
 
     private final static String TAG = "NearTalkVoiceRecord";
 
-    private static final int RECORDER_SAMPLERATE = 16000;
-    private static final int RECORDER_BPP = 16;
-
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
     private final int bufferSizeInBytes;
     private final SilenceDetector continuingSilenceDetector;
@@ -61,8 +58,8 @@ public class NearTalkVoiceRecord extends Thread {
         bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
 
         tarsosDSPAudioFormat = new TarsosDSPAudioFormat(
-                RECORDER_SAMPLERATE
-                , RECORDER_BPP
+                16000
+                , 16
                 , 1
                 , true,
                 false);

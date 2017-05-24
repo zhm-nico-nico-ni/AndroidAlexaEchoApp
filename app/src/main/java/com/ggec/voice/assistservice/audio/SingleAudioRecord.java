@@ -24,11 +24,11 @@ public class SingleAudioRecord {
         int recorder_channels = AudioFormat.CHANNEL_IN_MONO;
         int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
 
-        bufferSizeInBytes = Math.round((float)recorder_sample_rate * BUFFER_SIZE_SECONDS);
-//        bufferSizeInBytes = AudioRecord.getMinBufferSize(recorder_sample_rate,
-//                recorder_channels,
-//                recorder_audio_encoding
-//        );
+//        bufferSizeInBytes = Math.round((float)recorder_sample_rate * BUFFER_SIZE_SECONDS);
+        bufferSizeInBytes = AudioRecord.getMinBufferSize(recorder_sample_rate,
+                recorder_channels,
+                recorder_audio_encoding
+        );
 
         audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
                 recorder_sample_rate,

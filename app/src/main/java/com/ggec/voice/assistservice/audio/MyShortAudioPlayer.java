@@ -81,9 +81,9 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
                 sMainHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        exoPlayer.seekToDefaultPosition(0);
+                        exoPlayer.seekTo(0);
                     }
-                }, 1000);
+                }, 2000);
                 Log.d("MyShortAudioPlayer", "play and release use:"+ (SystemClock.elapsedRealtime() - begin));
             }
         }
