@@ -25,6 +25,7 @@ import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsLocalResumeItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
@@ -112,14 +113,16 @@ public class GGECMediaManager {
     }
 
     private final AvsAudioItem pauseMediaAudio() {
+        if(canPlayMedia == 0) {
+            canPlayMedia = 2;
+        }
+
         mMediaAudioPlayer.pause();
         long lastPosition = mMediaAudioPlayer.getCurrentPosition();
         AvsItem item = mMediaAudioPlayer.getCurrentItem();
         if (item instanceof AvsAudioItem) {
             ((AvsAudioItem) item).pausePosition = lastPosition;
             return (AvsAudioItem) item;
-        } else if (item instanceof AvsAlertPlayItem || item == null) {
-
         } else {
             avsQueue1.remove(item.messageID);
         }
@@ -362,6 +365,10 @@ public class GGECMediaManager {
         MyApplication.getContext().startService(it);
     }
 
+    private void setCanPlayMedia(){
+        if(2 == canPlayMedia) canPlayMedia = 0;
+    }
+
     public boolean addAvsItemToQueue(AvsItem response) {
         Log.d(TAG, "addAvsItemToQueue "+response.getClass());
         if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理, 暂时不需要先不管
@@ -400,7 +407,7 @@ public class GGECMediaManager {
             clear(false);
         } else if (response instanceof AvsPlayRemoteItem
                 || response instanceof AvsPlayAudioItem) {
-            canPlayMedia = true;
+
             //Note: When adding streams to your playback queue, you must ensure that the token for the
             // active stream matches the expectedPreviousToken in the stream being added to the queue.
             // If the tokens do not match the stream must be ignored. However,
@@ -425,7 +432,7 @@ public class GGECMediaManager {
             // The Stop directive is sent to your client to stop playback of an audio stream.
             // Your client may receive a Stop directive as the result of a voice request, a physical button press or GUI affordance.
             Log.w(TAG, "handle AvsStopItem");
-            canPlayMedia = false;
+
             long position = mMediaAudioPlayer.stop(false); //注意这个,停止全部audio
             clear(true);
             mMediaPlayHandler.sendEmptyMessage(QUEUE_STATE_PAUSE);
@@ -438,6 +445,8 @@ public class GGECMediaManager {
         } else if (response instanceof AvsMediaPreviousCommandItem) {
             Log.e(TAG, "Can not handle :" + response.getClass().getName());
             return true;
+        } else if(response instanceof AvsLocalResumeItem){
+            setCanPlayMedia();
         } else {
             return false;
         }
@@ -532,10 +541,11 @@ public class GGECMediaManager {
         } else if(completedItem instanceof AvsAlertPlayItem) {
             sendStopAlertEvent(completedItem.getToken());
         }
-        mSpeechSynthesizerPlayer.releaseAvsItem();
+        setCanPlayMedia();
+//        mSpeechSynthesizerPlayer.releaseAvsItem();
     }
 
-    private volatile boolean canPlayMedia = true;
+    private volatile int canPlayMedia = 0; // 0 can ,1 not, 2 local susspent
     private Handler mMediaPlayHandler = new Handler(Looper.getMainLooper()) {
         private volatile boolean running;
 
@@ -545,7 +555,7 @@ public class GGECMediaManager {
                 checkIsFinish();
 
                 if (!running &&
-                        (avsQueue1.size() > 0 || (canPlayMedia && avsQueue2.size() > 0))) {
+                        (avsQueue1.size() > 0 || (canPlayMedia == 0 && avsQueue2.size() > 0))) {
                     running = true;
                     checkQueueImpl();
                 } else if(running && avsQueue1.size() == 0 ){
@@ -568,7 +578,7 @@ public class GGECMediaManager {
         }
 
         private synchronized boolean checkIsFinish() {
-            if (canPlayMedia) {
+            if (canPlayMedia == 0) {
                 if (avsQueue1.size() == 0 && (avsQueue2.size() == 0)) {
                     running = false;
                 }

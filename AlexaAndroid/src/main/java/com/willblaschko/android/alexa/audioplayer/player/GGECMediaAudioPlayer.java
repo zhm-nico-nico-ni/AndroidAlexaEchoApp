@@ -2,12 +2,15 @@ package com.willblaschko.android.alexa.audioplayer.player;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.MyAVSAudioParser;
@@ -54,6 +57,13 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private int mMediaState = STATE_IDLE;
     private MyAVSAudioParser myAVSAudioParser;
 
+    private TaskRunnar mAsyncTask;
+    private int mPlaybackState;
+    private long bufferBeginTime;
+    private long beginOffset;
+    private boolean mFiredPrepareEvent;
+    private Handler handler;
+
     /**
      * Create our new AlexaAudioPlayer
      *
@@ -72,8 +82,8 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     private MyExoPlayer getMediaPlayer() {
         if (mMediaPlayer == null) {
-            mMediaPlayer = new MyExoPlayer(mContext, this, true);
-
+            mMediaPlayer = new MyExoPlayer(mContext, this, false);
+            handler = new Handler();
 //            mMediaPlayer.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
 //            mMediaPlayer.setPlayWhenReady(true);
         }
@@ -163,12 +173,12 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
             Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
-            getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"));
+            prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"), false, null);
         } else if (mItem instanceof AvsPlayRemoteItem) {
             handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
         } else if (mItem instanceof AvsPlayContentItem) {
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
-            getMediaPlayer().prepare(buildMediaSource(playItem.getUri(), null));
+            prepare(buildMediaSource(playItem.getUri(), null), false, null);
         } else if (mItem instanceof AvsPlayAudioItem) {
             AvsPlayAudioItem playAudioItem = (AvsPlayAudioItem) mItem;
             long offset = playAudioItem.mStream.getOffsetInMilliseconds();
@@ -192,7 +202,15 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @return true playing, false not
      */
     public boolean isPlaying() {
-        return mMediaPlayer != null && mMediaPlayer.isPlaying();
+        if(mMediaState == STATE_PLAYING) {
+            return true;
+        } else if(mMediaPlayer == null){
+            return false;
+        } else if(ExoPlayer.STATE_READY == mPlaybackState || ExoPlayer.STATE_BUFFERING == mPlaybackState) {
+            return mMediaPlayer.getPlayWhenReady();
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -208,6 +226,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * A helper function to play the MediaPlayer
      */
     public void play() {
+        mMediaState = STATE_PLAYING;
         getMediaPlayer().setPlayWhenReady(true);
     }
 
@@ -282,7 +301,6 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     }
 
 
-    @Override
     public void onComplete(long duration) {
         mMediaState = STATE_FINISHED;
         for (Callback callback : mCallbacks) {
@@ -291,13 +309,11 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         }
     }
 
-    @Override
     public void onError(ExoPlaybackException exception) {
         release(false);
         bubbleUpError(exception);
     }
 
-    @Override
     public void onPrepare() {
         mMediaState = STATE_PLAYING;
         for (Callback callback : mCallbacks) {
@@ -306,12 +322,10 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         }
     }
 
-    @Override
     public void onProgress(float percent, long remaining) {
         postProgress(percent, remaining);
     }
 
-    @Override
     public void onBuffering(long offset) {
         mMediaState = STATE_BUFFER_UNDER_RUN;
         for (Callback callback : mCallbacks) {
@@ -319,7 +333,6 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         }
     }
 
-    @Override
     public void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds) {
         mMediaState = STATE_PLAYING;
         for (Callback callback : mCallbacks) {
@@ -329,9 +342,10 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     private void playitem(AvsSpeakItem playItem, long offset) {
         //write out our raw audio data to a file
+        beginOffset = offset;
         File path = new File(mContext.getCacheDir(), playItem.messageID);
         if (path.exists()) {
-            getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
+            prepare(buildMediaSource(Uri.fromFile(path), null), false, path);
             return;
         }
         FileOutputStream fos = null;
@@ -340,7 +354,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
             fos.write(playItem.getAudio());
             fos.close();
             //play our newly-written file
-            getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
+            prepare(buildMediaSource(Uri.fromFile(path), null), false, path);
         } catch (IOException e) {
             //bubble up our error
             bubbleUpError(e);
@@ -376,12 +390,17 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if(myAVSAudioParser != null){
             myAVSAudioParser.cancelRequest();
         }
+        if (mAsyncTask != null) {
+            mAsyncTask.cancel();
+            mAsyncTask = null;
+        }
     }
 
     private void handleRemoteAVSItem(final AvsPlayRemoteItem playItem) {
         cancelAvsRemoteCallRequest();
         final long startOffset = playItem.pausePosition > playItem.getStartOffset()
                 ? playItem.pausePosition : playItem.getStartOffset();
+        mMediaState = STATE_BUFFER_UNDER_RUN;
 
         Log.d(TAG, "play remote item offset:"+startOffset+" , url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
         if (TextUtils.isEmpty(playItem.getConvertUrl())) {
@@ -411,7 +430,8 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
                         public void accept(@io.reactivex.annotations.NonNull ConvertAudioItem s) throws Exception {
                             if (!TextUtils.isEmpty(s.convertUrl)) {
                                 Log.d(TAG, "final play "+ s.convertUrl+ " extension:"+s.overrideExtension);
-                                getMediaPlayer().prepare(buildMediaSource(Uri.parse(s.convertUrl), s.overrideExtension), null, startOffset);
+                                beginOffset = startOffset;
+                                prepare(buildMediaSource(Uri.parse(s.convertUrl), s.overrideExtension), false, null);
                             } else {
                                 Log.w(TAG, "handleRemoteAVSItem end, may cancel or error :" + s.convertUrl);
                             }
@@ -423,9 +443,77 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
                         }
                     });
         } else {
-            getMediaPlayer().prepare(buildMediaSource(Uri.parse(playItem.getConvertUrl()), playItem.extension), null, startOffset);
+            beginOffset = startOffset;
+            prepare(buildMediaSource(Uri.parse(playItem.getConvertUrl()), playItem.extension), false, null);
         }
     }
 
 
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        if (ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY) {
+            if (bufferBeginTime > 0)
+                onBufferReady(mMediaPlayer.getCurrentPosition(),
+                        SystemClock.elapsedRealtime() - bufferBeginTime);
+        }
+
+        mPlaybackState = playbackState;
+        if (ExoPlayer.STATE_READY == playbackState) {
+            if (beginOffset > 0 && beginOffset < mMediaPlayer.getDuration()) {
+                mMediaPlayer.getMediaPlayer().seekTo(beginOffset);
+                beginOffset = 0;
+            } else {
+                // 加上正式准备好的提示
+                if (!mFiredPrepareEvent) {
+                    mFiredPrepareEvent = true;
+                    mMediaPlayer.setPlayWhenReady(true);
+                    if (mAsyncTask != null) {
+                        mAsyncTask.cancel();
+                        mAsyncTask = null;
+                    }
+                    onPrepare();
+                    mAsyncTask = new TaskRunnar();
+                    handler.postDelayed(mAsyncTask, 100);
+                }
+            }
+        } else if (ExoPlayer.STATE_ENDED == playbackState) {
+            onComplete(mMediaPlayer.getDuration());
+        } else if (ExoPlayer.STATE_BUFFERING == playbackState) {
+            long current = SystemClock.elapsedRealtime();
+            if (bufferBeginTime > 0 && current - bufferBeginTime > 2000) {
+                onBuffering(mMediaPlayer.getCurrentPosition());
+            }
+            bufferBeginTime = current;
+        }
+    }
+
+    private void prepare(MediaSource mediaSource, boolean playWhenReady, File deleteWhenFinishPath){
+        mFiredPrepareEvent = false;
+        getMediaPlayer().prepare(mediaSource, playWhenReady, deleteWhenFinishPath);
+    }
+
+    private class TaskRunnar implements Runnable {
+        private volatile boolean isTaskFinish;
+
+        @Override
+        public void run() {
+            if (!isTaskFinish && mMediaPlayer != null ) {
+
+                if(isPlaying()) {
+                    long pos = mMediaPlayer.getCurrentPosition();
+                    long duration = mMediaPlayer.getDuration();
+                    final float percent = (float) pos / (float) duration;
+
+                    onProgress(percent, duration - pos);
+                }
+
+                handler.postDelayed(this, 100);
+            }
+        }
+
+        public void cancel() {
+            isTaskFinish = true;
+            handler.removeCallbacks(null);
+        }
+    }
 }

@@ -2,8 +2,6 @@ package com.willblaschko.android.alexa.audioplayer;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.os.Handler;
-import android.os.SystemClock;
 
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -26,12 +24,9 @@ import java.io.File;
 public class MyExoPlayer implements ExoPlayer.EventListener {
     private SimpleExoPlayer mMediaPlayer;
     private IMyExoPlayerListener mListener;
-    private boolean mFiredPrepareEvent;
-    private TaskRunnar mAsyncTask;
+
     private File mDeleteWhenFinishPath;
-    private long beginOffset;
-    private int mPlaybackState;
-    private long bufferBeginTime;
+
     private EventLogger eventLogger;
 
     public MyExoPlayer(Context context, IMyExoPlayerListener listener, boolean needLogger) {
@@ -69,41 +64,9 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        if (ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY) {
-            if (bufferBeginTime > 0 && mListener != null)
-                mListener.onBufferReady(mMediaPlayer.getCurrentPosition(),
-                        SystemClock.elapsedRealtime() - bufferBeginTime);
-        }
-
-        mPlaybackState = playbackState;
-        if (ExoPlayer.STATE_READY == playbackState) {
-            if (beginOffset > 0 && beginOffset < mMediaPlayer.getDuration()) {
-                mMediaPlayer.seekTo(beginOffset);
-                beginOffset = 0;
-            } else {
-                // 加上正式准备好的提示
-                if (!mFiredPrepareEvent) {
-                    setPlayWhenReady(true);
-                    mFiredPrepareEvent = true;
-                    if (mAsyncTask != null) {
-                        mAsyncTask.cancel();
-                        mAsyncTask = null;
-                    }
-                    if (mListener != null) mListener.onPrepare();
-                    mAsyncTask = new TaskRunnar();
-                    handler.postDelayed(mAsyncTask, 100);
-                }
-            }
-        } else if (ExoPlayer.STATE_ENDED == playbackState) {
-            long duration = mMediaPlayer.getDuration();
+        if (mListener != null) mListener.onPlayerStateChanged(playWhenReady, playbackState);
+        if (ExoPlayer.STATE_ENDED == playbackState) {
             deletePlayFile();
-            if (mListener != null) mListener.onComplete(duration);
-        } else if (ExoPlayer.STATE_BUFFERING == playbackState) {
-            long current = SystemClock.elapsedRealtime();
-            if (bufferBeginTime > 0 && current - bufferBeginTime > 2000) {
-                mListener.onBuffering(mMediaPlayer.getCurrentPosition());
-            }
-            bufferBeginTime = current;
         }
     }
 
@@ -123,34 +86,15 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
 
     }
 
-//    public void resume(){
-//        mMediaPlayer.setPlayWhenReady(true);
-//    }
-//
-//    public long pause(){
-//        mMediaPlayer.setPlayWhenReady(false);
-//        return mMediaPlayer.getCurrentPosition();
-//    }
-
     public long stop() {
         long pos = mMediaPlayer.getCurrentPosition();
-        if (mAsyncTask != null) {
-            mAsyncTask.cancel();
-            mAsyncTask = null;
-        }
         mMediaPlayer.stop();
         deletePlayFile();
         return pos;
     }
 
-    public void prepare(MediaSource mediaSource) {
-        prepare(mediaSource, null, 0);
-    }
-
-    public void prepare(MediaSource mediaSource, File deleteWhenFinishPath, long beginOffset) {
-        this.beginOffset = beginOffset;
-        mFiredPrepareEvent = false;
-        bufferBeginTime = 0;
+    public void prepare(MediaSource mediaSource, boolean playWhenReady, File deleteWhenFinishPath) {
+        setPlayWhenReady(playWhenReady);
         deletePlayFile();
         mDeleteWhenFinishPath = deleteWhenFinishPath;
         mMediaPlayer.prepare(mediaSource);
@@ -196,57 +140,14 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         return mMediaPlayer.getDuration();
     }
 
-    public boolean isMediaReadyToPlay() {
-        int state = mMediaPlayer.getPlaybackState();
-        return ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state;
-    }
-
-    public boolean isPlaying() {
-        int state = mMediaPlayer.getPlaybackState();
-        if(ExoPlayer.STATE_READY == state || ExoPlayer.STATE_BUFFERING == state) {
-            return mMediaPlayer.getPlayWhenReady();
-        }
-        return false;
-    }
-
-    private Handler handler = new Handler();
-
-    private class TaskRunnar implements Runnable {
-        private volatile boolean isTaskFinish;
-
-        @Override
-        public void run() {
-            if (!isTaskFinish && mMediaPlayer != null ) {
-
-                if(isPlaying()) {
-                    long pos = mMediaPlayer.getCurrentPosition();
-                    long duration = mMediaPlayer.getDuration();
-                    final float percent = (float) pos / (float) duration;
-
-                    if (mListener != null) mListener.onProgress(percent, duration - pos);
-                }
-
-                handler.postDelayed(this, 100);
-            }
-        }
-
-        public void cancel() {
-            isTaskFinish = true;
-            handler.removeCallbacks(this);
-        }
+    public SimpleExoPlayer getMediaPlayer() {
+        return mMediaPlayer;
     }
 
     public interface IMyExoPlayerListener {
-        void onComplete(long duration);
+        void onPlayerStateChanged(boolean playWhenReady, int playbackState);
 
         void onError(ExoPlaybackException exception);
 
-        void onPrepare();
-
-        void onProgress(float percent, long remaining);
-
-        void onBuffering(long offsetInMilliseconds);
-
-        void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds);
     }
 }

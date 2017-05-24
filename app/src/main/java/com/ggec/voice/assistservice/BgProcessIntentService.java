@@ -28,6 +28,7 @@ import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsLocalResumeItem;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
@@ -283,7 +284,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("read my audio book", getCallBack("textTest"));
+        alexaManager.sendTextRequest("Tell me some news", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
         // "Set an alarm for 9:49 morning on everyday" "How's my day look"
     }
@@ -350,6 +351,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void continueWakeWordDetect(){
         sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+        AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsLocalResumeItem());
     }
 
     /*
@@ -378,6 +380,7 @@ public class BgProcessIntentService extends IntentService {
                     @Override
                     public void onCompletion() {
                         continueWakeWordDetect();
+
                     }
                 });
             }

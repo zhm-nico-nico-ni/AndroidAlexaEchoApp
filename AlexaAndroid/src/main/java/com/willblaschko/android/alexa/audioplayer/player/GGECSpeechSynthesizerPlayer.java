@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
@@ -45,6 +46,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
     private AvsItem mItem;
     private int mMediaState = STATE_IDLE;
     private Callback mCallback;
+    private boolean mFiredPrepareEvent;
 
     /**
      * Create our new AlexaAudioPlayer
@@ -137,15 +139,15 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
             Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
-            getMediaPlayer().prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"));
+            prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"), true, null);
         } else if (mItem instanceof AvsPlayContentItem) {
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
-            getMediaPlayer().prepare(buildMediaSource(playItem.getUri(), null));
+            prepare(buildMediaSource(playItem.getUri(), null), true, null);
         } else if (mItem instanceof AvsSpeakItem) {
-            playitem((AvsSpeakItem) mItem, 0);
+            playitem((AvsSpeakItem) mItem);
         } else if (mItem instanceof AvsAlertPlayItem) {
             Uri path = Uri.parse("asset:///alarm.mp3");
-            getMediaPlayer().prepare(buildMediaSource(path, "mp3"));
+            prepare(buildMediaSource(path, "mp3"), true, null);
         } else {
 
             bubbleUpError(new Exception("not suitable process"));
@@ -163,7 +165,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
      * @return true playing, false not
      */
     public boolean isPlaying() {
-        return mMediaPlayer != null && mMediaPlayer.isMediaReadyToPlay();
+        return  STATE_PLAYING == mMediaState || (mItem != null && STATE_BUFFER_UNDER_RUN == mMediaState);//mMediaPlayer != null && mMediaPlayer.isMediaReadyToPlay();
     }
 
 //    /**
@@ -237,7 +239,6 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
     }
 
 
-    @Override
     public void onComplete(long duration) {
         mMediaState = STATE_FINISHED;
         if(mCallback != null) {
@@ -246,49 +247,24 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         }
     }
 
-    @Override
     public void onError(ExoPlaybackException exception) {
         release(false);
         bubbleUpError(exception);
     }
 
-    @Override
     public void onPrepare() {
-        mMediaState = STATE_PLAYING;
         if(mCallback != null) {
             mCallback.playerPrepared(mItem);
             mCallback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0, 0);
         }
     }
 
-    @Override
-    public void onProgress(float percent, long remaining) {
-        if (mMediaPlayer != null && mCallback != null) {
-            mCallback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), percent, remaining);
-        }
-    }
 
-    @Override
-    public void onBuffering(long offset) {
-        mMediaState = STATE_BUFFER_UNDER_RUN;
-        if(mCallback != null) {
-            mCallback.onBuffering(getCurrentItem(), offset);
-        }
-    }
-
-    @Override
-    public void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds) {
-        mMediaState = STATE_PLAYING;
-        if(mCallback != null) {
-            mCallback.onBufferReady(getCurrentItem(), offsetInMilliseconds, stutterDurationInMilliseconds);
-        }
-    }
-
-    private void playitem(AvsSpeakItem playItem, long offset) {
+    private void playitem(AvsSpeakItem playItem) {
         //write out our raw audio data to a file
         File path = new File(mContext.getCacheDir(), playItem.messageID);
         if (path.exists()) {
-            getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
+            prepare(buildMediaSource(Uri.fromFile(path), null), true, path);
             return;
         }
         FileOutputStream fos = null;
@@ -297,7 +273,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
             fos.write(playItem.getAudio());
             fos.close();
             //play our newly-written file
-            getMediaPlayer().prepare(buildMediaSource(Uri.fromFile(path), null), path, offset);
+            prepare(buildMediaSource(Uri.fromFile(path), null), true, path);
         } catch (IOException e) {
             //bubble up our error
             bubbleUpError(e);
@@ -320,7 +296,23 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         }
     }
 
-    public void releaseAvsItem(){
-        mItem = null;
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        if (playbackState == ExoPlayer.STATE_READY) {
+            // 加上正式准备好的提示
+            mMediaState = STATE_PLAYING;
+            if (!mFiredPrepareEvent) {
+                mFiredPrepareEvent = true;
+                onPrepare();
+            }
+        } else if (ExoPlayer.STATE_ENDED == playbackState) {
+            long duration = mMediaPlayer.getDuration();
+            onComplete(duration);
+        }
+    }
+
+    private void prepare(MediaSource mediaSource, boolean playWhenReady, File deleteWhenFinishPath) {
+        mFiredPrepareEvent = false;
+        getMediaPlayer().prepare(mediaSource, playWhenReady, deleteWhenFinishPath);
     }
 }
