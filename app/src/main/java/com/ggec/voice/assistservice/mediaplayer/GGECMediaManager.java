@@ -92,17 +92,15 @@ public class GGECMediaManager {
         avsQueue1.clear();
         avsQueue2.clear();
         if (stopCurrent) {
-            if (mSpeechSynthesizerPlayer.isPlaying()) {
+            if (mSpeechSynthesizerPlayer.isPlaying() && !(mSpeechSynthesizerPlayer.getCurrentItem() instanceof AvsAlertPlayItem)) {
                 mSpeechSynthesizerPlayer.release(false);
             }
 
             if (mMediaAudioPlayer.isPlaying()) {
                 mMediaAudioPlayer.release(false);
             }
+            doWhenMediaPauseOrStop();
         }
-
-        doWhenMediaPauseOrStop();
-
     }
 
     //For each URL that AVS sends,
