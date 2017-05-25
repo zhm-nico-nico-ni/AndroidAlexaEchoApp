@@ -452,9 +452,11 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY) {
-            if (bufferBeginTime > 0)
-                onBufferReady(mMediaPlayer.getCurrentPosition(),
-                        SystemClock.elapsedRealtime() - bufferBeginTime);
+            if (bufferBeginTime > 0) {
+                long cp = mMediaPlayer.getCurrentPosition();
+                if(cp > beginOffset)
+                    onBufferReady(cp, SystemClock.elapsedRealtime() - bufferBeginTime);
+            }
         }
 
         mPlaybackState = playbackState;
@@ -481,7 +483,8 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         } else if (ExoPlayer.STATE_BUFFERING == playbackState) {
             long current = SystemClock.elapsedRealtime();
             if (bufferBeginTime > 0 && current - bufferBeginTime > 2000) {
-                onBuffering(mMediaPlayer.getCurrentPosition());
+                long cp = mMediaPlayer.getCurrentPosition();
+                onBuffering(cp > beginOffset ? cp : beginOffset);
             }
             bufferBeginTime = current;
         }
