@@ -17,7 +17,6 @@ import com.willblaschko.android.alexa.audioplayer.MyAVSAudioParser;
 import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
-import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
@@ -50,10 +49,10 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private final static int STATE_BUFFER_UNDER_RUN = 4;
     private final static int STATE_FINISHED = 5;
 
+    private final List<Callback> mCallbacks = new ArrayList<>();
     private MyExoPlayer mMediaPlayer;
     private Context mContext;
     private AvsItem mItem;
-    private final List<Callback> mCallbacks = new ArrayList<>();
     private int mMediaState = STATE_IDLE;
     private MyAVSAudioParser myAVSAudioParser;
 
@@ -124,15 +123,6 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
 //        }
 //    }
 
-//    /**
-//     * A helper function to play an AvsPlayContentItem, this is passed to play() and handled accordingly,
-//     *
-//     * @param item a speak type item
-//     */
-//    public void playItem(AvsPlayContentItem item) {
-//        play(item);
-//    }
-//
     /**
      * A helper function to play an AvsSpeakItem, this is passed to play() and handled accordingly,
      *
@@ -176,14 +166,10 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
             prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"), false, null);
         } else if (mItem instanceof AvsPlayRemoteItem) {
             handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
-        } else if (mItem instanceof AvsPlayContentItem) {
-            AvsPlayContentItem playItem = (AvsPlayContentItem) item;
-            prepare(buildMediaSource(playItem.getUri(), null), false, null);
         } else if (mItem instanceof AvsPlayAudioItem) {
             AvsPlayAudioItem playAudioItem = (AvsPlayAudioItem) mItem;
             long offset = playAudioItem.mStream.getOffsetInMilliseconds();
-            long startOffset = playAudioItem.pausePosition > offset
-                    ? playAudioItem.pausePosition : offset;
+            long startOffset = playAudioItem.pausePosition > offset ? playAudioItem.pausePosition : offset;
             playitem(playAudioItem, startOffset);
         } else {
 
@@ -301,7 +287,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     }
 
 
-    public void onComplete(long duration) {
+    private void onComplete(long duration) {
         mMediaState = STATE_FINISHED;
         for (Callback callback : mCallbacks) {
             callback.playerProgress(mItem, 1, 1, 0);
@@ -314,7 +300,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         bubbleUpError(exception);
     }
 
-    public void onPrepare() {
+    private void onPrepare() {
         mMediaState = STATE_PLAYING;
         for (Callback callback : mCallbacks) {
             callback.playerPrepared(mItem);
@@ -322,18 +308,18 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         }
     }
 
-    public void onProgress(float percent, long remaining) {
+    private void onProgress(float percent, long remaining) {
         postProgress(percent, remaining);
     }
 
-    public void onBuffering(long offset) {
+    private void onBuffering(long offset) {
         mMediaState = STATE_BUFFER_UNDER_RUN;
         for (Callback callback : mCallbacks) {
             callback.onBuffering(getCurrentItem(), offset);
         }
     }
 
-    public void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds) {
+    private void onBufferReady(long offsetInMilliseconds, long stutterDurationInMilliseconds) {
         mMediaState = STATE_PLAYING;
         for (Callback callback : mCallbacks) {
             callback.onBufferReady(getCurrentItem(), offsetInMilliseconds, stutterDurationInMilliseconds);
