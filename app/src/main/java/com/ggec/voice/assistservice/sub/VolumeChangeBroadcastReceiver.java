@@ -31,9 +31,7 @@ public class VolumeChangeBroadcastReceiver extends BroadcastReceiver {
     };
     @Override
     public void onReceive(Context context, Intent intent) {
-        //// FIXME: 2017/4/12  这里有个问题，当AVS 推送服务设置音量后，这里也会再次触发，看看怎样处理
         if(AudioManager.STREAM_MUSIC ==intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", 0)) {
-//            sOldVolume = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_VALUE", 0);//EXTRA_PREV_VOLUME_STREAM_VALUE
             sMainHandler.removeCallbacks(setVolumeChange);
             sMainHandler.postDelayed(setVolumeChange, 3000); //这里由于系统发broadcast并不快，建议至少等2s
         }

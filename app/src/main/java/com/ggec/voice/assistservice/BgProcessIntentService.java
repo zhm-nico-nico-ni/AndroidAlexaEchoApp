@@ -5,6 +5,7 @@ import android.app.IntentService;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -104,7 +105,8 @@ public class BgProcessIntentService extends IntentService {
 
         } else if (cmd.type == 2) {
             //stop
-            textTest();
+//            textTest();
+            search();
         } else if (cmd.type == 3) {
 //            alexaManager.closeOpenDownchannel(false);
 //            search();
@@ -143,18 +145,19 @@ public class BgProcessIntentService extends IntentService {
 //                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token));
 //                }
 //            });
-        } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
-            SpeakerUtil.setMute(MyApplication.getContext()
-                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                    , cmd.bundle.getBoolean("mute")
-                    , new ImplAsyncCallback("setMute")
-            );
+//        } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
+//            SpeakerUtil.setMute(MyApplication.getContext()
+//                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+//                    , cmd.bundle.getBoolean("mute")
+//                    , new ImplAsyncCallback("setMute")
+//            );
         } else if(cmd.type == BackGroundProcessServiceControlCommand.VOLUME_CHANGE){
-            SpeakerUtil.setVolume(MyApplication.getContext()
-                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-                    , cmd.bundle.getLong("volume")
-                    , false
-                    , new ImplAsyncCallback("setVolume"));
+            SharedPreferences sp = com.willblaschko.android.alexa.utility.Util.getPreferences(this);
+            if(Math.abs(System.currentTimeMillis()  - sp.getLong("lastSetMuteTime", 0)) < 5000){
+                SpeakerUtil.sendMuteEvent(this, alexaManager, null);
+            } else {
+                SpeakerUtil.sendVolumeEvent(this, alexaManager, null);
+            }
         } else if(cmd.type == BackGroundProcessServiceControlCommand.SEND_PING){
             sendPingEvent(alexaManager);
         } else if(cmd.type == BackGroundProcessServiceControlCommand.NETWORK_CONNECT){
@@ -284,7 +287,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Tell me some news", getCallBack("textTest"));
+        alexaManager.sendTextRequest("Set a timer after 50 seconds from now", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
         // "Set an alarm for 9:49 morning on everyday" "How's my day look"
     }

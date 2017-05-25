@@ -15,7 +15,7 @@ public class BackGroundProcessServiceControlCommand {
     public final static int START_VOICE_RECORD = 1;
     public final static int BEGIN_ALARM = 4;
 //    public final static int STOP_ALARM = 5;
-    public final static int MUTE_CHANGE = 6; // mute
+//    public final static int MUTE_CHANGE = 6; // mute
     public final static int VOLUME_CHANGE = 7; // volume
     public final static int SEND_PING = 8;
 //    public final static int SYSTEM_SYNCHRONIZE_STATE = 9; // no needed
