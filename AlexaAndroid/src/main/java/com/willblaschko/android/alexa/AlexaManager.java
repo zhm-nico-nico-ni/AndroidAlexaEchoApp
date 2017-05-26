@@ -15,11 +15,9 @@ import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsException;
-import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.GenericSendEvent;
 import com.willblaschko.android.alexa.interfaces.PingSendEvent;
-import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
@@ -265,6 +263,13 @@ public class AlexaManager {
                                             return false;
                                         }
                                     })
+                                    .onErrorReturn(new Function<Throwable, Boolean>() {
+                                        @Override
+                                        public Boolean apply(Throwable throwable) throws Exception {
+                                            Log.w(TAG, "sendOpenDownchannelDirective error", throwable);
+                                            return false;
+                                        }
+                                    })
                                     .subscribeOn(Schedulers.io())
                                     .observeOn(Schedulers.single())
                                     .subscribe(new Consumer<Boolean>() {
@@ -282,6 +287,7 @@ public class AlexaManager {
                         }
                     });
                 } else {
+                    Log.d(TAG, "open down channel fail, no auth");
                     //if the user is not logged in, log them in and then call the function again
                     logIn(new ImplAuthorizationCallback<AvsResponse>(pOpenDownChannelCallback) {
                         @Override
@@ -712,6 +718,12 @@ public class AlexaManager {
                                             return new Object();
                                         }
                                     })
+                                    .onErrorReturn(new Function<Throwable, Object>() {
+                                        @Override
+                                        public Object apply(Throwable throwable) throws Exception {
+                                            return new Object();
+                                        }
+                                    })
                                     .subscribeOn(Schedulers.io())
                                     .subscribe();
                         }
@@ -805,6 +817,12 @@ public class AlexaManager {
                                     return new Object();
                                 }
                             })
+                                    .onErrorReturn(new Function<Throwable, Object>() {
+                                        @Override
+                                        public Object apply(Throwable throwable) throws Exception {
+                                            return new Object();
+                                        }
+                                    })
                                     .subscribeOn(Schedulers.io())
                                     .subscribe();
                         }
@@ -851,7 +869,8 @@ public class AlexaManager {
                                         public AvsResponse call() throws Exception {
                                             return new PingSendEvent(url, token, callback).doWork();
                                         }
-                                    }).onErrorReturn(getErrorConsumer("sendPingEvent", callback))
+                                    })
+                                    .onErrorReturn(getErrorConsumer("sendPingEvent", callback))
                                     .subscribeOn(Schedulers.io())
                                     .subscribe();
                         }
@@ -865,10 +884,6 @@ public class AlexaManager {
             }
 
         });
-    }
-
-    private boolean isAudioPlayItem(AvsItem item) {
-        return (item instanceof AvsPlayAudioItem);
     }
 
     private String getEventsUrl() {
@@ -915,39 +930,7 @@ public class AlexaManager {
     public void sendUserInactivityReport(){
         final long second = (SystemClock.elapsedRealtime() - mLastUserActivityElapsedTime )/ 1000;
         if(second<3) return;
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
-            @Override
-            public void success(Boolean result) {
-                if (result) {
-                    //set our URL
-                    final String url = getEventsUrl();
-                    //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
-                        @Override
-                        public void onSuccess(final String token) {
-                            //do this off the main thread
-                            Observable.fromCallable(new Callable<Object>() {
-                                @Override
-                                public Object call() throws Exception {
-                                    Log.d(TAG, "sendUserInactivityReport");
-                                    new GenericSendEvent(url, token
-                                            , Event.createUserInactivityReportEvent(second)
-                                            , null);
-                                    return new Object();
-                                }
-                            }).subscribeOn(Schedulers.io())
-                                    .subscribe();
-                        }
-
-                        @Override
-                        public void onFailure(Throwable e) {
-
-                        }
-                    });
-                }
-            }
-
-        });
+        sendEvent(Event.createUserInactivityReportEvent(second), null);
     }
 
     public void tryRefreshToken(TokenManager.TokenCallback callback){
