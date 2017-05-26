@@ -160,11 +160,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         //if we're playing, stop playing before we continue
         getMediaPlayer().stop();
 
-        if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
-            Log.e(TAG, "what happen ? token:" + mItem.getToken());
-            //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
-            prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"), false, null);
-        } else if (mItem instanceof AvsPlayRemoteItem) {
+        if (mItem instanceof AvsPlayRemoteItem) {
             handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
         } else if (mItem instanceof AvsPlayAudioItem) {
             AvsPlayAudioItem playAudioItem = (AvsPlayAudioItem) mItem;

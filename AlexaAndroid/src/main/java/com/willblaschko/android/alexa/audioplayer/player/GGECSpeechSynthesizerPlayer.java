@@ -5,7 +5,6 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -136,14 +135,14 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         //if we're playing, stop playing before we continue
         getMediaPlayer().stop();
 
-        if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
+        /*if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
             Log.e(TAG, "what happen ? token:" + mItem.getToken());
             //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
             prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"), true, null);
         } else if (mItem instanceof AvsPlayContentItem) {
             AvsPlayContentItem playItem = (AvsPlayContentItem) item;
             prepare(buildMediaSource(playItem.getUri(), null), true, null);
-        } else if (mItem instanceof AvsSpeakItem) {
+        } else*/ if (mItem instanceof AvsSpeakItem) {
             playitem((AvsSpeakItem) mItem);
         } else if (mItem instanceof AvsAlertPlayItem) {
             Uri path = Uri.parse("asset:///alarm.mp3");
