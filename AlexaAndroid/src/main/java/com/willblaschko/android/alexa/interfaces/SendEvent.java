@@ -30,6 +30,7 @@ public abstract class SendEvent {
 
     private final static String TAG = "SendEvent";
 
+    @Deprecated
     //the output stream that extending classes will use to pass data to the AVS server
     protected ByteArrayOutputStream mOutputStream = new ByteArrayOutputStream();
     protected AsyncCallback<Void, Exception> mCallback;
@@ -107,7 +108,7 @@ public abstract class SendEvent {
             final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
                     ResponseParser.parseResponse(response.body().bytes(), getBoundary(response), false);
 
-            response.body().close();
+            response.close();
 
             return val;
         } catch (IOException exp) {

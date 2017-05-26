@@ -98,7 +98,14 @@ public class MyAVSAudioParser {
                         .build());
 
         Log.d(TAG, "requestImpl:"+url);
-        return parseResponse(mAvsRemoteCall.execute());
+
+        Response response = null;
+        try {
+            response = mAvsRemoteCall.execute();
+            return parseResponse(response);
+        } finally {
+            if(response != null) response.close();
+        }
     }
 
     private String parseResponse(Response response) throws IOException {
