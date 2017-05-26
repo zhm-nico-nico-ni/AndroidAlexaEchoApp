@@ -150,7 +150,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     private void play(@NonNull AvsItem item) {
         if (item.equals(mItem)) {
-            if(item instanceof AvsPlayRemoteItem && !getMediaPlayer().getPlayWhenReady()) {
+            if(item instanceof AvsPlayRemoteItem && !getMediaPlayer().getPlayWhenReady() && !getMediaPlayer().needPrepare()) {
                 Log.w(TAG, "play the same item");
                 play();
                 return;

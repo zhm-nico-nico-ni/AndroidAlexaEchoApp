@@ -144,6 +144,10 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
         return mMediaPlayer;
     }
 
+    public boolean needPrepare(){
+        return mMediaPlayer.getPlaybackState() == ExoPlayer.STATE_ENDED || mMediaPlayer.getPlaybackState() == ExoPlayer.STATE_IDLE;
+    }
+
     public interface IMyExoPlayerListener {
         void onPlayerStateChanged(boolean playWhenReady, int playbackState);
 

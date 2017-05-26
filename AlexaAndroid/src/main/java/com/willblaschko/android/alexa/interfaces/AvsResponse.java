@@ -9,8 +9,6 @@ import java.util.ArrayList;
 public class AvsResponse extends ArrayList<AvsItem> {
     public boolean continueWakeWordDetect = true;
     public boolean continueAudio = true;
-    public AvsResponse() {
+    public int responseCode;
 
-    }
-    
 }
