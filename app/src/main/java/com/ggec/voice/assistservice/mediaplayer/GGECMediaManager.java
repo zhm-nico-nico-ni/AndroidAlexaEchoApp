@@ -238,6 +238,8 @@ public class GGECMediaManager {
             checkQueue();
             if (completedItem instanceof AvsPlayContentItem) {
                 return;
+            } else if(completedItem instanceof AvsPlayAudioItem){
+                ((AvsPlayAudioItem) completedItem).releaseAudio();
             }
 
             if (!(completedItem instanceof AvsAlertPlayItem))
@@ -536,6 +538,7 @@ public class GGECMediaManager {
         if (completedItem instanceof AvsSpeakItem) {
             AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
                     .sendEvent(Event.getSpeechFinishedEvent(completedItem.getToken()), null);
+            ((AvsSpeakItem) completedItem).releaseAudio();
         } else if(completedItem instanceof AvsAlertPlayItem) {
             sendStopAlertEvent(completedItem.getToken());
         }

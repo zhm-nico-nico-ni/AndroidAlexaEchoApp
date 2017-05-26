@@ -112,7 +112,7 @@ public class ResponseParser {
             }
 
         } else {
-            Log.i(TAG, "Response Body: \n" + string(bytes));
+            Log.i(TAG, "Response Body: \n" + responseString);
             try {
                 Directive directive = getDirective(responseString);
                 if(directive.isTypeException()){

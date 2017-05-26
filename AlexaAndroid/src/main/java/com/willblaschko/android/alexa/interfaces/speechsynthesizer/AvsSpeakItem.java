@@ -33,4 +33,8 @@ public class AvsSpeakItem extends AvsAudioItem {
     public String getFormat(){
         return format;
     }
+
+    public void releaseAudio(){
+        mAudio = null;
+    }
 }

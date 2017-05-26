@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -33,13 +34,13 @@ public class OpenDownchannel extends SendEvent {
     private Call currentCall;
     private OkHttpClient client;
     private String url;
-    private AsyncCallback<AvsResponse, Exception> callback;
+    private final AsyncCallback<AvsResponse, Exception> callback;
     private boolean isStop;
 
     public OpenDownchannel(final String url, final AsyncCallback<AvsResponse, Exception> callback) {
         this.callback = callback;
         this.url = url;
-        this.client = ClientUtil.getHttp2Client().newBuilder().readTimeout(60, TimeUnit.MINUTES).build();
+        this.client = ClientUtil.getHttp2Client().newBuilder().connectionPool(new ConnectionPool(1,1,TimeUnit.HOURS)).readTimeout(60, TimeUnit.MINUTES).build();
     }
 
     /**

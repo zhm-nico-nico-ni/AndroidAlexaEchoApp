@@ -244,6 +244,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if (reportComplete) {
             onComplete(duration);
         }
+        if(mItem instanceof AvsSpeakItem) ((AvsSpeakItem) mItem).releaseAudio();
     }
 
     //Sets the audio volume, with 0 being silence and 1 being unity gain.
