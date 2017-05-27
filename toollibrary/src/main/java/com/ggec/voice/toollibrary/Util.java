@@ -9,7 +9,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Environment;
+import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Base64;
 
 import com.ggec.voice.toollibrary.log.Log;
@@ -336,6 +339,13 @@ public class Util {
         @SuppressLint("MissingPermission") WifiInfo wifiInf = wifiMan.getConnectionInfo();
         String mac = wifiInf.getMacAddress();
 
+        if(Build.VERSION.SDK_INT <23){
+            if(TextUtils.isEmpty(mac)){
+                return Settings.Secure.getString(context.getContentResolver(),
+                        Settings.Secure.ANDROID_ID);
+            }else
+                return mac;
+        }
         if("02:00:00:00:00:00".equals(mac)){
             try {
                 List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
