@@ -2,7 +2,6 @@ package com.ggec.voice.assistservice.connectlink;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
-import android.provider.Settings;
 
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
@@ -18,6 +17,7 @@ import com.ggec.voice.bluetoothconnect.proto.impl.SendAuth2DeviceAck;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendAuth2DeviceReq;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceAck;
 import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceReq;
+import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.SharedPreferenceUtil;
 
@@ -39,8 +39,8 @@ public class DeviceLinkHandler extends LinkHandler {
             discoverableIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             MyApplication.getContext().startActivity(discoverableIntent);
         }
-        String id = Settings.Secure.getString(MyApplication.getContext().getContentResolver(),
-                Settings.Secure.ANDROID_ID);
+        String id = Util.getProductId(MyApplication.getContext());
+
         mChannel.setDeviceName("GGEC_BOX_"+id);
         mChannel.start();
     }
@@ -60,8 +60,7 @@ public class DeviceLinkHandler extends LinkHandler {
             GetDeviceInfoRes ack = new GetDeviceInfoRes();
             ack.seqId = received.seqId;
             ack.resCode = ProtoResult.SUCCESS;
-            ack.deviceSerialNumber = Settings.Secure.getString(MyApplication.getContext().getContentResolver(),
-                    Settings.Secure.ANDROID_ID);
+            ack.deviceSerialNumber = Util.getProductId(MyApplication.getContext());;
             ack.productId = BuildConfig.PRODUCT_ID;
             sendData(ack);
         } else if (uri == ProtoURI.SendAuth2DeviceReqURI) {

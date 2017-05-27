@@ -1,12 +1,16 @@
 package com.ggec.voice.toollibrary;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Environment;
+import android.util.Base64;
 
 import com.ggec.voice.toollibrary.log.Log;
 
@@ -19,7 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.NetworkInterface;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -316,5 +322,49 @@ public class Util {
             return dir.delete();
         }
         return false;
+    }
+
+    public static String getProductId(Context context){
+        String mac = recupAdresseMAC(context);
+        String productId = Base64.encodeToString(mac.getBytes(), Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+        Log.d("getProductId", "mac:"+mac +" pid:"+productId);
+        return productId;
+    }
+
+    public static String recupAdresseMAC(Context context) {
+        WifiManager wifiMan = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        @SuppressLint("MissingPermission") WifiInfo wifiInf = wifiMan.getConnectionInfo();
+        String mac = wifiInf.getMacAddress();
+
+        if("02:00:00:00:00:00".equals(mac)){
+            try {
+                List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
+                for (NetworkInterface nif : all) {
+                    if (nif.getName().equalsIgnoreCase("wlan0")) {
+                        byte[] macBytes = nif.getHardwareAddress();
+                        if (macBytes == null) {
+                            return "";
+                        }
+
+                        StringBuilder res1 = new StringBuilder();
+                        for (byte b : macBytes) {
+                            res1.append(String.format("%02X:", b));
+                        }
+
+                        if (res1.length() > 0) {
+                            res1.deleteCharAt(res1.length() - 1);
+                        }
+                        return res1.toString();
+                    }
+                }
+            } catch (IOException e) {
+                Log.e("MobileAccess", "Erreur lecture propriete Adresse MAC");
+            } catch (Exception e) {
+                Log.e("MobileAcces", "Erreur lecture propriete Adresse MAC ");
+            }
+        } else{
+            return mac;
+        }
+        return "02:00:00:00:00:00";
     }
 }

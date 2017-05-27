@@ -2,7 +2,6 @@ package com.willblaschko.android.alexa;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Base64;
 
 import com.amazon.identity.auth.device.AuthError;
@@ -105,8 +104,7 @@ public class AuthorizationManager {
     public void authorizeUser(AuthorizationCallback callback){
         mCallback = callback;
 
-        String PRODUCT_DSN = Settings.Secure.getString(mContext.getContentResolver(),
-                Settings.Secure.ANDROID_ID);
+        String PRODUCT_DSN = com.ggec.voice.toollibrary.Util.getProductId(mContext);
 
         Bundle options = new Bundle();
         String scope_data = "{\"alexa:all\":{\"productID\":\"" + mProductId +
