@@ -234,7 +234,11 @@ public class GGECMediaManager {
 
             almostDoneFired = false;
             playbackStartedFired = false;
-            avsQueue2.remove(completedItem.messageID);
+            if(completedItem instanceof IAvsPlayDirectiveBaseItem){
+                avsQueue2.remove(((IAvsPlayDirectiveBaseItem) completedItem).getUrl());
+            } else {
+                avsQueue2.remove(completedItem.messageID);
+            }
             checkQueue();
             if (completedItem instanceof AvsPlayContentItem) {
                 return;
@@ -412,9 +416,11 @@ public class GGECMediaManager {
             // active stream matches the expectedPreviousToken in the stream being added to the queue.
             // If the tokens do not match the stream must be ignored. However,
             // if no expectedPreviousToken is returned, the stream must be added to the queue.
-            if(((IAvsPlayDirectiveBaseItem)response).canAddToQueue()) {
-                avsQueue2.put(response.messageID, response);
-                setNeedSendPlaybackStartEvent();
+            IAvsPlayDirectiveBaseItem baseItem = (IAvsPlayDirectiveBaseItem)response;
+            if(baseItem.canAddToQueue()) {
+                avsQueue2.put(baseItem.getUrl(), response);
+                if(!mMediaAudioPlayer.isPlaying())
+                    setNeedSendPlaybackStartEvent();
             } else {
                 Log.w(TAG, "expectedPreviousToken not equal token, ignore!");
             }

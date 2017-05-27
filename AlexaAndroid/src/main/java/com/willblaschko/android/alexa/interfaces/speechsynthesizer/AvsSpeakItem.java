@@ -22,7 +22,7 @@ public class AvsSpeakItem extends AvsAudioItem {
         this.format = format;
     }
 
-    public String getCid() {
+    public String getUrl() {
         return mCid;
     }
 

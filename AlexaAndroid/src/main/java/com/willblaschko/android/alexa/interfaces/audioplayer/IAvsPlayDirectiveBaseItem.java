@@ -10,4 +10,6 @@ public interface IAvsPlayDirectiveBaseItem  {
     // If the tokens do not match the stream must be ignored. However,
     // if no expectedPreviousToken is returned, the stream must be added to the queue.
     boolean canAddToQueue();
+
+    String getUrl();
 }
