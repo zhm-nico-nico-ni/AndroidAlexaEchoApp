@@ -475,6 +475,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
     private void prepare(MediaSource mediaSource, boolean playWhenReady, File deleteWhenFinishPath){
         mFiredPrepareEvent = false;
+        bufferBeginTime = 0;
         getMediaPlayer().prepare(mediaSource, playWhenReady, deleteWhenFinishPath);
     }
 
