@@ -80,8 +80,12 @@ public class SharedPreferenceUtil {
 
     public static void clearUtcTimeKey(Context context){
         SharedPreferences.Editor preferences = Util.getPreferences(context.getApplicationContext()).edit();
-        //comes back in seconds, needs to be milis
         preferences.remove(TokenManager.PREF_TOKEN_EXPIRES);
         preferences.apply();
+    }
+
+    public static long getLongByKey(Context context, String key, long def){
+        SharedPreferences sp = Util.getPreferences(context);
+        return sp.getLong(key, def);
     }
 }

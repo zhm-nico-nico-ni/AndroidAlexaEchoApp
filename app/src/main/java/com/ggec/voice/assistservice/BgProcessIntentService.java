@@ -18,6 +18,7 @@ import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
+import com.willblaschko.android.alexa.SharedPreferenceUtil;
 import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
@@ -380,16 +381,17 @@ public class BgProcessIntentService extends IntentService {
                     alexaManager.sendSynchronizeStateEvent2(ContextUtil.getActuallyContextList(MyApplication.getContext()
                             , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState()), getCallBack("SynchronizeState"));
                     setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
-                    setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
+                    long nextRefreshTime = SharedPreferenceUtil.getLongByKey(MyApplication.getContext(), TokenManager.PREF_TOKEN_EXPIRES, 0) - System.currentTimeMillis();
+                    setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN
+                            , nextRefreshTime < 2 * REFRESH_TOKEN_MIN_INTERVAL? 3000 : nextRefreshTime);
                     Log.i(TAG, "opendownchannel connected");
                 }
 
                 @Override
                 public void failure(Exception error) {
                     super.failure(error);
-                    if(error instanceof AvsResponseException){
-//        TODO open after test
-               com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).commit();
+                    if(error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()){
+                         com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).apply();
                     }
                     cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
                     cancelTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN);
