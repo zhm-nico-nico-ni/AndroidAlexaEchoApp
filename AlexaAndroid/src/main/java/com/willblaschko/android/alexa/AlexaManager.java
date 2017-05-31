@@ -307,7 +307,6 @@ public class AlexaManager {
 
             @Override
             public void failure(Throwable error) {
-                error.printStackTrace();
                 if(!BuildConfig.ENABLE_LOCAL_AUTH) reconnect(false);
             }
 

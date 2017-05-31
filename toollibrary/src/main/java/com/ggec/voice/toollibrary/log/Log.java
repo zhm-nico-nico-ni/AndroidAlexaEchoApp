@@ -37,7 +37,7 @@ public final class Log {
     public static void w(String tag, String msg, Throwable tr) {
         DebugFileLogger.log(android.util.Log.WARN, tag, msg, tr);
         if (android.util.Log.WARN >= LOG_LEVEL) {
-            android.util.Log.w(tag, msg);
+            android.util.Log.w(tag, msg, tr);
         }
     }
 
@@ -51,7 +51,7 @@ public final class Log {
     public static void e(String tag, String msg, Throwable tr) {
         DebugFileLogger.log(android.util.Log.ERROR, tag, msg, tr);
         if (android.util.Log.ERROR >= LOG_LEVEL) {
-            android.util.Log.e(tag, msg);
+            android.util.Log.e(tag, msg, tr);
         }
     }
 }
