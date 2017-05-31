@@ -270,8 +270,8 @@ public class AlexaManager {
                                             return false;
                                         }
                                     })
-                                    .subscribeOn(Schedulers.io())
-                                    .observeOn(Schedulers.single())
+                                    .observeOn(Schedulers.newThread())
+                                    .subscribeOn(Schedulers.single())
                                     .subscribe(new Consumer<Boolean>() {
                                         @Override
                                         public void accept(Boolean aBoolean) throws Exception {
@@ -307,6 +307,7 @@ public class AlexaManager {
 
             @Override
             public void failure(Throwable error) {
+                error.printStackTrace();
                 if(!BuildConfig.ENABLE_LOCAL_AUTH) reconnect(false);
             }
 

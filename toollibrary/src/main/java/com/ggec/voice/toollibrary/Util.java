@@ -367,8 +367,6 @@ public class Util {
                         return res1.toString();
                     }
                 }
-            } catch (IOException e) {
-                Log.e("MobileAccess", "Erreur lecture propriete Adresse MAC");
             } catch (Exception e) {
                 Log.e("MobileAcces", "Erreur lecture propriete Adresse MAC ");
             }
