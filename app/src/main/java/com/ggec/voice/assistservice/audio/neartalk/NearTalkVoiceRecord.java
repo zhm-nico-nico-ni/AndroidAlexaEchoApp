@@ -45,10 +45,10 @@ public class NearTalkVoiceRecord extends Thread {
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
     private final int bufferSizeInBytes;
     private final SilenceDetector continuingSilenceDetector;
-    private boolean mIsSilent;
+
     private MyVoiceRecord.State mState;
-    private String mFilePath;
-    private volatile MyVoiceRecord.RecordState recordState = MyVoiceRecord.RecordState.empty;
+    private final String mFilePath;
+    private volatile RecordState recordState = RecordState.empty;
     private volatile NearTalkRandomAccessFile mShareFile;
     private IMyVoiceRecordListener mListener;
 
@@ -61,8 +61,8 @@ public class NearTalkVoiceRecord extends Thread {
                 16000
                 , 16
                 , 1
-                , true,
-                false);
+                , true
+                ,false);
 
         // 这里的最小声音分贝值可以根据先前的输入值来判断
         continuingSilenceDetector = new SilenceDetector(silenceThreshold, false);
@@ -75,7 +75,7 @@ public class NearTalkVoiceRecord extends Thread {
             doActuallyInterrupt();
         }
 
-        recordState = MyVoiceRecord.RecordState.init;
+        recordState = RecordState.init;
         if(!SingleAudioRecord.getInstance().isRecording()) {
             SingleAudioRecord.getInstance().getAudioRecorder().startRecording();
         }
@@ -89,7 +89,7 @@ public class NearTalkVoiceRecord extends Thread {
 
         mState = new MyVoiceRecord.State();
         mState.initTime = SystemClock.elapsedRealtime();
-        mIsSilent = true;
+        boolean mIsSilent = true;
 
         long currentDataPointer = 0;
         try {
@@ -127,7 +127,7 @@ public class NearTalkVoiceRecord extends Thread {
                     if (mState.beginSpeakTime == 0 &&
                             currentTime - mState.initTime >= MAX_WAIT_TIME) {
                         Log.d(TAG, "finish: wait to long ");
-                        recordState = MyVoiceRecord.RecordState.interrupt;
+                        recordState = RecordState.interrupt;
                         break;
                     } else if (isSilent &&
                             mState.lastSilentTime != 0 &&
@@ -172,20 +172,11 @@ public class NearTalkVoiceRecord extends Thread {
         stopRecord(mState.lastSilentRecordIndex);
     }
 
-    @Override
-    public synchronized void start() {
-        if (recordState == MyVoiceRecord.RecordState.init) {
-            super.start();
-        } else {
-            Log.w(TAG, "start with wrong state");
-        }
-    }
-
     private void stopRecord(long actuallyLong) {
         SingleAudioRecord.getInstance().getAudioRecorder().stop();
-        Log.i(TAG, " record finish, success:" + (recordState != MyVoiceRecord.RecordState.interrupt)
+        Log.i(TAG, " record finish, success:" + (recordState != RecordState.interrupt)
                 + " file:" + mFilePath + " state:" + mState.toString());
-        boolean success = recordState != MyVoiceRecord.RecordState.interrupt;
+        boolean success = recordState != RecordState.interrupt;
         if (success) {
 //            mListener.recordFinish(true, mFilePath, actuallyLong);
         } else {
@@ -196,10 +187,11 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public boolean isInterrupted() {
-        return recordState == MyVoiceRecord.RecordState.interrupt || recordState == MyVoiceRecord.RecordState.stop;
+        return recordState == RecordState.interrupt || recordState == RecordState.stop;
     }
 
     @Override
+    @Deprecated
     public void interrupt() {
 //        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
 //        Log.d(TAG, "NearTalkVoiceRecord # interrupt");
@@ -212,10 +204,10 @@ public class NearTalkVoiceRecord extends Thread {
         SingleAudioRecord.getInstance().stop();
         if(stopAll) {
             Log.d(TAG, "NearTalkVoiceRecord # interrupt");
-            recordState = MyVoiceRecord.RecordState.interrupt;
+            recordState = RecordState.interrupt;
         } else {
             Log.d(TAG, "NearTalkVoiceRecord # stop");
-            recordState = MyVoiceRecord.RecordState.stop;
+            recordState = RecordState.stop;
         }
         mShareFile.cancel();
     }
@@ -253,7 +245,7 @@ public class NearTalkVoiceRecord extends Thread {
             public void complete() {
                 if (callback != null) callback.complete();
             }
-        },getContextEventCallBack);
+        }, getContextEventCallBack);
     }
 
     class NearTalkFileDataRequestBody extends RequestBody {

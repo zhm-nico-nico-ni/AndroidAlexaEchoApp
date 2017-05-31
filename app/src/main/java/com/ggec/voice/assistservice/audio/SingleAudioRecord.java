@@ -12,8 +12,7 @@ import com.ggec.voice.toollibrary.log.Log;
  */
 
 public class SingleAudioRecord {
-    private final static String TAG = "SingleAudioRecord";
-    private static final float BUFFER_SIZE_SECONDS = 0.4F;
+//    private static final float BUFFER_SIZE_SECONDS = 0.4F;
     private static volatile SingleAudioRecord sInstance;
     private final AudioRecord audioRecorder;
     private final int bufferSizeInBytes;
@@ -39,7 +38,7 @@ public class SingleAudioRecord {
 
         if(this.audioRecorder.getState() == 0) {
             this.audioRecorder.release();
-            Log.e(TAG,"Failed to initialize recorder. Microphone might be already in use.");
+            Log.e("SingleAudioRecord","Failed to initialize recorder. Microphone might be already in use.");
         }
 
         startRecording();

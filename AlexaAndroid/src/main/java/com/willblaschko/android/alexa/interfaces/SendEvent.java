@@ -102,7 +102,7 @@ public abstract class SendEvent {
             Log.d(TAG, "Response headers: {}" + response.headers().toString());
 
             if(response.code() == HttpURLConnection.HTTP_NO_CONTENT){
-                Log.w(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
+                Log.d(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
             }
 
             final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
