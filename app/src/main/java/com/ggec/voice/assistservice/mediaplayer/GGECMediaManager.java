@@ -20,8 +20,6 @@ import com.willblaschko.android.alexa.data.message.PayloadFactory;
 import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
-import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertStopItem;
-import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
@@ -375,17 +373,7 @@ public class GGECMediaManager {
 
     public boolean addAvsItemToQueue(AvsItem response) {
         Log.d(TAG, "addAvsItemToQueue "+response.getClass());
-        if (response instanceof AvsAlertStopItem) { //FIXME 这个需要专门处理, 暂时不需要先不管
-            Log.d(TAG, "stop alarm right now :" + response.getToken());
-            AvsSetAlertItem item = SetAlertHelper.getAlertItemByToken(MyApplication.getContext(), response.getToken());
-            if(item != null) {
-                sendStopAlertEvent(response.getToken());
-                avsQueue1.remove(item.messageID);
-                if(TextUtils.equals(response.getToken(), mSpeechSynthesizerPlayer.getCurrentToken())) {
-                    mSpeechSynthesizerPlayer.release(false);
-                }
-            }
-        } else if(response instanceof AvsClearQueueItem){
+        if(response instanceof AvsClearQueueItem){
             if(((AvsClearQueueItem) response).isClearAll()){
                 Log.w(TAG, "ClearQueue Directive, and replace current and enqueued streams");
                 long position = mMediaAudioPlayer.getCurrentPosition();

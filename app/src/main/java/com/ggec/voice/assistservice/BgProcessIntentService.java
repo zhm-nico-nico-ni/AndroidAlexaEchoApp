@@ -7,14 +7,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
 
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
-import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.toollibrary.Util;
@@ -34,12 +31,15 @@ import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
-import com.willblaschko.android.alexa.requestbody.FileDataRequestBody;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by ggec on 2017/3/29.
@@ -55,12 +55,6 @@ public class BgProcessIntentService extends IntentService {
     private final static int SEND_PING_INTERVAL = 300 * 1000;
     private final static int REFRESH_TOKEN_MIN_INTERVAL = 300 * 1000;
 
-    private Handler handler = new Handler(Looper.getMainLooper());
-
-    public BgProcessIntentService() {
-        this("test");
-    }
-
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      *
@@ -68,7 +62,7 @@ public class BgProcessIntentService extends IntentService {
      */
     public BgProcessIntentService(String name) {
         super(name);
-        Log.i("BgProcessIntentService", "construct : " + name);
+        Log.d(TAG, "construct : " + name);
     }
 
     @Override
@@ -79,7 +73,7 @@ public class BgProcessIntentService extends IntentService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.i(TAG, "onDestory");
+        Log.d(TAG, "onDestory");
     }
 
     @Override
@@ -95,7 +89,7 @@ public class BgProcessIntentService extends IntentService {
             final long waitMicDelayMillSecond = intent.getLongExtra("waitMicDelayMillSecond", 0);
             //start
 //            startRecord1(cmd.waitMicDelayMillSecond);
-            handler.postAtFrontOfQueue(new Runnable() {
+            MyApplication.mainHandler.postAtFrontOfQueue(new Runnable() {
                 @Override
                 public void run() {
                     startNearTalkRecord(waitMicDelayMillSecond);
@@ -110,47 +104,20 @@ public class BgProcessIntentService extends IntentService {
         } else if (cmd.type == 3) {
 //            alexaManager.closeOpenDownchannel(false);
 //            search();
-            startRecord1(0);
+            textTest();
+//            startRecord1(0);
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
             final String messageId = intent.getStringExtra("messageId");
             Log.i(TAG, "BEGIN_ALARM: "+ messageId+ " ,token:"+token);
             SetAlertHelper.sendAlertStarted(alexaManager, token, getCallBack("sendAlertStarted"));
-            handler.post(new Runnable() {
+            MyApplication.mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
                     AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertPlayItem(token, messageId));
                 }
             });
 
-//            handler.postDelayed(new Runnable() {
-//                @Override
-//                public void run() {
-//                    Intent it = new Intent(MyApplication.getContext(), BgProcessIntentService.class);
-//                    it.putExtra(EXTRA_CMD, new BackGroundProcessServiceControlCommand(BackGroundProcessServiceControlCommand.STOP_ALARM));
-//                    it.putExtra("token", token);
-//                    it.putExtra("messageId", messageId);
-//                    startService(it);
-//
-//                }
-//            }, 15000);
-//        } else if (cmd.type == BackGroundProcessServiceControlCommand.STOP_ALARM) {
-//            final String token = intent.getStringExtra("token");
-//            final String messageId = intent.getStringExtra("messageId");
-//            Log.d(TAG, "STOP_ALARM: "+ messageId+ " ,token:"+token);
-//
-//            handler.post(new Runnable() {
-//                @Override
-//                public void run() {
-//                    AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertStopItem(token));
-//                }
-//            });
-//        } else if(cmd.type == BackGroundProcessServiceControlCommand.MUTE_CHANGE){
-//            SpeakerUtil.setMute(MyApplication.getContext()
-//                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
-//                    , cmd.bundle.getBoolean("mute")
-//                    , new ImplAsyncCallback("setMute")
-//            );
         } else if(cmd.type == BackGroundProcessServiceControlCommand.VOLUME_CHANGE){
             SharedPreferences sp = com.willblaschko.android.alexa.utility.Util.getPreferences(this);
             if(Math.abs(System.currentTimeMillis()  - sp.getLong("lastSetMuteTime", 0)) < 5000){
@@ -205,54 +172,54 @@ public class BgProcessIntentService extends IntentService {
         }
     }
 
-    MyVoiceRecord myVoiceRecord;
-
-    Runnable waitMicTimeoutRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (myVoiceRecord != null && (myVoiceRecord.isAlive() || !myVoiceRecord.isInterrupted())) {
-                myVoiceRecord.doActuallyInterrupt();
-            }
-        }
-    };
-
-    /**
-     * @param waitMicTimeOut 这个值禁止手工设置
-     */
-    private void startRecord1(final long waitMicTimeOut) {
-//        Uri path = Uri.parse("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.start);
-
-        if (waitMicTimeOut > 0) {
-            handler.postDelayed(waitMicTimeoutRunnable, waitMicTimeOut);
-        }
-
-        playStart(new MyShortAudioPlayer2.IOnCompletionListener() {
-            @Override
-            public void onCompletion() {
-                if (myVoiceRecord != null && !myVoiceRecord.isInterrupted()) {
-                    myVoiceRecord.doActuallyInterrupt();
-                }
-                myVoiceRecord = new MyVoiceRecord(MyVoiceRecord.DEFAULT_SILENT_THRESHOLD, new IMyVoiceRecordListener() {
-                    @Override
-                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
-                        if (recordSuccess) {
-                            handler.removeCallbacks(waitMicTimeoutRunnable);
-                            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack("record", path));
-                        } else {
-                            if (waitMicTimeOut > 0) {
-                                handler.removeCallbacks(waitMicTimeoutRunnable);
-                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
-                            }
-                            playError();
-                        }
-                    }
-                });
-                myVoiceRecord.start();
-            }
-        });
-    }
+//    MyVoiceRecord myVoiceRecord;
+//
+//    Runnable waitMicTimeoutRunnable = new Runnable() {
+//        @Override
+//        public void run() {
+//            if (myVoiceRecord != null && (myVoiceRecord.isAlive() || !myVoiceRecord.isInterrupted())) {
+//                myVoiceRecord.doActuallyInterrupt();
+//            }
+//        }
+//    };
+//
+//    /**
+//     * @param waitMicTimeOut 这个值禁止手工设置
+//     */
+//    private void startRecord1(final long waitMicTimeOut) {
+////        Uri path = Uri.parse("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.start);
+//
+//        if (waitMicTimeOut > 0) {
+//            handler.postDelayed(waitMicTimeoutRunnable, waitMicTimeOut);
+//        }
+//
+//        playStart(new MyShortAudioPlayer2.IOnCompletionListener() {
+//            @Override
+//            public void onCompletion() {
+//                if (myVoiceRecord != null && !myVoiceRecord.isInterrupted()) {
+//                    myVoiceRecord.doActuallyInterrupt();
+//                }
+//                myVoiceRecord = new MyVoiceRecord(MyVoiceRecord.DEFAULT_SILENT_THRESHOLD, new IMyVoiceRecordListener() {
+//                    @Override
+//                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
+//                        if (recordSuccess) {
+//                            handler.removeCallbacks(waitMicTimeoutRunnable);
+//                            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack("record", path));
+//                        } else {
+//                            if (waitMicTimeOut > 0) {
+//                                handler.removeCallbacks(waitMicTimeoutRunnable);
+//                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
+//                            }
+//                            playError("asset:///error.mp3");
+//                        }
+//                    }
+//                });
+//                myVoiceRecord.start();
+//            }
+//        });
+//    }
 
     private void startNearTalkRecord(final long waitMicTimeOut) {
         AvsHandleHelper.getAvsHandleHelper().pauseSound();
@@ -262,7 +229,7 @@ public class BgProcessIntentService extends IntentService {
         if(!Util.isNetworkAvailable(this)){
             //TODO play no net work
             Log.e(TAG, "return because no net work");
-            playError();
+            playError("asset:///error_not_connected.mp3");
             return;
         }
 
@@ -287,7 +254,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendTextRequest("Set a timer after 50 seconds from now", getCallBack("textTest"));
+        alexaManager.sendTextRequest("Set an alarm", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
         // "Set an alarm for 9:49 morning on everyday" "How's my day look"
     }
@@ -325,7 +292,11 @@ public class BgProcessIntentService extends IntentService {
             @Override
             public void failure(Exception error) {
                 super.failure(error);
-                playError();
+                if(error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()){
+                    playError("asset:///error_not_authorization.mp3");
+                } else {
+                    playError("asset:///error.mp3");
+                }
                 deleteFile(filePath);
                 if(error instanceof AvsAudioException) {
                     Log.e(TAG, "Speech Recognize event send, but receive nothing, http response code = 204");
@@ -339,10 +310,11 @@ public class BgProcessIntentService extends IntentService {
             }
 
             private void deleteFile(String fp) {
-                if (true) {//TODO 清除文件
+                if (true) {// 清除文件
                     File file = new File(fp);
                     if (file.exists()) {
-                        Log.w(TAG, "delete cache file state:" + file.delete() + " p:" + fp);
+                        boolean res = file.delete();
+                        Log.d(TAG, "delete cache file state:" + res + " p:" + fp);
                     }
                 } else {
                     Log.w(TAG, "Not delete cache file p:" + fp);
@@ -357,33 +329,16 @@ public class BgProcessIntentService extends IntentService {
         AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsLocalResumeItem());
     }
 
-    /*
-     * 这个由于ready性能太慢，因此不在这里调用了，提示音放在assistant server中播放
-     */
-    @Deprecated
-    private void playStart(final MyShortAudioPlayer2.IOnCompletionListener listener) {
-        new MyShortAudioPlayer2("asset:///start.mp3", listener);
-//        handler.post(new Runnable() {
-//            @Override
-//            public void run() {
-//                //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
-//
-//            }
-//        });
-
-    }
-
-    private void playError() {
-        Log.d(TAG, "playError");
-        handler.post(new Runnable() {
+    //"asset:///error.mp3"
+    private void playError(String res) {
+        Log.d(TAG, "playError:"+res);
+        Observable.just(res).subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<String>() {
             @Override
-            public void run() {
-                //"android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.raw.start
-                new MyShortAudioPlayer2("asset:///error.mp3", new MyShortAudioPlayer2.IOnCompletionListener() {
+            public void accept(String s) throws Exception {
+                new MyShortAudioPlayer2(s, new MyShortAudioPlayer2.IOnCompletionListener() {
                     @Override
                     public void onCompletion() {
                         continueWakeWordDetect();
-
                     }
                 });
             }
