@@ -70,7 +70,7 @@ public class MyApplication extends Application {
 
         //Log开关
         if (!BuildConfig.DEBUG) {
-            Log.LOG_LEVEL = (android.util.Log.WARN);
+            Log.LOG_LEVEL = (android.util.Log.ERROR);
         } else {
             Log.LOG_LEVEL = (android.util.Log.VERBOSE);
         }
@@ -80,7 +80,7 @@ public class MyApplication extends Application {
         if (BuildConfig.DEBUG) {
             File logDir = getExternalFilesDir("log");
 //            File logDir = new File(Environment.getExternalStorageDirectory(), getPackageName() + "/log/");
-            DebugFileLogger.initialize(logDir, tag);
+            DebugFileLogger.initialize(logDir, tag, android.util.Log.ERROR);
             Log.i("MyApplication", "#### app client ver:" + Util.getPackageVersionName(this) + "-" + Util.getPackageVersionCode(this));
         }
 
