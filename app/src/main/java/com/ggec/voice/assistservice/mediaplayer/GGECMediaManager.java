@@ -361,9 +361,10 @@ public class GGECMediaManager {
         }
     }
 
-    private void startListening(long waitMicMillseconds) {
+    private void startListening(long waitMicMillseconds, String initiator) {
         Intent it = BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
         it.putExtra("waitMicDelayMillSecond", waitMicMillseconds);
+        it.putExtra("initiator", initiator);
         MyApplication.getContext().startService(it);
     }
 
@@ -635,7 +636,8 @@ public class GGECMediaManager {
             } else if (current instanceof AvsExpectSpeechItem) {
                 //listen for user input
                 pauseSound();
-                startListening(((AvsExpectSpeechItem) current).getTimeoutInMiliseconds());
+                AvsExpectSpeechItem speechItem = (AvsExpectSpeechItem) current;
+                startListening(speechItem.getTimeoutInMiliseconds(), speechItem.initiator);
             } else if (current instanceof AvsAlertPlayItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying()) {
                     tryPauseMediaAudio();

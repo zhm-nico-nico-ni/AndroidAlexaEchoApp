@@ -45,7 +45,7 @@ public class SnowboyWakeWordAgent extends WakeWordAgent {
                     // Toast.makeText(Demo.this, "Active "+activeTimes, Toast.LENGTH_SHORT).show();
 //                    showToast("Active "+activeTimes);
                     recordingThread.stopRecording();
-                    mListener.onDetectWakeWord();
+                    mListener.onDetectWakeWord(null, 0, 0);
                     break;
                 case MSG_INFO:
                     Log.d(TAG, " ----> "+message);

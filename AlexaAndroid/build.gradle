@@ -37,7 +37,8 @@ android {
 
         buildConfigField "String", "PRODUCT_ID", "\"" + project.PRODUCT_ID + "\""
         buildConfigField "String", "APP_PACKAGE_NAME", "\"" + project.APPLICATION_ID + "\""
-        buildConfigField "boolean", "ENABLE_LOCAL_AUTH", "" + false + ""
+        buildConfigField "boolean", "ENABLE_LOCAL_AUTH", "" + project.ENABLE_LOCAL_AUTH + ""
+        buildConfigField "String", "WAKE_WORD", "\"" + project.WAKE_WORD + "\""
     }
 
 

@@ -13,6 +13,7 @@ import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
@@ -195,13 +196,15 @@ public class AvsHandleHelper {
         audioManager.pauseSound();
     }
 
-    public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener, final AsyncCallback<AvsResponse, Exception> callback){
+    public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener
+            , final AsyncCallback<AvsResponse, Exception> callback, final Initiator initiator){
         Log.d(TAG, "startNearTalkVoiceRecord");
         stopCaptureNearTalkVoiceRecord(false);
+        long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
-        myNearTalkVoiceRecord = new NearTalkVoiceRecord(path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);
+        myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);
         myNearTalkVoiceRecord.start();
-        myNearTalkVoiceRecord.startHttpRequest( new AsyncCallback<AvsResponse, Exception>(){
+        myNearTalkVoiceRecord.startHttpRequest(endIndexInSamples, new AsyncCallback<AvsResponse, Exception>(){
             @Override
             public void start() {
                 if(callback != null) callback.start();
@@ -227,6 +230,11 @@ public class AvsHandleHelper {
             @Override
             public List<Event> getContextEvent() {
                 return ContextUtil.getActuallyContextList(MyApplication.getContext(), getAudioAndSpeechState());
+            }
+
+            @Override
+            public Initiator getInitiator() {
+                return initiator;
             }
         });
     }

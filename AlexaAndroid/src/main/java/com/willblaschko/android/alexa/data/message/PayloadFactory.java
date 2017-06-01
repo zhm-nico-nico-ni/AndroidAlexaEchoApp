@@ -13,6 +13,7 @@ import com.willblaschko.android.alexa.data.message.request.context.SpeechStatePa
 import com.willblaschko.android.alexa.data.message.request.context.VolumeStatePayload;
 import com.willblaschko.android.alexa.data.message.request.speaker.MuteChange;
 import com.willblaschko.android.alexa.data.message.request.speaker.VolumeChangedPayload;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.SpeechRecognizerPayload;
 import com.willblaschko.android.alexa.data.message.request.system.ExceptionEncounteredPayload;
 import com.willblaschko.android.alexa.data.message.request.system.UserInactivityReportPayload;
@@ -40,10 +41,11 @@ public class PayloadFactory {
      * @param format Accepted value: "AUDIO_L16_RATE_16000_CHANNELS_1"
      * @return
      */
-    public static SpeechRecognizerPayload createSpeechRecognizerPayload(String profile, String format) {
+    public static SpeechRecognizerPayload createSpeechRecognizerPayload(String profile, String format, Initiator initiator) {
         SpeechRecognizerPayload payload = new SpeechRecognizerPayload();
         payload.profile = profile;
         payload.format = format;
+        payload.initiator = initiator;
         return payload;
     }
 

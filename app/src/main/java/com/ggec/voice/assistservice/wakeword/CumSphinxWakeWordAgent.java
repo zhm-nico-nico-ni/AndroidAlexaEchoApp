@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.ggec.voice.assistservice.wakeword.sphinx.SpeechRecognizer;
 import com.ggec.voice.toollibrary.log.Log;
+import com.willblaschko.android.alexa.BuildConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +24,7 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
     private static final String KWS_SEARCH = "wakeup";
 
     /* Keyword we are looking for to activate menu */
-    private static final String KEYPHRASE = "oh mighty computer";//oh mighty computer
+    private static final String KEYPHRASE = BuildConfig.WAKE_WORD;//oh mighty computer
 
     private SpeechRecognizer recognizer;
 
@@ -122,7 +123,7 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
         String text = hypothesis != null ? hypothesis.getHypstr() : null;
         if (KEYPHRASE.equals(text)) {
             recognizer.stop();
-            mListener.onDetectWakeWord();
+            mListener.onDetectWakeWord(null, 0,0);
 
         } else {
 //            Log.d(TAG, "onPartialResult " + text);

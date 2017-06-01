@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa.callbacks;
 
 import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 
 import java.util.List;
 
@@ -10,4 +11,6 @@ import java.util.List;
 
 public interface IGetContextEventCallBack {
     List<Event> getContextEvent();
+
+    Initiator getInitiator();
 }

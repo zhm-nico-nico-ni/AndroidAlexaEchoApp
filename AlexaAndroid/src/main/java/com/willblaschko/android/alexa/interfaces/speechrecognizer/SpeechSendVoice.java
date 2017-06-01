@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
@@ -181,6 +182,11 @@ public  class SpeechSendVoice extends SpeechSendEvent {
 
     @Override
     protected List<Event> getContextStateEvents() {
+        return null;
+    }
+
+    @Override
+    protected Initiator getInitiatorState() {
         return null;
     }
 

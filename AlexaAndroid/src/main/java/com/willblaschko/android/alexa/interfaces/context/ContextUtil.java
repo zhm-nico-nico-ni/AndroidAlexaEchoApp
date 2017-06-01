@@ -4,8 +4,10 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Pair;
 
+import com.willblaschko.android.alexa.BuildConfig;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
+import com.willblaschko.android.alexa.data.message.request.system.RecognizerStatePayload;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
@@ -49,9 +51,9 @@ public class ContextUtil {
                 .setPayload(PayloadFactory.createVolumeStatePayload(p.first, p.second));
         list.add(speakerEventBuilder.build().getEvent());
 
+        addSpeechRecognizerRecognizerState(list);
         return list;
     }
-
 
     public static List<Event> getActuallyContextList(Context context, @NonNull List<Event> audioAndSpeech){
         List<Event> list = new ArrayList<>();
@@ -71,7 +73,18 @@ public class ContextUtil {
                 .setPayload(PayloadFactory.createVolumeStatePayload(p.first, p.second));
         list.add(speakerEventBuilder.build().getEvent());
 
+        addSpeechRecognizerRecognizerState(list);
+
         return list;
     }
 
+    private static void addSpeechRecognizerRecognizerState(List<Event> list){
+        if("ALEXA".equalsIgnoreCase(BuildConfig.WAKE_WORD)){
+            Event.Builder recognizerStateEventBuilder = new Event.Builder()
+                    .setHeaderNamespace(AVSAPIConstants.SpeechRecognizer.NAMESPACE)
+                    .setHeaderName("RecognizerState")
+                    .setPayload(new RecognizerStatePayload("ALEXA"));
+            list.add(recognizerStateEventBuilder.build().getEvent());
+        }
+    }
 }

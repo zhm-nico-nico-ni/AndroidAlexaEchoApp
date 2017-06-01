@@ -90,8 +90,7 @@ public class Directive {
 
     public static class Payload{
 
-
-
+        String initiator;
         String url;
         String format;
         String token;
@@ -162,6 +161,8 @@ public class Directive {
         public String getEndpoint(){
             return endpoint;
         }
+
+        public String getInitiator() {return initiator;}
     }
 
     public static class AudioItem{

@@ -14,6 +14,7 @@ import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 import com.willblaschko.android.alexa.interfaces.AvsException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.GenericSendEvent;
@@ -116,6 +117,10 @@ public class AlexaManager {
                 protected List<Event> getContextStateEvents() {
                     return ContextUtil.getContextList(mContext);
                 }
+                @Override
+                protected Initiator getInitiatorState() {
+                    return null;
+                }
             };
         }
         return mSpeechSendText;
@@ -127,6 +132,11 @@ public class AlexaManager {
                 @Override
                 protected List<Event> getContextStateEvents() {
                     return contextEventCallBack.getContextEvent();
+                }
+
+                @Override
+                protected Initiator getInitiatorState() {
+                    return contextEventCallBack.getInitiator();
                 }
             };
         }
@@ -669,6 +679,11 @@ public class AlexaManager {
             @Override
             public List<Event> getContextEvent() {
                 return ContextUtil.getContextList(mContext);
+            }
+
+            @Override
+            public Initiator getInitiator() {
+                return null;
             }
         });
     }

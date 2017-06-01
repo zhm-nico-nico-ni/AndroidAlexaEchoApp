@@ -228,17 +228,17 @@ public class SpeechRecognizer {
         private int timeoutSamples;
 
         public RecognizerThread(int timeout) {
-            if(timeout != -1) {
+            if(timeout != NO_TIMEOUT) {
                 this.timeoutSamples = timeout * SpeechRecognizer.this.sampleRate / 1000;
             } else {
-                this.timeoutSamples = -1;
+                this.timeoutSamples = NO_TIMEOUT;
             }
 
             this.remainingSamples = this.timeoutSamples;
         }
 
         public RecognizerThread() {
-            this(-1);
+            this(NO_TIMEOUT);
         }
 
         public void run() {
@@ -254,7 +254,7 @@ public class SpeechRecognizer {
                 boolean inSpeech = SpeechRecognizer.this.decoder.getInSpeech();
                 SingleAudioRecord.getInstance().getAudioRecorder().read(buffer, 0, buffer.length);
 
-                while(!interrupted() && (this.timeoutSamples == -1 || this.remainingSamples > 0)) {
+                while(!interrupted() && (this.timeoutSamples == NO_TIMEOUT || this.remainingSamples > 0)) {
                     int nread = SingleAudioRecord.getInstance().getAudioRecorder().read(buffer, 0, buffer.length);
                     if(-1 == nread) {
                         throw new RuntimeException("error reading audio buffer");
@@ -275,7 +275,7 @@ public class SpeechRecognizer {
                         MyApplication.mainHandler.post(SpeechRecognizer.this.new ResultEvent(hypothesis, false));
                     }
 
-                    if(this.timeoutSamples != -1) {
+                    if(this.timeoutSamples != NO_TIMEOUT) {
                         this.remainingSamples -= nread;
                     }
                 }
@@ -283,7 +283,7 @@ public class SpeechRecognizer {
                 SingleAudioRecord.getInstance().stop();
                 SpeechRecognizer.this.decoder.endUtt();
                 MyApplication.mainHandler.removeCallbacksAndMessages(null);
-                if(this.timeoutSamples != -1 && this.remainingSamples <= 0) {
+                if(this.timeoutSamples != NO_TIMEOUT && this.remainingSamples <= 0) {
                     MyApplication.mainHandler.post(SpeechRecognizer.this.new TimeoutEvent());
                 }
 

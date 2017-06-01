@@ -51,8 +51,10 @@ public class NearTalkVoiceRecord extends Thread {
     private volatile RecordState recordState = RecordState.empty;
     private volatile NearTalkRandomAccessFile mShareFile;
     private IMyVoiceRecordListener mListener;
+    private final long mBeginPosition;
 
-    public NearTalkVoiceRecord(String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) {
+    public NearTalkVoiceRecord(long beginPosition, String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) {
+        mBeginPosition = beginPosition;
         mListener = listener;
 
         bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
@@ -91,7 +93,7 @@ public class NearTalkVoiceRecord extends Thread {
         mState.initTime = SystemClock.elapsedRealtime();
         boolean mIsSilent = true;
 
-        long currentDataPointer = 0;
+        long currentDataPointer = mBeginPosition;
         try {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
@@ -220,9 +222,9 @@ public class NearTalkVoiceRecord extends Thread {
         if(!super.isInterrupted()) super.interrupt();
     }
 
-    public void startHttpRequest(final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
+    public void startHttpRequest(long endIndexInSamples, final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile), new AsyncCallback<AvsResponse, Exception>() {
+        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples), new AsyncCallback<AvsResponse, Exception>() {
             @Override
             public void start() {
                 if (callback != null) callback.start();
@@ -250,14 +252,15 @@ public class NearTalkVoiceRecord extends Thread {
 
     class NearTalkFileDataRequestBody extends RequestBody {
         private NearTalkRandomAccessFile mFile;
-        private int pointer = 0;
+        private long pointer;
         private FileOutputStream mRecordOutputStream;
         ByteArrayOutputStream mByteArrayStream;
 
-        public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file) {
+        public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file, long beginPosition) {
             if (file == null) throw new NullPointerException("content == null");
             mFile = file;
             mByteArrayStream = new ByteArrayOutputStream();
+            pointer = beginPosition;
 //            if (BuildConfig.DEBUG) { // Record wav
 //                try {
 //                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
@@ -266,11 +269,6 @@ public class NearTalkVoiceRecord extends Thread {
 //                    e.printStackTrace();
 //                }
 //            }
-        }
-
-        @Override
-        public long contentLength() throws IOException {
-            return super.contentLength();
         }
 
         @Override

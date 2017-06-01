@@ -9,5 +9,5 @@ import com.willblaschko.android.alexa.data.message.Payload;
 public class SpeechRecognizerPayload extends Payload {
     public String profile;
     public String format;
-
+    public Initiator initiator;
 }

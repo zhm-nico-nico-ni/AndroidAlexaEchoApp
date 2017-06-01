@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
@@ -16,12 +17,14 @@ import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
+import com.google.gson.Gson;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.SharedPreferenceUtil;
 import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
@@ -91,12 +94,14 @@ public class BgProcessIntentService extends IntentService {
 
         if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
             final long waitMicDelayMillSecond = intent.getLongExtra("waitMicDelayMillSecond", 0);
+            final String initiator = intent.getStringExtra("initiator");
+            final String rawPath = intent.getStringExtra("rawPath");
             //start
 //            startRecord1(cmd.waitMicDelayMillSecond);
             MyApplication.mainHandler.postAtFrontOfQueue(new Runnable() {
                 @Override
                 public void run() {
-                    startNearTalkRecord(waitMicDelayMillSecond);
+                    startNearTalkRecord(rawPath, waitMicDelayMillSecond, initiator);
                 }
             });
 
@@ -225,7 +230,7 @@ public class BgProcessIntentService extends IntentService {
 //        });
 //    }
 
-    private void startNearTalkRecord(final long waitMicTimeOut) {
+    private void startNearTalkRecord(String rawPath , final long waitMicTimeOut, String strInitiator) {
         AvsHandleHelper.getAvsHandleHelper().pauseSound();
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
         SpeechSendAudio audio = alexaManager.getSpeechSendAudio();
@@ -237,7 +242,9 @@ public class BgProcessIntentService extends IntentService {
             return;
         }
 
-        String path = MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
+        Initiator initiator = TextUtils.isEmpty(strInitiator) ? null : new Gson().fromJson(strInitiator, Initiator.class);
+        String path = TextUtils.isEmpty(rawPath) ? MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis()
+                : rawPath;
 
         AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, new IMyVoiceRecordListener() {
             @Override
@@ -252,7 +259,7 @@ public class BgProcessIntentService extends IntentService {
 //                            playError();
                 }
             }
-        }, getFileCallBack("record", path));
+        }, getFileCallBack("record", path), initiator);
 
     }
 

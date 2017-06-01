@@ -5,5 +5,5 @@ package com.ggec.voice.assistservice.wakeword;
  */
 
 public interface IWakeWordAgentEvent {
-    void onDetectWakeWord();
+    void onDetectWakeWord(String rawPath, long startIndexInSamples, long endIndexInSamples);
 }

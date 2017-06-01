@@ -40,7 +40,8 @@ public class DirectiveParseHelper {
         final String headName = directive.getHeaderName();
         if (AVSAPIConstants.SpeechRecognizer.NAMESPACE.equals(headNameSpace)) {
             if (AVSAPIConstants.SpeechRecognizer.Directives.ExpectSpeech.NAME.equals(headName)) {
-                return new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds(), directive.getHeaderMessageId());
+                return new AvsExpectSpeechItem(directive.getPayload().getToken(), directive.getPayload().getTimeoutInMilliseconds()
+                        , directive.getHeaderMessageId(), directive.getPayload().getInitiator());
             } else if (AVSAPIConstants.SpeechRecognizer.Directives.StopCapture.NAME.equals(headName)) {
                 return new AvsStopCaptureItem(directive.getHeaderMessageId());
             }
