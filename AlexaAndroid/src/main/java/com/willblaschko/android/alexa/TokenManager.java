@@ -1,5 +1,6 @@
 package com.willblaschko.android.alexa;
 
+import android.accounts.AuthenticatorException;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
@@ -118,7 +119,7 @@ public class TokenManager {
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
-                                callback.onFailure(new Exception("http response "+response.code() + " " + s));
+                                callback.onFailure(new AuthenticatorException("http response "+response.code() + " " + s));
                             }
                         });
                     }
@@ -234,7 +235,7 @@ public class TokenManager {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            callback.onFailure(new Exception("http response unexcept code:" + response.code()));
+                            callback.onFailure(new AuthenticatorException("http response unexcept code:" + response.code()));
                         }
                     });
                 }

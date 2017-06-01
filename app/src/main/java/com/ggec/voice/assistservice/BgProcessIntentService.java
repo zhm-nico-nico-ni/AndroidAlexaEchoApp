@@ -1,5 +1,6 @@
 package com.ggec.voice.assistservice;
 
+import android.accounts.AuthenticatorException;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
@@ -303,7 +304,7 @@ public class BgProcessIntentService extends IntentService {
             @Override
             public void failure(Exception error) {
                 super.failure(error);
-                if(error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()){
+                if((error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()) || error instanceof AuthenticatorException){
                     playError("asset:///error_not_authorization.mp3");
                 } else {
                     playError("asset:///error.mp3");

@@ -211,7 +211,7 @@ public class AlexaManager {
             @Override
             public void failure(Throwable error) {
                 if (callback != null) {
-                    callback.onError(new Exception(error));
+                    callback.onError((Exception) error);
                 }
             }
 
