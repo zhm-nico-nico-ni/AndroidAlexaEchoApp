@@ -13,7 +13,6 @@ import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
-import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
 import org.apache.commons.io.IOUtils;
@@ -95,15 +94,6 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
     }
 
     /**
-     * A helper function to play an AvsPlayContentItem, this is passed to play() and handled accordingly,
-     *
-     * @param item a speak type item
-     */
-    public void playItem(AvsPlayContentItem item) {
-        play(item);
-    }
-
-    /**
      * A helper function to play an AvsSpeakItem, this is passed to play() and handled accordingly,
      *
      * @param item a speak type item
@@ -120,8 +110,6 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
     /**
      * Request our MediaPlayer to play an item, if it's an AvsPlayRemoteItem (url, usually), we set that url as our data source for the MediaPlayer
      * if it's an AvsSpeakItem, then we write the raw audio to a file and then read it back using the MediaPlayer
-     *
-     * @param item
      */
     private void play(@NonNull AvsItem item) {
 //        if (item.equals(mItem)) {
@@ -135,14 +123,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         //if we're playing, stop playing before we continue
         getMediaPlayer().stop();
 
-        /*if (!TextUtils.isEmpty(mItem.getToken()) && mItem.getToken().contains("PausePrompt")) {
-            Log.e(TAG, "what happen ? token:" + mItem.getToken());
-            //a gross work around for a broke pause mp3 coming from Amazon, play the local mp3
-            prepare(buildMediaSource(Uri.parse("asset:///shhh.mp3"), "mp3"), true, null);
-        } else if (mItem instanceof AvsPlayContentItem) {
-            AvsPlayContentItem playItem = (AvsPlayContentItem) item;
-            prepare(buildMediaSource(playItem.getUri(), null), true, null);
-        } else*/ if (mItem instanceof AvsSpeakItem) {
+        if (mItem instanceof AvsSpeakItem) {
             playitem((AvsSpeakItem) mItem);
         } else if (mItem instanceof AvsAlertPlayItem) {
             Uri path = Uri.parse("asset:///alarm.mp3");
@@ -239,7 +220,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
     }
 
 
-    public void onComplete(long duration) {
+    private void onComplete(long duration) {
         mMediaState = STATE_FINISHED;
         if(mCallback != null) {
             mCallback.playerProgress(mItem, 1, 1, 0);
@@ -252,7 +233,7 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
         bubbleUpError(exception);
     }
 
-    public void onPrepare() {
+    private void onPrepare() {
         if(mCallback != null) {
             mCallback.playerPrepared(mItem);
             mCallback.playerProgress(mItem, mMediaPlayer.getCurrentPosition(), 0, 0);

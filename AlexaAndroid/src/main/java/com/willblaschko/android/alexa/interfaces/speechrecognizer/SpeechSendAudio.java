@@ -54,7 +54,7 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
                     callback.failure(new AvsAudioException("Nothing came back"));
                 }
                 return;
-            } else if(response.responseCode == -1){
+            } else if(response.responseCode == -1){ // http already cancel
                 return;
             }
 

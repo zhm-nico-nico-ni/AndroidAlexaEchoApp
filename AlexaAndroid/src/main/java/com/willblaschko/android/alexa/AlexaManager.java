@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa;
 
 import android.accounts.AuthenticatorException;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -53,6 +54,7 @@ public class AlexaManager {
 
     private static final String TAG = "AlexaManager";
 
+    @SuppressLint("StaticFieldLeak")
     private static volatile AlexaManager mInstance;
     private SpeechSendText mSpeechSendText;
     private SpeechSendAudio mSpeechSendAudio;
@@ -295,9 +297,10 @@ public class AlexaManager {
     }
     /**
      * Send streamed raw audio data to the Alexa servers, this is a more advanced option to bypass other issues (like only one item being able to use the mic at a time).
-     *
+     * @param profile "CLOSE_TALK" / "NEAR_FIELD"
      * @param requestBody a request body that incorporates either a static byte[] write to the BufferedSink or a streamed, managed byte[] data source
      * @param callback    the state change callback
+     * @param getContextEventCallBack get actually context
      */
     public void sendAudioRequest(final String profile, final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback, @NonNull final IGetContextEventCallBack getContextEventCallBack) {
         //set our URL

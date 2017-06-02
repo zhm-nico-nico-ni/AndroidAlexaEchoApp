@@ -12,6 +12,7 @@ import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import okhttp3.RequestBody;
@@ -25,6 +26,8 @@ public abstract class SpeechSendText extends SpeechSendEvent {
 
     private final static String TAG = "SpeechSendText";
 
+    //the output stream that extending classes will use to pass data to the AVS server
+    protected ByteArrayOutputStream mOutputStream;
     long start = 0;
 
     /**
@@ -53,7 +56,8 @@ public abstract class SpeechSendText extends SpeechSendEvent {
 
         final String input = text;
 
-
+        //reset our output stream
+        mOutputStream = new ByteArrayOutputStream();
         //call the parent class's prepareConnection() in order to prepare our URL POST
         prepareConnection(url, accessToken);
 
@@ -75,9 +79,7 @@ public abstract class SpeechSendText extends SpeechSendEvent {
                         callback.complete();
                     }
 
-                } catch (IOException e) {
-                    onError(e);
-                } catch (AvsException e) {
+                } catch (IOException | AvsException e) {
                     onError(e);
                 }
             }

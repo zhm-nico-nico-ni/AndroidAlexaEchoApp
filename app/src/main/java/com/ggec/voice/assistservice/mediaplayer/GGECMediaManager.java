@@ -25,7 +25,6 @@ import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsClearQueueItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsLocalResumeItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
-import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayContentItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.IAvsPlayDirectiveBaseItem;
 import com.willblaschko.android.alexa.interfaces.playbackcontrol.AvsMediaNextCommandItem;
@@ -205,7 +204,7 @@ public class GGECMediaManager {
 
         @Override
         public void playerProgress(AvsItem item, long offsetInMilliseconds, float percent, long remaining) {
-            if (item instanceof AvsPlayContentItem || item == null) {
+            if (item == null) {
                 return;
             }
             if (!playbackStartedFired) {
@@ -238,9 +237,7 @@ public class GGECMediaManager {
                 avsQueue2.remove(completedItem.messageID);
             }
             checkQueue();
-            if (completedItem instanceof AvsPlayContentItem) {
-                return;
-            } else if(completedItem instanceof AvsPlayAudioItem){
+            if(completedItem instanceof AvsPlayAudioItem){
                 ((AvsPlayAudioItem) completedItem).releaseAudio();
             }
 
@@ -613,11 +610,6 @@ public class GGECMediaManager {
                         sendPlaybackPauseOrResumeEvent(false, audioItem);
                     }
                 }
-//        } else if (current instanceof AvsPlayContentItem) {
-//            //play a URL
-//            if (!audioPlayer.isPlaying()) {
-//                audioPlayer.playItem((AvsPlayContentItem) current);
-//            }
             } else if (current instanceof AvsPlayAudioItem) {
                 if (!mSpeechSynthesizerPlayer.isPlaying() && !mMediaAudioPlayer.isPlaying()) {
                     AvsPlayAudioItem audioItem = (AvsPlayAudioItem) current;
