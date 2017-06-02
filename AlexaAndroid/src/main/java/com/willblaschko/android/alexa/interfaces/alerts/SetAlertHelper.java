@@ -103,9 +103,10 @@ public class SetAlertHelper {
     public static boolean setAlert(Context context, AvsSetAlertItem setAlertItem, Intent it) {
         try {
             Date date = simpleDateFormat.parse(setAlertItem.getScheduledTime());
-            Log.d("SetAlertHelper", "setAlert date:" + date.getTime() + " off:" + System.currentTimeMillis()
-                    + " diff:" + (date.getTime() - System.currentTimeMillis()) + " \nsc:" + setAlertItem.getScheduledTime()+ " now:"+simpleDateFormat.format(new Date(System.currentTimeMillis()))
-                + " timezoneOffset:"+date.getTimezoneOffset());
+            Date local = new Date(System.currentTimeMillis());
+            Log.d("SetAlertHelper", "setAlert date:" + date.getTime() + " off:" + local.getTime()
+                    + " diff:" + (date.getTime() - System.currentTimeMillis()) + " \nsc:" + setAlertItem.getScheduledTime()+ " now:"+simpleDateFormat.format(local)
+                + " timezoneOffset:"+date.getTimezoneOffset()+ " time:"+(local.getTime() - System.currentTimeMillis()));
             it.putExtra("token", setAlertItem.getToken());
             it.putExtra("messageId", setAlertItem.getMessageId());
             PendingIntent intent = PendingIntent.getService(context, setAlertItem.getTimeId(), it, 0);

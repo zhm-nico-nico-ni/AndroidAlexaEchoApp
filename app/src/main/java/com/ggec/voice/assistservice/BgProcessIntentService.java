@@ -61,9 +61,13 @@ public class BgProcessIntentService extends IntentService {
     private final static int SEND_PING_INTERVAL = 300 * 1000;
     private final static int REFRESH_TOKEN_MIN_INTERVAL = 300 * 1000;
 
+    /**
+     * warning 这个不能删
+     */
     public BgProcessIntentService(){
         this("test");
     }
+
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      *

@@ -64,6 +64,7 @@ public class ResponseParser {
 
         byte[] bytes = stream;
         String responseString = string(bytes);
+//        Log.d(TAG, "raw:"+responseString);
         if (checkBoundary) {
             Log.d(TAG, ""+responseString);
             final String responseTrim = responseString.trim();
@@ -78,7 +79,7 @@ public class ResponseParser {
 
         //have to do this otherwise mpStream throws an exception
         if (mpStream.skipPreamble()) {
-            Log.i(TAG, "Found initial boundary: true");
+            Log.d(TAG, "Found initial boundary: true");
 
             //we have to use the count hack here because otherwise readBoundary() throws an exception
             int count = 0;
@@ -105,14 +106,13 @@ public class ResponseParser {
                 } else {
                     // get the json directive
                     String directive = data.toString(Charset.defaultCharset().displayName());
-
+                    Log.d(TAG, ""+directive);
                     directives.add(getDirective(directive));
                 }
                 count++;
             }
 
         } else {
-            Log.i(TAG, "Response Body: \n" + responseString);
             try {
                 Directive directive = getDirective(responseString);
                 if(directive.isTypeException()){
@@ -132,7 +132,7 @@ public class ResponseParser {
 
         for (Directive directive: directives) {
 
-            Log.i(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName());
+            Log.d(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName());
 
             AvsItem item = DirectiveParseHelper.parseDirective(directive, audio, response); //FIXME 根据namespace来区分
             if(item instanceof AvsExpectSpeechItem){
@@ -159,16 +159,12 @@ public class ResponseParser {
             response.add(item);
         }
 
-        Log.i(TAG, "Parsing response took: " + (System.currentTimeMillis() - start) +" size is " + response.size());
-
-        if(response.size() == 0){
-            Log.i(TAG, string(bytes));
-        }
+        Log.d(TAG, "Parsing response took: " + (System.currentTimeMillis() - start) +" size is " + response.size());
 
         return response;
     }
 
-    private static final String string(byte[] bytes) throws IOException {
+    private static final String string(byte[] bytes) {
         return new String(bytes, UTF_8);
     }
 
