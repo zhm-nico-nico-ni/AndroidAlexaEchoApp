@@ -30,7 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
@@ -379,7 +380,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         }
     }
 
-    private void handleRemoteAVSItem(final AvsPlayRemoteItem playItem) {
+    private synchronized void handleRemoteAVSItem(final AvsPlayRemoteItem playItem) {
         cancelAvsRemoteCallRequest();
         final long startOffset = playItem.pausePosition > playItem.getStartOffset()
                 ? playItem.pausePosition : playItem.getStartOffset();
@@ -387,7 +388,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
 
         Log.d(TAG, "play remote item offset:"+startOffset+" , url -> " + playItem.getUrl() + "\n convert -> " + playItem.getConvertUrl());
         if (TextUtils.isEmpty(playItem.getConvertUrl())) {
-            Flowable.fromCallable(new Callable<ConvertAudioItem>() {
+            Observable.fromCallable(new Callable<ConvertAudioItem>() {
                 @Override
                 public ConvertAudioItem call() throws Exception {
                     String playUri;
@@ -406,8 +407,9 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
                         return new ConvertAudioItem(null, null);
                     }
                 }
-            }).subscribeOn(Schedulers.io())
-                    .observeOn(Schedulers.single())
+            })
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Consumer<ConvertAudioItem>() {
                         @Override
                         public void accept(@io.reactivex.annotations.NonNull ConvertAudioItem s) throws Exception {
