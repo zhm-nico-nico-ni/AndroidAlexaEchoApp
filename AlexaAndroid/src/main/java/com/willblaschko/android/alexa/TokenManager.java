@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 
-import com.amazon.identity.auth.device.authorization.api.AmazonAuthorizationManager;
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.gson.Gson;
 import com.willblaschko.android.alexa.connection.ClientUtil;
@@ -132,11 +131,10 @@ public class TokenManager {
     /**
      * Check if we have a pre-existing access token, and whether that token is expired. If it is not, return that token, otherwise get a refresh token and then
      * use that to get a new token.
-     * @param authorizationManager our AuthManager
      * @param context local/application context
      * @param callback the TokenCallback where we return our tokens when successful
      */
-    public static void getAccessToken(@NotNull AmazonAuthorizationManager authorizationManager, @NotNull Context context, @NotNull TokenCallback callback) {
+    public static void getAccessToken(@NotNull Context context, @NotNull TokenCallback callback) {
         SharedPreferences preferences = Util.getPreferences(context.getApplicationContext());
         //if we have an access token
         if(preferences.contains(PREF_ACCESS_TOKEN)){
@@ -148,9 +146,6 @@ public class TokenManager {
                 //if it is expired but we have a refresh token, get a new token
                 if(preferences.contains(PREF_REFRESH_TOKEN)){
                     String clientId = preferences.getString(PREF_CLIENT_ID, "");
-                    if(BuildConfig.ENABLE_LOCAL_AUTH && TextUtils.isEmpty(clientId)){
-                        clientId = authorizationManager.getClientId() ;
-                    }
                     getRefreshToken(clientId, context, callback, preferences.getString(PREF_REFRESH_TOKEN, ""));
                     return;
                 }
@@ -158,17 +153,14 @@ public class TokenManager {
         }
 
         //uh oh, the user isn't logged in, we have an IllegalStateException going on!
-        callback.onFailure(new IllegalStateException("User is not logged in and no refresh token found."));
+        callback.onFailure(new AuthenticatorException("User is not logged in and no refresh token found."));
     }
 
-    public static void tryRefreshToken(@NotNull AmazonAuthorizationManager authorizationManager, @NotNull Context context, @NotNull TokenCallback callback){
+    public static void tryRefreshToken(@NotNull Context context, @NotNull TokenCallback callback){
         SharedPreferences preferences = Util.getPreferences(context.getApplicationContext());
         String refreshToken = preferences.getString(PREF_REFRESH_TOKEN, "");
         if (!TextUtils.isEmpty(refreshToken)){
             String clientId = preferences.getString(PREF_CLIENT_ID, "");
-            if(BuildConfig.ENABLE_LOCAL_AUTH && TextUtils.isEmpty(clientId)){
-                clientId = authorizationManager.getClientId() ;
-            }
             getRefreshToken(clientId, context, callback, refreshToken);
         }
     }

@@ -28,7 +28,6 @@ import com.willblaschko.android.alexa.interfaces.system.OpenDownchannel;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -58,7 +57,6 @@ public class AlexaManager {
     private static final String TAG = "AlexaManager";
 
     private static volatile AlexaManager mInstance;
-    private AuthorizationManager mAuthorizationManager;
     private SpeechSendVoice mSpeechSendVoice;
     private SpeechSendText mSpeechSendText;
     private SpeechSendAudio mSpeechSendAudio;
@@ -73,7 +71,6 @@ public class AlexaManager {
     private AlexaManager(Context context, String productId) {
         resetUserInactivityTime();
         mContext = context.getApplicationContext();
-        mAuthorizationManager = new AuthorizationManager(mContext, productId);
         mVoiceHelper = VoiceHelper.getInstance(mContext);
         mEndPoint = SharedPreferenceUtil.getEndPointUrl(mContext);
 //        new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -152,42 +149,13 @@ public class AlexaManager {
     }
 
     /**
-     * Check if the user is logged in to the Amazon service, uses an async callback with a boolean to return response
-     *
-     * @param callback state callback
-     */
-    public void checkLoggedIn(@NotNull final AsyncCallback<Boolean, Throwable> callback) {
-        mAuthorizationManager.checkLoggedIn(mContext, new AsyncCallback<Boolean, Throwable>() {
-            @Override
-            public void start() {
-
-            }
-
-            @Override
-            public void success(Boolean result) {
-                callback.success(result);
-            }
-
-            @Override
-            public void failure(Throwable error) {
-                callback.failure(error);
-            }
-
-            @Override
-            public void complete() {
-
-            }
-        });
-    }
-
-    /**
      * Send a log in request to the Amazon Authentication Manager
      *
      * @param callback state callback
      */
     public void logIn(@Nullable final AuthorizationCallback callback) {
         //check if we're already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new AsyncCallback<Boolean, Throwable>() {
+        AuthorizationManager.checkLoggedIn(mContext, new AsyncCallback<Boolean, Throwable>() {
             @Override
             public void start() {
 
@@ -199,11 +167,6 @@ public class AlexaManager {
                 if (result) {
                     if (callback != null) {
                         callback.onSuccess();
-                    }
-                } else {
-                    if(BuildConfig.ENABLE_LOCAL_AUTH) {
-                        //otherwise start the authorization process
-                        mAuthorizationManager.authorizeUser(callback);
                     }
                 }
             }
@@ -250,7 +213,7 @@ public class AlexaManager {
         isSendingOpenDownchannelDirective = true;
         Log.d(TAG, "sendOpenDownchannelDirective begin");
         //check if the user is already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
             @Override
             public void success(Boolean result) {
@@ -260,7 +223,7 @@ public class AlexaManager {
                     openDownchannel = new OpenDownchannel(getDirectivesUrl(), pOpenDownChannelCallback);
                     isSendingOpenDownchannelDirective = false;
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
+                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             Observable
@@ -445,7 +408,7 @@ public class AlexaManager {
     public void startRecording(@Nullable final byte[] assetFile, @Nullable final AsyncCallback<Void, Exception> callback) {
 
         //check if user is logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
             @Override
             public void success(Boolean result) {
@@ -461,7 +424,7 @@ public class AlexaManager {
                         @Override
                         protected Void doInBackground(Void... params) {
                             //get our user's access token
-                            TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
+                            TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
                                 @Override
                                 public void onSuccess(String token) {
                                     //we are authenticated, let's record some audio!
@@ -601,7 +564,7 @@ public class AlexaManager {
      */
     public void sendTextRequest(final String text, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
             @Override
             public void success(Boolean result) {
                 if (result) {
@@ -614,7 +577,7 @@ public class AlexaManager {
                         @Override
                         protected AvsResponse doInBackground(Void... params) {
                             //get our access token
-                            TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
+                            TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
                                 @Override
                                 public void onSuccess(String token) {
                                     mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
@@ -695,7 +658,7 @@ public class AlexaManager {
      */
     public void sendAudioRequest(final String profile, final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback, @NonNull final IGetContextEventCallBack getContextEventCallBack) {
         //check if the user is already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
             @Override
             public void success(Boolean result) {
@@ -705,7 +668,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getEventsUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
+                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -811,7 +774,7 @@ public class AlexaManager {
      */
     public void sendEvent(@NonNull final String event, final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
             @Override
             public void success(Boolean result) {
@@ -821,7 +784,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getEventsUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
+                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -864,7 +827,7 @@ public class AlexaManager {
 
     public void sendPingEvent(final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
-        mAuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
             @Override
             public void success(Boolean result) {
@@ -874,7 +837,7 @@ public class AlexaManager {
                     //set our URL
                     final String url = getPingUrl();
                     //get our access token
-                    TokenManager.getAccessToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, new ImplTokenCallback() {
+                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
                         @Override
                         public void onSuccess(final String token) {
                             //do this off the main thread
@@ -949,7 +912,7 @@ public class AlexaManager {
     }
 
     public void tryRefreshToken(TokenManager.TokenCallback callback){
-        TokenManager.tryRefreshToken(mAuthorizationManager.getAmazonAuthorizationManager(), mContext, callback);
+        TokenManager.tryRefreshToken(mContext, callback);
     }
 
     private Function<Throwable, AvsResponse> getErrorConsumer(final String method, final AsyncCallback<AvsResponse, Exception> callback){
