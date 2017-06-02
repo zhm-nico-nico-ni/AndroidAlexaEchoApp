@@ -20,6 +20,7 @@ import com.ggec.voice.assistservice.wakeword.IWakeWordAgentEvent;
 import com.ggec.voice.assistservice.wakeword.WakeWordAgent;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.BroadCast;
+import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 
 /**
  * Created by ggec on 2017/3/29.
@@ -68,16 +69,17 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
     }
 
     @Override
-    public void onDetectWakeWord() {
+    public void onDetectWakeWord(final String rawPath, final long startIndexInSamples, final long endIndexInSamples) {
         Log.w(TAG, "onDetectWakeWord");
 
         playStart(new MyShortAudioPlayer.IOnCompletionListener() {
             @Override
             public void onCompletion() {
-                startService(
-                        BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
-                                BackGroundProcessServiceControlCommand.START_VOICE_RECORD)
-                );
+                Intent it = BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
+                        BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
+                it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
+                it.putExtra("rawPath", rawPath);
+                startService(it);
             }
         });
 
