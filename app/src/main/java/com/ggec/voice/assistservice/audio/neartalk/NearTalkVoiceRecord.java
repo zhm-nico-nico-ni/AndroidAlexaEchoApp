@@ -30,6 +30,7 @@ import okio.BufferedSink;
 
 /**
  * Created by ggec on 2017/4/25.
+ * Near Talk, use stop capture directive
  */
 
 public class NearTalkVoiceRecord extends Thread {
@@ -250,11 +251,11 @@ public class NearTalkVoiceRecord extends Thread {
         }, getContextEventCallBack);
     }
 
-    class NearTalkFileDataRequestBody extends RequestBody {
+    private class NearTalkFileDataRequestBody extends RequestBody {
         private NearTalkRandomAccessFile mFile;
         private long pointer;
         private FileOutputStream mRecordOutputStream;
-        ByteArrayOutputStream mByteArrayStream;
+        private ByteArrayOutputStream mByteArrayStream;
 
         public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file, long beginPosition) {
             if (file == null) throw new NullPointerException("content == null");
@@ -283,7 +284,9 @@ public class NearTalkVoiceRecord extends Thread {
                 sink.write(mByteArrayStream.toByteArray());
                 sink.flush();
             } else {
-                byte[] buffer = new byte[256];
+                //We encourage streaming captured audio to AVS in 10ms chunks at 320 bytes (320 byte DATA frames sent as single units).
+                // Larger chunk sizes create unnecessary buffering, which negatively impacts AVS’ ability to process audio and may result in higher latencies.
+                byte[] buffer = new byte[320];
                 Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
                 try {
                     while (!mFile.isClose()) {
