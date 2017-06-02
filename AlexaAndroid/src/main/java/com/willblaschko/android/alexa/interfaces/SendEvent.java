@@ -101,9 +101,9 @@ public abstract class SendEvent {
             Log.d(TAG, "response:" + statusCode + "  "+ response.message());
             Log.d(TAG, "Response headers: {}" + response.headers().toString());
 
-            if(response.code() == HttpURLConnection.HTTP_NO_CONTENT){
-                Log.d(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
-            }
+//            if(response.code() == HttpURLConnection.HTTP_NO_CONTENT){
+//                Log.d(TAG, "This response successfully had no content. \nReceived a 204 response code from Amazon, is this expected?");
+//            }
 
             final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
                     ResponseParser.parseResponse(response.body().bytes(), getBoundary(response), false);
@@ -113,9 +113,10 @@ public abstract class SendEvent {
 
             return val;
         } catch (IOException exp) {
-            Log.w(TAG, "parseResponse fail ", exp);
             if (currentCall.isCanceled()) {
-                return new AvsResponse();
+                AvsResponse cancelResponse = new AvsResponse();
+                cancelResponse.responseCode = -1;
+                return cancelResponse;
             } else {
                 throw exp;
             }

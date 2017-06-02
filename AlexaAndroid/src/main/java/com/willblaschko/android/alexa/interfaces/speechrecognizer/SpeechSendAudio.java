@@ -49,10 +49,12 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
             prepareConnection(url, accessToken);
             final AvsResponse response = completePost();
 
-            if (response == null || (response.responseCode != 200 && response.isEmpty())) {
+            if (response == null || (!isSuccessful(response.responseCode) && response.isEmpty())) {
                 if (callback != null) {
                     callback.failure(new AvsAudioException("Nothing came back"));
                 }
+                return;
+            } else if(response.responseCode == -1){
                 return;
             }
 
@@ -84,4 +86,7 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
         return requestBody;
     }
 
+    private boolean isSuccessful(int code){
+        return code >= 200 && code < 300;
+    }
 }
