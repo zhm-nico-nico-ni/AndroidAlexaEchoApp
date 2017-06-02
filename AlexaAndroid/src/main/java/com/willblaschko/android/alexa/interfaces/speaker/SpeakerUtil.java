@@ -7,12 +7,9 @@ import android.util.Pair;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
+import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.utility.Util;
-
-/**
- * Created by ggec on 2017/4/12.
- */
 
 public class SpeakerUtil {
     private static final String TAG = "SpeakerUtil";
@@ -34,7 +31,7 @@ public class SpeakerUtil {
             am.setStreamVolume(AudioManager.STREAM_MUSIC, (int) vol, 0);
         } else {
             Log.d(TAG, "just send sendVolumeChangedEvent"+ vol + "/" + max + " (" + volume + ") adjust:" + adjust);
-            alexaManager.sendVolumeChangedEvent(volume, vol == 0, callback);
+            alexaManager.sendEvent(Event.getVolumeChangedEvent(volume, vol == 0), callback);
         }
     }
 
@@ -42,7 +39,7 @@ public class SpeakerUtil {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         long vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
-        alexaManager.sendVolumeChangedEvent((vol * 100 ) / max, vol == 0, callback);
+        alexaManager.sendEvent(Event.getVolumeChangedEvent((vol * 100 ) / max, vol == 0), callback);
     }
 
 
@@ -60,7 +57,7 @@ public class SpeakerUtil {
             Util.getPreferences(context).edit().putLong("lastSetMuteTime", System.currentTimeMillis()).apply();
         } else {
             Log.i(TAG, "just sendMutedEvent : "+isMute);
-            alexaManager.sendMutedEvent(isMute, localVolume, callback);
+            alexaManager.sendEvent(Event.getMuteChangeEvent(isMute, localVolume), callback);
         }
     }
 
@@ -70,7 +67,7 @@ public class SpeakerUtil {
         final int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         long vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         long localVolume = (vol * 100) / max;
-        alexaManager.sendMutedEvent(localVolume == 0, localVolume, callback);
+        alexaManager.sendEvent(Event.getMuteChangeEvent(localVolume == 0, localVolume), callback);
     }
 
     public static long getAlexaVolume(Context context){

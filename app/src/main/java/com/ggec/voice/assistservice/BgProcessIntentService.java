@@ -25,6 +25,7 @@ import com.willblaschko.android.alexa.SharedPreferenceUtil;
 import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
+import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
 import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
@@ -91,7 +92,7 @@ public class BgProcessIntentService extends IntentService {
         if (b != null) {
             cmd.bundle = b;
         }
-        AlexaManager alexaManager = AlexaManager.getInstance(this, BuildConfig.PRODUCT_ID);
+        AlexaManager alexaManager = AlexaManager.getInstance(this);
 
         if (cmd.type == BackGroundProcessServiceControlCommand.START_VOICE_RECORD) {
             final long waitMicDelayMillSecond = intent.getLongExtra("waitMicDelayMillSecond", 0);
@@ -154,7 +155,7 @@ public class BgProcessIntentService extends IntentService {
             setTimerEvent(this, USER_INACTIVITY_REPORT_JOB_ID, BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT, 60 * 60 * 1000);
         } else if(cmd.type == BackGroundProcessServiceControlCommand.REFRESH_TOKEN){
             Log.i(TAG, "REFRESH_TOKEN");
-            alexaManager.tryRefreshToken(new ImplTokenCallback(){
+            alexaManager.tryRefreshToken(new ImplTokenCallback(null){
                 @Override
                 public void beginRefreshTokenEvent(Context context, long expires_in) {
                     setTimerEvent(context, REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN
@@ -162,7 +163,7 @@ public class BgProcessIntentService extends IntentService {
                 }
 
                 @Override
-                public void onFailure(Throwable e) {
+                public void onFailure(Exception e) {
                     setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN, REFRESH_TOKEN_MIN_INTERVAL);
                 }
             });
@@ -214,12 +215,12 @@ public class BgProcessIntentService extends IntentService {
 //                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
 //                        if (recordSuccess) {
 //                            handler.removeCallbacks(waitMicTimeoutRunnable);
-//                            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
 //                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack("record", path));
 //                        } else {
 //                            if (waitMicTimeOut > 0) {
 //                                handler.removeCallbacks(waitMicTimeoutRunnable);
-//                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
 //                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
 //                            }
 //                            playError("asset:///error.mp3");
@@ -233,7 +234,7 @@ public class BgProcessIntentService extends IntentService {
 
     private void startNearTalkRecord(String rawPath , final long waitMicTimeOut, String strInitiator) {
         AvsHandleHelper.getAvsHandleHelper().pauseSound();
-        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
         SpeechSendAudio audio = alexaManager.getSpeechSendAudio();
         if (audio != null) audio.cancelRequest();
         if(!Util.isNetworkAvailable(this)){
@@ -254,8 +255,8 @@ public class BgProcessIntentService extends IntentService {
 
                 } else {
                     if (waitMicTimeOut > 0 && actuallyLong == -1) {
-                        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                        alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
+                        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
+                        alexaManager.sendEvent(Event.getExpectSpeechTimedOutEvent(), getCallBack("sendExpectSpeechTimeoutEvent"));
                     }
 //                            playError();
                 }
@@ -265,7 +266,7 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void textTest() {
-        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
         alexaManager.sendTextRequest("Set an alarm", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
         // "Set an alarm for 9:49 morning on everyday" "How's my day look"
@@ -277,8 +278,7 @@ public class BgProcessIntentService extends IntentService {
             byte[] fileBytes = new byte[is.available()];
             is.read(fileBytes);
             is.close();
-            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-            alexaManager.sendAudioRequest(fileBytes, getCallBack("search"));
+            AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest(fileBytes, getCallBack("search"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -312,7 +312,7 @@ public class BgProcessIntentService extends IntentService {
                 deleteFile(filePath);
                 if(error instanceof AvsAudioException) {
                     Log.e(TAG, "Speech Recognize event send, but receive nothing, http response code = 204");
-//                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+//                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
 //                    alexaManager.sendEvent(Event
 //                            .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
 //                                    , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState())
@@ -362,7 +362,7 @@ public class BgProcessIntentService extends IntentService {
             @Override
             public void success(AvsResponse result) {
                 super.success(result);
-                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 if (!alexaManager.hasOpenDownchannel()) {
                     alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
                     return;
@@ -374,7 +374,7 @@ public class BgProcessIntentService extends IntentService {
             @Override
             public void failure(Exception error) {
                 super.failure(error);
-                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 alexaManager.closeOpenDownchannel(false);
             }
         });
@@ -385,8 +385,7 @@ public class BgProcessIntentService extends IntentService {
             alexaManager.sendOpenDownchannelDirective(new ImplAsyncCallback("{opendownchannel}"){
                 @Override
                 public void start() {
-                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-                    alexaManager.sendSynchronizeStateEvent2(ContextUtil.getActuallyContextList(MyApplication.getContext()
+                    AlexaManager.getInstance(MyApplication.getContext()).sendSynchronizeStateEvent2(ContextUtil.getActuallyContextList(MyApplication.getContext()
                             , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState()), getCallBack("SynchronizeState"));
                     setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
                     long nextRefreshTime = SharedPreferenceUtil.getLongByKey(MyApplication.getContext(), TokenManager.PREF_TOKEN_EXPIRES, 0) - System.currentTimeMillis();

@@ -254,6 +254,6 @@ public class TokenManager {
     public interface TokenCallback{
         void onSuccess(String token);
         void beginRefreshTokenEvent(Context context, long expires_in);
-        void onFailure(Throwable e);
+        void onFailure(Exception e);
     }
 }

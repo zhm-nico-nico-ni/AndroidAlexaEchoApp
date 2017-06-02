@@ -3,7 +3,6 @@ package com.ggec.voice.assistservice.audio.neartalk;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 
-import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyVoiceRecord;
@@ -224,8 +223,9 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     public void startHttpRequest(long endIndexInSamples, final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
-        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
-        alexaManager.sendAudioRequest("NEAR_FIELD", new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples), new AsyncCallback<AvsResponse, Exception>() {
+        AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest("NEAR_FIELD"
+                        , new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples)
+                        , new AsyncCallback<AvsResponse, Exception>() {
             @Override
             public void start() {
                 if (callback != null) callback.start();
@@ -311,7 +311,7 @@ public class NearTalkVoiceRecord extends Thread {
                     }else if(mFile.isClose() && mFile.length() == 0){
                         //is cancel here
                         Log.d(TAG, "writeTo1 cancel http!");
-                        AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID).cancelAudioRequest();
+                        AlexaManager.getInstance(MyApplication.getContext()).cancelAudioRequest();
                     } else {
 //                    mListener.recordFinish(false, mFilePath, 0);
 //                    Log.w(TAG, "it should cancel http request here");

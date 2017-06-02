@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
@@ -77,8 +78,10 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
             public void onCompletion() {
                 Intent it = BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
                         BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
-                it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
-                it.putExtra("rawPath", rawPath);
+                if(!TextUtils.isEmpty(rawPath)) {
+                    it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
+                    it.putExtra("rawPath", rawPath);
+                }
                 startService(it);
             }
         });

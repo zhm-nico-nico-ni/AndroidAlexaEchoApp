@@ -104,14 +104,14 @@ public class AvsHandleHelper {
         if (current instanceof AvsSetVolumeItem) {
             //set our volume
             SpeakerUtil.setVolume(MyApplication.getContext()
-                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , AlexaManager.getInstance(MyApplication.getContext())
                     , ((AvsSetVolumeItem) current).getVolume()
                     , false
                     , new ImplAsyncCallback("setVolume"));
         } else if (current instanceof AvsAdjustVolumeItem) {
             //adjust the volume
             SpeakerUtil.setVolume(MyApplication.getContext()
-                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , AlexaManager.getInstance(MyApplication.getContext())
                     , ((AvsAdjustVolumeItem) current).getAdjustment()
                     , true
                     , new ImplAsyncCallback("AdjustVolume")
@@ -119,13 +119,13 @@ public class AvsHandleHelper {
         } else if (current instanceof AvsSetMuteItem) {
             //mute/unmute the device
             SpeakerUtil.setMute(MyApplication.getContext()
-                    , AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                    , AlexaManager.getInstance(MyApplication.getContext())
                     , ((AvsSetMuteItem) current).isMute()
                     , new ImplAsyncCallback("setMute")
             );
         } else if(current instanceof AvsUnableExecuteItem){
             AvsUnableExecuteItem item = (AvsUnableExecuteItem) current;
-            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
             alexaManager.sendEvent(Event
                             .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
                                     , getAudioAndSpeechState())
@@ -134,12 +134,12 @@ public class AvsHandleHelper {
                                     , item.message)
                     , null);
         } else if(current instanceof AvsResetUserInactivityItem){
-            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
             alexaManager.resetUserInactivityTime();
         } else if(current instanceof AvsSetEndPointItem){
             Log.w(TAG, " handle clear queue ! AvsSetEndPointItem");
             audioManager.clear(true);
-            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
             alexaManager.setEndPoint(((AvsSetEndPointItem) current).endPoint);
         } else if(current instanceof AvsStopCaptureItem) {
             Log.w(TAG, "handle AvsStopCaptureItem");
@@ -150,10 +150,10 @@ public class AvsHandleHelper {
                     , BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.BEGIN_ALARM));
             if (setSuccess) {
                 SetAlertHelper.putAlert(MyApplication.getContext(), setAlertItem);
-                SetAlertHelper.sendSetAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                SetAlertHelper.sendSetAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext())
                         , current.getToken(), new ImplAsyncCallback("SetAlertSucceeded"));
             } else {
-                SetAlertHelper.sendSetAlertFailed(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                SetAlertHelper.sendSetAlertFailed(AlexaManager.getInstance(MyApplication.getContext())
                         , current.getToken(), new ImplAsyncCallback("SetAlertFail"));
             }
         } else if (current instanceof AvsDeleteAlertItem) {
@@ -161,10 +161,10 @@ public class AvsHandleHelper {
                     , BackGroundProcessServiceControlCommand.createIntentByType(MyApplication.getContext(), BackGroundProcessServiceControlCommand.BEGIN_ALARM));
             Log.d(TAG, "Delete Alert res:" + res);
             if (res) {
-                SetAlertHelper.sendDeleteAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                SetAlertHelper.sendDeleteAlertSucceeded(AlexaManager.getInstance(MyApplication.getContext())
                         , current.getToken(), new ImplAsyncCallback("DeleteAlertSucceeded"));
             } else {
-                SetAlertHelper.sendDeleteAlertFail(AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID)
+                SetAlertHelper.sendDeleteAlertFail(AlexaManager.getInstance(MyApplication.getContext())
                         , current.getToken(), new ImplAsyncCallback("DeleteAlertFail"));
             }
         } else {
@@ -184,7 +184,7 @@ public class AvsHandleHelper {
                 myNearTalkVoiceRecord.interrupt(false);
             } else {
                 myNearTalkVoiceRecord.doActuallyInterrupt();
-                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext(), BuildConfig.PRODUCT_ID);
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 alexaManager.cancelAudioRequest();
             }
 

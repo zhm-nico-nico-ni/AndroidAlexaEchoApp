@@ -1,5 +1,6 @@
 package com.willblaschko.android.alexa;
 
+import android.accounts.AuthenticatorException;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -10,7 +11,6 @@ import android.support.annotation.NonNull;
 import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
-import com.willblaschko.android.alexa.callbacks.AuthorizationCallback;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.callbacks.ImplTokenCallback;
 import com.willblaschko.android.alexa.data.Event;
@@ -23,15 +23,12 @@ import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendText;
-import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendVoice;
 import com.willblaschko.android.alexa.interfaces.system.OpenDownchannel;
 import com.willblaschko.android.alexa.requestbody.DataRequestBody;
 
-import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -57,21 +54,17 @@ public class AlexaManager {
     private static final String TAG = "AlexaManager";
 
     private static volatile AlexaManager mInstance;
-    private SpeechSendVoice mSpeechSendVoice;
     private SpeechSendText mSpeechSendText;
     private SpeechSendAudio mSpeechSendAudio;
     private volatile OpenDownchannel openDownchannel;
-    private VoiceHelper mVoiceHelper;
     private Context mContext;
-    private boolean mIsRecording = false;
     private long mLastUserActivityElapsedTime;
     private String mEndPoint;
     private Handler mMainHandler = new Handler(Looper.getMainLooper());
 
-    private AlexaManager(Context context, String productId) {
+    private AlexaManager(Context context) {
         resetUserInactivityTime();
         mContext = context.getApplicationContext();
-        mVoiceHelper = VoiceHelper.getInstance(mContext);
         mEndPoint = SharedPreferenceUtil.getEndPointUrl(mContext);
 //        new Handler(Looper.getMainLooper()).post(new Runnable() {
 //            @Override
@@ -93,21 +86,14 @@ public class AlexaManager {
 //        }
 //    };
 
-    public static synchronized AlexaManager getInstance(Context context, String productId) {
+    public static synchronized AlexaManager getInstance(Context context) {
         if (mInstance == null) {
-            mInstance = new AlexaManager(context, productId);
+            mInstance = new AlexaManager(context);
         }
         return mInstance;
     }
 
-    public SpeechSendVoice getSpeechSendVoice() {
-        if (mSpeechSendVoice == null) {
-            mSpeechSendVoice = new SpeechSendVoice();
-        }
-        return mSpeechSendVoice;
-    }
-
-    public SpeechSendText getSpeechSendText() {
+    private SpeechSendText getSpeechSendText() {
         if (mSpeechSendText == null) {
             mSpeechSendText = new SpeechSendText(){
                 @Override
@@ -123,7 +109,7 @@ public class AlexaManager {
         return mSpeechSendText;
     }
 
-    public SpeechSendAudio getSpeechSendAudio(@NonNull final IGetContextEventCallBack contextEventCallBack) {
+    private SpeechSendAudio getSpeechSendAudio(@NonNull final IGetContextEventCallBack contextEventCallBack) {
         if (mSpeechSendAudio == null) {
             mSpeechSendAudio = new SpeechSendAudio(){
                 @Override
@@ -142,48 +128,6 @@ public class AlexaManager {
 
     public SpeechSendAudio getSpeechSendAudio(){
         return mSpeechSendAudio;
-    }
-
-    public VoiceHelper getVoiceHelper() {
-        return mVoiceHelper;
-    }
-
-    /**
-     * Send a log in request to the Amazon Authentication Manager
-     *
-     * @param callback state callback
-     */
-    public void logIn(@Nullable final AuthorizationCallback callback) {
-        //check if we're already logged in
-        AuthorizationManager.checkLoggedIn(mContext, new AsyncCallback<Boolean, Throwable>() {
-            @Override
-            public void start() {
-
-            }
-
-            @Override
-            public void success(Boolean result) {
-                //if we are, return a success
-                if (result) {
-                    if (callback != null) {
-                        callback.onSuccess();
-                    }
-                }
-            }
-
-            @Override
-            public void failure(Throwable error) {
-                if (callback != null) {
-                    callback.onError((Exception) error);
-                }
-            }
-
-            @Override
-            public void complete() {
-
-            }
-        });
-
     }
 
     public void closeOpenDownchannel(final boolean stop) {
@@ -212,75 +156,47 @@ public class AlexaManager {
         pOpenDownChannelCallback = callback;
         isSendingOpenDownchannelDirective = true;
         Log.d(TAG, "sendOpenDownchannelDirective begin");
-        //check if the user is already logged in
-        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
 
+        openDownchannel = new OpenDownchannel(getDirectivesUrl(), pOpenDownChannelCallback);
+        //get our access token
+        TokenManager.getAccessToken(mContext, new ImplTokenCallback(pOpenDownChannelCallback) {
             @Override
-            public void success(Boolean result) {
-
-                if (result) {
-                    //if the user is logged in
-                    openDownchannel = new OpenDownchannel(getDirectivesUrl(), pOpenDownChannelCallback);
-                    isSendingOpenDownchannelDirective = false;
-                    //get our access token
-                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
-                        @Override
-                        public void onSuccess(final String token) {
-                            Observable
-                                    .fromCallable(new Callable<Boolean>() {
-                                        @Override
-                                        public Boolean call() throws Exception {
-                                            if (openDownchannel != null) {
-                                                return openDownchannel.connect(token);
-                                            }
-                                            return false;
-                                        }
-                                    })
-                                    .onErrorReturn(new Function<Throwable, Boolean>() {
-                                        @Override
-                                        public Boolean apply(Throwable throwable) throws Exception {
-                                            Log.w(TAG, "sendOpenDownchannelDirective error", throwable);
-                                            return false;
-                                        }
-                                    })
-                                    .observeOn(Schedulers.newThread())
-                                    .subscribeOn(Schedulers.single())
-                                    .subscribe(new Consumer<Boolean>() {
-                                        @Override
-                                        public void accept(Boolean aBoolean) throws Exception {
-                                            reconnect(aBoolean);
-                                        }
-                                    });
-                            //do this off the main thread
-                        }
-
-                        @Override
-                        public void onFailure(Throwable e) {
-                            reconnect(false);
-                        }
-                    });
-                } else {
-                    Log.d(TAG, "open down channel fail, no auth");
-                    //if the user is not logged in, log them in and then call the function again
-                    logIn(new ImplAuthorizationCallback<AvsResponse>(pOpenDownChannelCallback) {
-                        @Override
-                        public void onSuccess() {
-                            isSendingOpenDownchannelDirective = false;
-                            //call our function again
-                            sendOpenDownchannelDirective(callback);
-                        }
-
-                        @Override
-                        public void onError(Exception error) {
-                            isSendingOpenDownchannelDirective = false;
-                        }
-                    });
-                }
+            public void onSuccess(final String token) {
+                Observable
+                        .fromCallable(new Callable<Boolean>() {
+                            @Override
+                            public Boolean call() throws Exception {
+                                isSendingOpenDownchannelDirective = false;
+                                if (openDownchannel != null) {
+                                    return openDownchannel.connect(token);
+                                }
+                                return false;
+                            }
+                        })
+                        .onErrorReturn(new Function<Throwable, Boolean>() {
+                            @Override
+                            public Boolean apply(Throwable throwable) throws Exception {
+                                Log.w(TAG, "sendOpenDownchannelDirective error", throwable);
+                                return false;
+                            }
+                        })
+                        .observeOn(Schedulers.newThread())
+                        .subscribeOn(Schedulers.single())
+                        .subscribe(new Consumer<Boolean>() {
+                            @Override
+                            public void accept(Boolean aBoolean) throws Exception {
+                                reconnect(aBoolean);
+                            }
+                        });
+                //do this off the main thread
             }
 
             @Override
-            public void failure(Throwable error) {
-                if(!BuildConfig.ENABLE_LOCAL_AUTH) reconnect(false);
+            public void onFailure(Exception e) {
+                if(e instanceof AuthenticatorException){
+                    Log.d(TAG, "open down channel fail, no auth");
+                }
+                reconnect(false);
             }
 
             private void reconnect(boolean canceled){
@@ -313,247 +229,6 @@ public class AlexaManager {
     }
 
     /**
-     * Helper function to check if we're currently recording
-     *
-     * @return
-     */
-    public boolean isRecording() {
-        return mIsRecording;
-    }
-
-    /**
-     * Helper function to start our recording
-     * {@see #startRecording(int, byte[], AsyncCallback)}
-     * <p>
-     * * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #stopRecording(AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void startRecording(int requestType, @Nullable AsyncCallback<Void, Exception> callback) throws IOException {
-        startRecording((byte[]) null, callback);
-    }
-
-    /**
-     * Helper function to start our recording
-     * {@see #startRecording(int, byte[], AsyncCallback)}
-     * <p>
-     * * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #stopRecording(AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void startRecording(@Nullable AsyncCallback<Void, Exception> callback) {
-        startRecording((byte[]) null, callback);
-    }
-
-    /**
-     * Helper function to start our recording
-     * {@see #startRecording(int, byte[], AsyncCallback)}
-     * <p>
-     * * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #stopRecording(AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void startRecording(final int requestType, @Nullable final String assetFile, @Nullable final AsyncCallback<Void, Exception> callback) throws IOException {
-        startRecording(assetFile, callback);
-    }
-
-    /**
-     * Helper function to start our recording
-     * {@see #startRecording(int, byte[], AsyncCallback)}
-     * <p>
-     * * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #stopRecording(AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void startRecording(@Nullable final String assetFile, @Nullable final AsyncCallback<Void, Exception> callback) throws IOException {
-
-        byte[] bytes = null;
-        //if we have an introduction audio clip, add it to the stream here
-        if (assetFile != null) {
-            InputStream input = mContext.getAssets().open(assetFile);
-            bytes = IOUtils.toByteArray(input);
-            input.close();
-        }
-
-        startRecording(bytes, callback);
-    }
-
-    /**
-     * Helper function to start our recording
-     * {@see #startRecording(int, byte[], AsyncCallback)}
-     * <p>
-     * * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #stopRecording(AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void startRecording(final int requestType, @Nullable final byte[] assetFile, @Nullable final AsyncCallback<Void, Exception> callback) {
-        startRecording(assetFile, callback);
-    }
-
-    /**
-     * Paired with {@link #stopRecording(AsyncCallback)}--these need to be triggered manually or programmatically as a pair.
-     * <p>
-     * This operation is done off the main thread and may need to be brought back to the main thread on callbacks.
-     * <p>
-     * Check to see if the user is logged in, and if not, we request login, when they log in, or if they already are, we start recording audio
-     * to pass to the Amazon AVS server. This audio can be pre-pended by the byte[] assetFile, which needs to match the audio requirements of
-     * the rest of the service.
-     *
-     * @param assetFile our nullable byte[] that prepends audio to the record request
-     * @param callback  our state callback
-     * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #stopRecording(AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void startRecording(@Nullable final byte[] assetFile, @Nullable final AsyncCallback<Void, Exception> callback) {
-
-        //check if user is logged in
-        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
-
-            @Override
-            public void success(Boolean result) {
-                //if the user is already logged in
-                if (result) {
-
-                    final String url = getEventsUrl();
-                    if (callback != null) {
-                        callback.start();
-                    }
-                    //perform this off the main thread
-                    new AsyncTask<Void, Void, Void>() {
-                        @Override
-                        protected Void doInBackground(Void... params) {
-                            //get our user's access token
-                            TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
-                                @Override
-                                public void onSuccess(String token) {
-                                    //we are authenticated, let's record some audio!
-                                    try {
-                                        mIsRecording = true;
-                                        getSpeechSendVoice().startRecording(url, token, assetFile, callback);
-
-                                        if (callback != null) {
-                                            callback.success(null);
-                                        }
-                                    } catch (IOException e) {
-                                        mIsRecording = false;
-                                        e.printStackTrace();
-                                        //bubble up
-                                        if (callback != null) {
-                                            callback.failure(e);
-                                        }
-                                    } finally {
-                                        //bubble up
-                                        if (callback != null) {
-                                            callback.complete();
-                                        }
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(Throwable e) {
-
-                                }
-                            });
-                            return null;
-                        }
-                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                } else {
-                    //user is not logged in, log them in
-                    logIn(new ImplAuthorizationCallback<Void>(callback) {
-
-                        @Override
-                        public void onSuccess() {
-                            //start the call all over again
-                            startRecording(assetFile, callback);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    /**
-     * Paired with startRecording()--these need to be triggered manually or programmatically as a pair.
-     * <p>
-     * This operation is done off the main thread and may need to be brought back to the main thread on callbacks.
-     * <p>
-     * Stop our current audio being recorded and send the post request off to the server.
-     * <p>
-     * Warning: this does not check whether we're currently logged in. The world could explode if called without startRecording()
-     *
-     * @param callback
-     * @deprecated - Deprecated because of the difficulty of managing Application state in an external library. Avoid using this and {@link #startRecording(AsyncCallback)} (AsyncCallback)},
-     * use {@link #sendAudioRequest(byte[], AsyncCallback)} and manage state within your Application/Activity.
-     */
-    @Deprecated
-    public void stopRecording(@Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        if (!mIsRecording) {
-            if (callback != null) {
-                callback.failure(new RuntimeException("recording not started"));
-            }
-            return;
-        }
-
-        mIsRecording = false;
-        if (callback != null) {
-            callback.start();
-        }
-
-        //make sure we're doing this off the main thread
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    //stop recording audio and get a response
-                    AvsResponse response = getSpeechSendVoice().stopRecording();
-
-                    //parse that response
-                    try {
-                        if (callback != null) {
-                            callback.success(response);
-                            callback.complete();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        if (callback != null) {
-                            //bubble up the error
-                            callback.failure(e);
-                            callback.complete();
-                        }
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    //bubble up the error
-                    if (callback != null) {
-                        callback.failure(e);
-                    }
-                } catch (AvsException e) {
-                    e.printStackTrace();
-                    //bubble up the error
-                    if (callback != null) {
-                        callback.failure(e);
-                    }
-                } finally {
-                    if (callback != null) {
-                        callback.complete();
-                    }
-                }
-
-                return null;
-            }
-
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-    }
-
-    @Deprecated
-    public void sendTextRequest(final int requestType, final String text, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendTextRequest(text, callback);
-    }
-
-    /**
      * Send a text string request to the AVS server, this is run through Text-To-Speech to create the raw audio file needed by the AVS server.
      * <p>
      * This allows the developer to pre/post-pend or send any arbitrary text to the server, versus the startRecording()/stopRecording() combination which
@@ -563,64 +238,32 @@ public class AlexaManager {
      * @param callback the state change callback
      */
     public void sendTextRequest(final String text, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        //check if the user is already logged in
-        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
+        final String url = getEventsUrl();
+        //do this off the main thread
+        new AsyncTask<Void, Void, AvsResponse>() {
             @Override
-            public void success(Boolean result) {
-                if (result) {
-                    //if the user is logged in
-
-                    //set our URL
-                    final String url = getEventsUrl();
-                    //do this off the main thread
-                    new AsyncTask<Void, Void, AvsResponse>() {
-                        @Override
-                        protected AvsResponse doInBackground(Void... params) {
-                            //get our access token
-                            TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
-                                @Override
-                                public void onSuccess(String token) {
-                                    mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
-                                    try {
-                                        getSpeechSendText().sendText(mContext, url, token, text, new AsyncEventHandler(AlexaManager.this, callback));
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                        //bubble up the error
-                                        if(callback != null) {
-                                            callback.failure(e);
-                                        }
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(Throwable e) {
-
-                                }
-                            });
-                            return null;
+            protected AvsResponse doInBackground(Void... params) {
+                //get our access token
+                TokenManager.getAccessToken(mContext, new ImplTokenCallback(callback) {
+                    @Override
+                    public void onSuccess(String token) {
+                        mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
+                        try {
+                            getSpeechSendText().sendText(mContext, url, token, text, new AsyncEventHandler(AlexaManager.this, callback));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            //bubble up the error
+                            if(callback != null) {
+                                callback.failure(e);
+                            }
                         }
+                    }
 
-                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                } else {
-                    //if the user is not logged in, log them in and then call the function again
-                    logIn(new ImplAuthorizationCallback<AvsResponse>(callback) {
-
-                        @Override
-                        public void onSuccess() {
-                            //call our function again
-                            sendTextRequest(text, callback);
-                        }
-
-                    });
-                }
+                });
+                return null;
             }
 
-        });
-    }
-
-    @Deprecated
-    public void sendAudioRequest(final int requestType, final byte[] data, final AsyncCallback<AvsResponse, Exception> callback) {
-        sendAudioRequest(data, callback);
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -657,72 +300,46 @@ public class AlexaManager {
      * @param callback    the state change callback
      */
     public void sendAudioRequest(final String profile, final RequestBody requestBody, @Nullable final AsyncCallback<AvsResponse, Exception> callback, @NonNull final IGetContextEventCallBack getContextEventCallBack) {
-        //check if the user is already logged in
-        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
-
+        //set our URL
+        final String url = getEventsUrl();
+        //get our access token
+        TokenManager.getAccessToken(mContext, new ImplTokenCallback(callback) {
             @Override
-            public void success(Boolean result) {
-                if (result) {
-                    //if the user is logged in
-
-                    //set our URL
-                    final String url = getEventsUrl();
-                    //get our access token
-                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
-                        @Override
-                        public void onSuccess(final String token) {
-                            //do this off the main thread
-                            Observable
-                                    .fromCallable(new Callable<Object>() {
-                                        @Override
-                                        public Object call() throws Exception {
-                                            mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
-                                            try {
-                                                getSpeechSendAudio(getContextEventCallBack).sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
-                                            } catch (AvsResponseException e) {
-                                                if (e.isUnAuthorized()) {
-                                                    com.willblaschko.android.alexa.utility.Util.getPreferences(mContext).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).apply();
-                                                }
-                                                if (callback != null) {
-                                                    callback.failure(e);
-                                                }
-                                            } catch (AvsException e) {
-                                                //bubble up the error
-                                                // report to avs
-                                                if (callback != null) {
-                                                    callback.failure(e);
-                                                }
-                                            }
-                                            return new Object();
-                                        }
-                                    })
-                                    .onErrorReturn(new Function<Throwable, Object>() {
-                                        @Override
-                                        public Object apply(Throwable throwable) throws Exception {
-                                            return new Object();
-                                        }
-                                    })
-                                    .subscribeOn(Schedulers.io())
-                                    .subscribe();
-                        }
-
-                        @Override
-                        public void onFailure(Throwable e) {
-
-                        }
-                    });
-                } else {
-                    //if the user is not logged in, log them in and then call the function again
-                    logIn(new ImplAuthorizationCallback<AvsResponse>(callback) {
-                        @Override
-                        public void onSuccess() {
-                            //call our function again
-                            sendAudioRequest(requestBody, callback);
-                        }
-                    });
-                }
+            public void onSuccess(final String token) {
+                //do this off the main thread
+                Observable
+                        .fromCallable(new Callable<Object>() {
+                            @Override
+                            public Object call() throws Exception {
+                                mLastUserActivityElapsedTime = SystemClock.elapsedRealtime();
+                                try {
+                                    getSpeechSendAudio(getContextEventCallBack).sendAudio(profile, url, token, requestBody, new AsyncEventHandler(AlexaManager.this, callback));
+                                } catch (AvsResponseException e) {
+                                    if (e.isUnAuthorized()) {
+                                        com.willblaschko.android.alexa.utility.Util.getPreferences(mContext).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).apply();
+                                    }
+                                    if (callback != null) {
+                                        callback.failure(e);
+                                    }
+                                } catch (AvsException e) {
+                                    //bubble up the error
+                                    // report to avs
+                                    if (callback != null) {
+                                        callback.failure(e);
+                                    }
+                                }
+                                return new Object();
+                            }
+                        })
+                        .onErrorReturn(new Function<Throwable, Object>() {
+                            @Override
+                            public Object apply(Throwable throwable) throws Exception {
+                                return new Object();
+                            }
+                        })
+                        .subscribeOn(Schedulers.io())
+                        .subscribe();
             }
-
         });
     }
 
@@ -733,163 +350,76 @@ public class AlexaManager {
     }
 
     /**
-     * Send a confirmation to the Alexa server that the device volume has been changed in response to a directive
-     * See: {@link #sendEvent(String, AsyncCallback)}
-     *
-     * @param volume   volume as reported by the {@link com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem} Directive
-     * @param isMute   report whether the device is currently muted
-     * @param callback state callback
-     */
-    public void sendVolumeChangedEvent(final long volume, final boolean isMute, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.getVolumeChangedEvent(volume, isMute), callback);
-    }
-
-
-    /**
-     * Send a confirmation to the Alexa server that the mute state has been changed in response to a directive
-     * See: {@link #sendEvent(String, AsyncCallback)}
-     *
-     * @param isMute   mute state as reported by the {@link com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem} Directive
-     * @param callback
-     */
-    public void sendMutedEvent(final boolean isMute, long volume, @Nullable final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.getMuteChangeEvent(isMute, volume), callback);
-    }
-
-    /**
-     * Send confirmation that the device has timed out without receiving a speech request when expected
-     * See: {@link #sendEvent(String, AsyncCallback)}
-     *
-     * @param callback
-     */
-    public void sendExpectSpeechTimeoutEvent(final AsyncCallback<AvsResponse, Exception> callback) {
-        sendEvent(Event.getExpectSpeechTimedOutEvent(), callback);
-    }
-
-    /**
      * Send a generic event to the AVS server, this is generated using {@link com.willblaschko.android.alexa.data.Event.Builder}
      *
      * @param event    the string JSON event
-     * @param callback
+     * @param callback back
      */
     public void sendEvent(@NonNull final String event, final AsyncCallback<AvsResponse, Exception> callback) {
-        //check if the user is already logged in
-        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
-
+        //set our URL
+        final String url = getEventsUrl();
+        //get our access token
+        TokenManager.getAccessToken(mContext, new ImplTokenCallback(callback) {
             @Override
-            public void success(Boolean result) {
-                if (result) {
-                    //if the user is logged in
-
-                    //set our URL
-                    final String url = getEventsUrl();
-                    //get our access token
-                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
-                        @Override
-                        public void onSuccess(final String token) {
-                            //do this off the main thread
-                            Observable.fromCallable(new Callable<Object>() {
-                                @Override
-                                public Object call() throws Exception {
-                                    new GenericSendEvent(url, token, event, new AsyncEventHandler(AlexaManager.this, callback));
-                                    return new Object();
-                                }
-                            })
-                                    .onErrorReturn(new Function<Throwable, Object>() {
-                                        @Override
-                                        public Object apply(Throwable throwable) throws Exception {
-                                            return new Object();
-                                        }
-                                    })
-                                    .subscribeOn(Schedulers.io())
-                                    .subscribe();
-                        }
-
-                        @Override
-                        public void onFailure(Throwable e) {
-
-                        }
-                    });
-                } else {
-                    //if the user is not logged in, log them in and then call the function again
-                    logIn(new ImplAuthorizationCallback<AvsResponse>(callback) {
-                        @Override
-                        public void onSuccess() {
-                            //call our function again
-                            sendEvent(event, callback);
-                        }
-                    });
-                }
+            public void onSuccess(final String token) {
+                //do this off the main thread
+                Observable
+                        .fromCallable(new Callable<Object>() {
+                            @Override
+                            public Object call() throws Exception {
+                                new GenericSendEvent(url, token, event, callback);
+                                return new Object();
+                            }
+                        })
+                        .onErrorReturn(new Function<Throwable, Object>() {
+                            @Override
+                            public Object apply(Throwable throwable) throws Exception {
+                                return new Object();
+                            }
+                        })
+                        .subscribeOn(Schedulers.io())
+                        .subscribe();
             }
-
         });
     }
 
     public void sendPingEvent(final AsyncCallback<AvsResponse, Exception> callback) {
         //check if the user is already logged in
-        AuthorizationManager.checkLoggedIn(mContext, new ImplCheckLoggedInCallback() {
-
+        //set our URL
+        final String url = getPingUrl();
+        //get our access token
+        TokenManager.getAccessToken(mContext, new ImplTokenCallback(callback) {
             @Override
-            public void success(Boolean result) {
-                if (result) {
-                    //if the user is logged in
-
-                    //set our URL
-                    final String url = getPingUrl();
-                    //get our access token
-                    TokenManager.getAccessToken(mContext, new ImplTokenCallback() {
-                        @Override
-                        public void onSuccess(final String token) {
-                            //do this off the main thread
-                            Observable
-                                    .fromCallable(new Callable<AvsResponse>() {
-                                        @Override
-                                        public AvsResponse call() throws Exception {
-                                            return new PingSendEvent(url, token, callback).doWork();
-                                        }
-                                    })
-                                    .onErrorReturn(getErrorConsumer("sendPingEvent", callback))
-                                    .subscribeOn(Schedulers.io())
-                                    .subscribe();
-                        }
-
-                        @Override
-                        public void onFailure(Throwable e) {
-
-                        }
-                    });
-                }
+            public void onSuccess(final String token) {
+                //do this off the main thread
+                Observable
+                        .fromCallable(new Callable<AvsResponse>() {
+                            @Override
+                            public AvsResponse call() throws Exception {
+                                return new PingSendEvent(url, token, callback).doWork();
+                            }
+                        })
+                        .onErrorReturn(getErrorConsumer("sendPingEvent", callback))
+                        .subscribeOn(Schedulers.io())
+                        .subscribe();
             }
-
         });
     }
 
     private String getEventsUrl() {
-        return new StringBuilder()
-                .append(mEndPoint)
-                .append("/")
-                .append(mContext.getString(R.string.alexa_api_version))
-                .append("/")
-                .append("events")
-                .toString();
+        return mEndPoint + "/" +
+                mContext.getString(R.string.alexa_api_version) +
+                "/events";
     }
 
     private String getDirectivesUrl() {
-        return new StringBuilder()
-                .append(mEndPoint)
-                .append("/")
-                .append(mContext.getString(R.string.alexa_api_version))
-                .append("/")
-                .append("directives")
-                .toString();
+        return mEndPoint + "/" +
+                mContext.getString(R.string.alexa_api_version) +
+                "/directives";
     }
 
     private String getPingUrl() {
-        return new StringBuilder()
-                .append(mEndPoint)
-                .append("/")
-                .append("ping")
-                .toString();
+        return mEndPoint + "/" + "ping";
     }
 
     public void resetUserInactivityTime (){
@@ -932,7 +462,7 @@ public class AlexaManager {
         AsyncCallback<AvsResponse, Exception> callback;
         AlexaManager manager;
 
-        public AsyncEventHandler(AlexaManager manager, AsyncCallback<AvsResponse, Exception> callback) {
+        AsyncEventHandler(AlexaManager manager, AsyncCallback<AvsResponse, Exception> callback) {
             this.callback = callback;
             this.manager = manager;
         }
@@ -967,49 +497,8 @@ public class AlexaManager {
                 callback.complete();
             }
             manager.mSpeechSendAudio = null;
-            manager.mSpeechSendVoice = null;
             manager.mSpeechSendText = null;
         }
     }
 
-    private abstract static class ImplAuthorizationCallback<E> implements AuthorizationCallback {
-
-        AsyncCallback<E, Exception> callback;
-
-        public ImplAuthorizationCallback(AsyncCallback<E, Exception> callback) {
-            this.callback = callback;
-        }
-
-        @Override
-        public void onCancel() {
-
-        }
-
-        @Override
-        public void onError(Exception error) {
-            if (callback != null) {
-                //bubble up the error
-                callback.failure(error);
-            }
-        }
-    }
-
-    private abstract static class ImplCheckLoggedInCallback implements AsyncCallback<Boolean, Throwable> {
-
-        @Override
-        public void start() {
-
-        }
-
-
-        @Override
-        public void failure(Throwable error) {
-
-        }
-
-        @Override
-        public void complete() {
-
-        }
-    }
 }
