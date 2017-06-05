@@ -5,7 +5,6 @@ import android.support.annotation.NonNull;
 
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
-import com.ggec.voice.assistservice.audio.MyVoiceRecord;
 import com.ggec.voice.assistservice.audio.SingleAudioRecord;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
@@ -17,6 +16,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -43,53 +43,46 @@ public class NearTalkVoiceRecord extends Thread {
     private final static String TAG = "NearTalkVoiceRecord";
 
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
-    private final int bufferSizeInBytes;
     private final SilenceDetector continuingSilenceDetector;
 
-    private MyVoiceRecord.State mState;
+    private NearTalkState mState;
     private final String mFilePath;
-    private volatile RecordState recordState = RecordState.empty;
+    private volatile int recordState = RecordState.EMPTY; // 高四位表示http， 低4位表示本地
     private volatile NearTalkRandomAccessFile mShareFile;
     private IMyVoiceRecordListener mListener;
     private final long mBeginPosition;
 
-    public NearTalkVoiceRecord(long beginPosition, String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) {
+    public NearTalkVoiceRecord(long beginPosition, String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) throws FileNotFoundException {
         mBeginPosition = beginPosition;
         mListener = listener;
-
-        bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
 
         tarsosDSPAudioFormat = new TarsosDSPAudioFormat(
                 16000
                 , 16
                 , 1
                 , true
-                ,false);
+                , false);
 
         // 这里的最小声音分贝值可以根据先前的输入值来判断
         continuingSilenceDetector = new SilenceDetector(silenceThreshold, false);
 
         mFilePath = filepath;
-        try {
-            mShareFile = new NearTalkRandomAccessFile(mFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            doActuallyInterrupt();
-        }
+        mShareFile = new NearTalkRandomAccessFile(mFilePath);
 
-        recordState = RecordState.init;
-        if(!SingleAudioRecord.getInstance().isRecording()) {
-            SingleAudioRecord.getInstance().getAudioRecorder().startRecording();
+        if (!SingleAudioRecord.getInstance().isRecording()) {
+            SingleAudioRecord.getInstance().startRecording();
         }
     }
 
     @Override
     public void run() {
+        setRecordLocalState(RecordState.START);
         int numberOfReadFloat;
+        int bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
         byte audioBuffer[] = new byte[bufferSizeInBytes];
         float tempFloatBuffer[] = new float[bufferSizeInBytes / 2];
 
-        mState = new MyVoiceRecord.State();
+        mState = new NearTalkState();
         mState.initTime = SystemClock.elapsedRealtime();
         boolean mIsSilent = true;
 
@@ -129,11 +122,12 @@ public class NearTalkVoiceRecord extends Thread {
                     if (mState.beginSpeakTime == 0 &&
                             currentTime - mState.initTime >= MAX_WAIT_TIME) {
                         Log.d(TAG, "finish: wait to long ");
-                        recordState = RecordState.interrupt;
+                        setRecordLocalState(RecordState.ERROR);
                         break;
                     } else if (isSilent &&
                             mState.lastSilentTime != 0 &&
                             currentTime - mState.lastSilentTime >= MAX_WAIT_END_TIME) {
+                        setRecordLocalState(RecordState.FINISH);
                         Log.d(TAG, "OK: complete after speak ");
                         break;
                     }
@@ -163,9 +157,6 @@ public class NearTalkVoiceRecord extends Thread {
 
             Log.d(TAG, " important !!!!!!!!!!!!!!!! size:" + currentDataPointer + " act:" + mState.lastSilentRecordIndex);
 
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            interrupt();
         } finally {
             if (mShareFile != null) {
                 IOUtils.closeQuietly(mShareFile);
@@ -176,20 +167,18 @@ public class NearTalkVoiceRecord extends Thread {
 
     private void stopRecord(long actuallyLong) {
         SingleAudioRecord.getInstance().getAudioRecorder().stop();
-        Log.i(TAG, " record finish, success:" + (recordState != RecordState.interrupt)
-                + " file:" + mFilePath + " state:" + mState.toString());
-        boolean success = recordState != RecordState.interrupt;
-        if (success) {
-//            mListener.recordFinish(true, mFilePath, actuallyLong);
-        } else {
+        Log.d(TAG, " record finish, success:" + recordState + " file:" + mFilePath + " state:" + mState.toString() + " actuallyLong:" + actuallyLong);
+        boolean success = getRecordLocalState() != RecordState.CANCEL;
+        if (!success) {
             new File(mFilePath).delete();
-            mListener.recordFinish(false, "", -1);
+            if (getRecordLocalState() == RecordState.ERROR)
+                mListener.failure(null, "", -1);
         }
     }
 
     @Override
-    public boolean isInterrupted() {
-        return recordState == RecordState.interrupt || recordState == RecordState.stop;
+    public boolean isInterrupted() { // means local audio record is interrupted
+        return getRecordLocalState() == RecordState.CANCEL || getRecordLocalState() == RecordState.FINISH;
     }
 
     @Override
@@ -204,51 +193,70 @@ public class NearTalkVoiceRecord extends Thread {
     public void interrupt(boolean stopAll) {
 //        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
         SingleAudioRecord.getInstance().stop();
-        if(stopAll) {
+        if (stopAll) { // stop mic record and http
             Log.d(TAG, "NearTalkVoiceRecord # interrupt");
-            recordState = RecordState.interrupt;
-        } else {
+            setRecordLocalState(RecordState.CANCEL);
+            setRecordHttpState(RecordState.CANCEL);
+        } else { // just stop mic
             Log.d(TAG, "NearTalkVoiceRecord # stop");
-            recordState = RecordState.stop;
+            setRecordLocalState(RecordState.FINISH);
         }
         mShareFile.cancel();
     }
 
-    public void doActuallyInterrupt(){
+    public void doActuallyInterrupt() {
         Log.d(TAG, "NearTalkVoiceRecord # doActuallyInterrupt");
-//        audioRecorder.stop(); // 这里不应该会到这一步
-//        audioRecorder.release();
+
         interrupt(true);
-        if(!super.isInterrupted()) super.interrupt();
+        if (!super.isInterrupted()) super.interrupt();
     }
 
     public void startHttpRequest(long endIndexInSamples, final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
         AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest("NEAR_FIELD"
-                        , new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples)
-                        , new AsyncCallback<AvsResponse, Exception>() {
-            @Override
-            public void start() {
-                if (callback != null) callback.start();
-            }
+                , new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples)
+                , new AsyncCallback<AvsResponse, Exception>() {
+                    @Override
+                    public void start() {
+                        setRecordHttpState(RecordState.START);
+                        if (callback != null) callback.start();
+                    }
 
-            @Override
-            public void success(AvsResponse result) {
-                if (callback != null) callback.success(result);
-            }
+                    @Override
+                    public void success(AvsResponse result) {
+                        setRecordHttpState(RecordState.FINISH);
+                        if (callback != null) callback.success(result);
+                    }
 
-            @Override
-            public void failure(Exception error) {
-                Log.d(TAG, "startHttpRequest#failure");
-                // 这里表示Http已经超时了
-                doActuallyInterrupt();
-                if (callback != null) callback.failure(error);
-            }
+                    @Override
+                    public void failure(Exception error) {
+                        setRecordHttpState(RecordState.ERROR);
+                        Log.d(TAG, "startHttpRequest#failure");
+                        // 这里表示Http已经超时, 或已经失败（没授权）
+                        doActuallyInterrupt();
+                        if (callback != null) callback.failure(error);
+                    }
 
-            @Override
-            public void complete() {
-                if (callback != null) callback.complete();
-            }
-        }, getContextEventCallBack);
+                    @Override
+                    public void complete() {
+                        if (callback != null) callback.complete();
+                    }
+                }, getContextEventCallBack);
+    }
+
+    private void setRecordLocalState(int state) {
+        recordState &= 0xFFFF0000 + state;
+    }
+
+    private int getRecordLocalState() {
+        return recordState & 0x0000FFFF;
+    }
+
+    private void setRecordHttpState(int state) {
+        recordState &= 0x0000FFFF + (state << 4);
+    }
+
+    private int getRecordHttpState() {
+        return (recordState & 0xFFFF0000) >> 4;
     }
 
     private class NearTalkFileDataRequestBody extends RequestBody {
@@ -279,8 +287,8 @@ public class NearTalkVoiceRecord extends Thread {
 
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
-            if(mFile.isClose() && mByteArrayStream.size()>0){
-                Log.w(TAG, "writeTo0000:"+mByteArrayStream.size());
+            if (mFile.isClose() && mByteArrayStream.size() > 0) {
+                Log.w(TAG, "writeTo0000:" + mByteArrayStream.size());
                 sink.write(mByteArrayStream.toByteArray());
                 sink.flush();
             } else {
@@ -300,29 +308,27 @@ public class NearTalkVoiceRecord extends Thread {
                     }
 
                     Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled()
-                            + " interrupted:" + isInterrupted() + "\n pointer:"+pointer + " act_length:"+mFile.getActuallyLong() );
+                            + " interrupted:" + isInterrupted() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
                     if (!mFile.isCanceled() && !isInterrupted()) {
                         while (pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
                         }
-                        mListener.recordFinish(true, mFilePath, pointer);
-                    }else if(mFile.isClose() && mFile.length() == 0){
+
+                    } else if (mFile.isClose() && mFile.length() == 0) {
                         //is cancel here
                         Log.d(TAG, "writeTo1 cancel http!");
+                        setRecordHttpState(RecordState.CANCEL);
                         AlexaManager.getInstance(MyApplication.getContext()).cancelAudioRequest();
-                    } else {
-//                    mListener.recordFinish(false, mFilePath, 0);
-//                    Log.w(TAG, "it should cancel http request here");
                     }
                     int actl = (int) mFile.getActuallyLong();
-                    if(actl>0 && actl<mByteArrayStream.size()){
-                        Log.d(TAG, "trying change ByteArrayStream size to "+ actl);
+                    if (actl > 0 && actl < mByteArrayStream.size()) {
+                        Log.d(TAG, "trying change ByteArrayStream size to " + actl);
                         byte[] raw = mByteArrayStream.toByteArray();
                         mByteArrayStream.reset();
                         mByteArrayStream.write(raw, 0, actl);
-                        Log.d(TAG, "change ByteArrayStream size to "+ mByteArrayStream.size());
+                        Log.d(TAG, "change ByteArrayStream size to " + mByteArrayStream.size());
                     }
 //                try {
 //                    mFile.doActuallyClose(); //这里应该是异步线程调用close，会导致难以恢复的异常,千万别调用
@@ -331,7 +337,8 @@ public class NearTalkVoiceRecord extends Thread {
 //                    ioe.printStackTrace();
 //                }
                 } catch (IOException ioe) {
-                    throw ioe;
+                    ioe.printStackTrace();
+//                    throw ioe;
                 } finally {
                     IOUtils.closeQuietly(mRecordOutputStream);
                     Log.d(TAG, "writeToSink end, actually_end_point:" + mFile.getActuallyLong() + " p:" + pointer + " diff: " + (mFile.getActuallyLong() - pointer));

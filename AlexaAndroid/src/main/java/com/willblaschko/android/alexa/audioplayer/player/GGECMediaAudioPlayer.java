@@ -352,6 +352,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     }
 
     public String getStateString() {
+        if(TextUtils.isEmpty(getCurrentToken())) return "FINISHED";
         switch (mMediaState) {
             case STATE_IDLE:
                 return "IDLE";

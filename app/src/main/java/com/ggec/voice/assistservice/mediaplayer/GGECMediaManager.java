@@ -480,9 +480,7 @@ public class GGECMediaManager {
     public List<Event> getAudioAndSpeechState(){
         String playDirectiveToken = mMediaAudioPlayer.getCurrentToken();
 
-        // 注意！！ 如果是Alert item的话，不要把Token 及 Offset 报上去
-        boolean isLastPlayAlert = mSpeechSynthesizerPlayer.getCurrentItem() instanceof AvsAlertPlayItem;
-        String speakDirectiveToken = isLastPlayAlert ? "" : mSpeechSynthesizerPlayer.getCurrentToken();
+
         List<Event> list = new ArrayList<>();
         Event.Builder playbackEventBuilder = new Event.Builder()
                 .setHeaderNamespace(AVSAPIConstants.AudioPlayer.NAMESPACE)
@@ -491,6 +489,9 @@ public class GGECMediaManager {
                         mMediaAudioPlayer.getCurrentPosition(), mMediaAudioPlayer.getStateString()));
         list.add(playbackEventBuilder.build().getEvent());
 
+        // 注意！！ 如果是Alert item的话，不要把Token 及 Offset 报上去
+        boolean isLastPlayAlert = mSpeechSynthesizerPlayer.getCurrentItem() instanceof AvsAlertPlayItem;
+        String speakDirectiveToken = isLastPlayAlert ? "" : mSpeechSynthesizerPlayer.getCurrentToken();
         Event.Builder speechSynthesizerEventBuilder = new Event.Builder()
                 .setHeaderNamespace(AVSAPIConstants.SpeechSynthesizer.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.SpeechSynthesizer.Events.SpeechState.NAME)

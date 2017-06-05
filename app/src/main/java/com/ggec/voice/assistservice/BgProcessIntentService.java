@@ -103,7 +103,6 @@ public class BgProcessIntentService extends IntentService {
             final String initiator = intent.getStringExtra("initiator");
             final String rawPath = intent.getStringExtra("rawPath");
             //start
-//            startRecord1(cmd.waitMicDelayMillSecond);
             MyApplication.mainHandler.postAtFrontOfQueue(new Runnable() {
                 @Override
                 public void run() {
@@ -120,7 +119,6 @@ public class BgProcessIntentService extends IntentService {
 //            alexaManager.closeOpenDownchannel(false);
 //            search();
             textTest();
-//            startRecord1(0);
         } else if (cmd.type == BackGroundProcessServiceControlCommand.BEGIN_ALARM) {
             final String token = intent.getStringExtra("token");
             final String messageId = intent.getStringExtra("messageId");
@@ -187,55 +185,6 @@ public class BgProcessIntentService extends IntentService {
         }
     }
 
-//    MyVoiceRecord myVoiceRecord;
-//
-//    Runnable waitMicTimeoutRunnable = new Runnable() {
-//        @Override
-//        public void run() {
-//            if (myVoiceRecord != null && (myVoiceRecord.isAlive() || !myVoiceRecord.isInterrupted())) {
-//                myVoiceRecord.doActuallyInterrupt();
-//            }
-//        }
-//    };
-//
-//    /**
-//     * @param waitMicTimeOut 这个值禁止手工设置
-//     */
-//    private void startRecord1(final long waitMicTimeOut) {
-////        Uri path = Uri.parse("android.resource://"+BuildConfig.APPLICATION_ID+ "/"+R.raw.start);
-//
-//        if (waitMicTimeOut > 0) {
-//            handler.postDelayed(waitMicTimeoutRunnable, waitMicTimeOut);
-//        }
-//
-//        playStart(new MyShortAudioPlayer2.IOnCompletionListener() {
-//            @Override
-//            public void onCompletion() {
-//                if (myVoiceRecord != null && !myVoiceRecord.isInterrupted()) {
-//                    myVoiceRecord.doActuallyInterrupt();
-//                }
-//                myVoiceRecord = new MyVoiceRecord(MyVoiceRecord.DEFAULT_SILENT_THRESHOLD, new IMyVoiceRecordListener() {
-//                    @Override
-//                    public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
-//                        if (recordSuccess) {
-//                            handler.removeCallbacks(waitMicTimeoutRunnable);
-//                            AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
-//                            alexaManager.sendAudioRequest(new FileDataRequestBody(new File(path), actuallyLong), getFileCallBack("record", path));
-//                        } else {
-//                            if (waitMicTimeOut > 0) {
-//                                handler.removeCallbacks(waitMicTimeoutRunnable);
-//                                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
-//                                alexaManager.sendExpectSpeechTimeoutEvent(getCallBack("sendExpectSpeechTimeoutEvent"));
-//                            }
-//                            playError("asset:///error.mp3");
-//                        }
-//                    }
-//                });
-//                myVoiceRecord.start();
-//            }
-//        });
-//    }
-
     private void startNearTalkRecord(String rawPath , final long waitMicTimeOut, String strInitiator) {
         AvsHandleHelper.getAvsHandleHelper().pauseSound();
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
@@ -249,23 +198,10 @@ public class BgProcessIntentService extends IntentService {
         }
 
         Initiator initiator = TextUtils.isEmpty(strInitiator) ? null : new Gson().fromJson(strInitiator, Initiator.class);
-        String path = TextUtils.isEmpty(rawPath) ? MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis()
-                : rawPath;
+        String path = !TextUtils.isEmpty(rawPath) ? rawPath :
+                MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
 
-        AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, new IMyVoiceRecordListener() {
-            @Override
-            public void recordFinish(boolean recordSuccess, String path, long actuallyLong) {
-                if (recordSuccess) {
-
-                } else {
-                    if (waitMicTimeOut > 0 && actuallyLong == -1) {
-                        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
-                        alexaManager.sendEvent(Event.getExpectSpeechTimedOutEvent(), getCallBack("sendExpectSpeechTimeoutEvent"));
-                    }
-//                            playError();
-                }
-            }
-        }, getFileCallBack("record", path), initiator);
+        AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator);
 
     }
 
@@ -293,12 +229,11 @@ public class BgProcessIntentService extends IntentService {
         return new ImplAsyncCallback(name);
     }
 
-    private AsyncCallback<AvsResponse, Exception> getFileCallBack(final String name, final String filePath) {
-        return new ImplAsyncCallback(name) {
+    private IMyVoiceRecordListener getFileCallBack(final long waitMicTimeOut, final String name, String filePath) {
+        return new IMyVoiceRecordListener(filePath) {
 
             @Override
-            public void success(AvsResponse result) {
-                super.success(result);
+            public void success(AvsResponse result, String filePath) {
                 deleteFile(filePath);
                 if(result.continueWakeWordDetect) {
                     continueWakeWordDetect();
@@ -306,14 +241,18 @@ public class BgProcessIntentService extends IntentService {
             }
 
             @Override
-            public void failure(Exception error) {
-                super.failure(error);
+            public void failure(Exception error, String filePath, long actuallyLong) {
+                if(error != null) Log.w(TAG, "IMyVoiceRecordListener fail", error);
                 if((error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()) || error instanceof AuthenticatorException){
-                    playError("asset:///error_not_authorization.mp3");
+                    if(needNotifyVoice()) playError("asset:///error_not_authorization.mp3");
                 } else {
-                    playError("asset:///error.mp3");
+                    if(needNotifyVoice()) playError("asset:///error.mp3");
                 }
                 deleteFile(filePath);
+                if (waitMicTimeOut > 0 && actuallyLong == -1) {
+                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
+                    alexaManager.sendEvent(Event.getExpectSpeechTimedOutEvent(), getCallBack("sendExpectSpeechTimeoutEvent"));
+                }
                 if(error instanceof AvsAudioException) {
                     Log.e(TAG, "Speech Recognize event send, but receive nothing, http response code = 204");
 //                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());

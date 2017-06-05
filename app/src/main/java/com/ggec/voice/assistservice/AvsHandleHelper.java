@@ -10,7 +10,6 @@ import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
-import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
@@ -29,6 +28,7 @@ import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityIt
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 /**
@@ -196,35 +196,40 @@ public class AvsHandleHelper {
         audioManager.pauseSound();
     }
 
-    public void startNearTalkVoiceRecord(String path, IMyVoiceRecordListener myVoiceRecordListener
-            , final AsyncCallback<AvsResponse, Exception> callback, final Initiator initiator){
+    public void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator){
         Log.d(TAG, "startNearTalkVoiceRecord");
         stopCaptureNearTalkVoiceRecord(false);
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
-        myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, myVoiceRecordListener);
+        try {
+            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback);
+        } catch (FileNotFoundException e) {
+            callback.failure(e);
+            audioManager.continueSound();
+            return;
+        }
         myNearTalkVoiceRecord.start();
-        myNearTalkVoiceRecord.startHttpRequest(endIndexInSamples, new AsyncCallback<AvsResponse, Exception>(){
+        myNearTalkVoiceRecord.startHttpRequest(endIndexInSamples, new IMyVoiceRecordListener(path){
             @Override
             public void start() {
-                if(callback != null) callback.start();
+                callback.start();
             }
 
             @Override
-            public void success(AvsResponse result) {
-                if(callback != null) callback.success(result);
+            public void success(AvsResponse result, String filePath) {
+                callback.success(result, filePath);
                 if(result.continueAudio) audioManager.continueSound();
             }
 
             @Override
-            public void failure(Exception error) {
-                if(callback != null) callback.failure(error);
+            public void failure(Exception error, String filePath, long actuallyLong) {
+                callback.failure(error, filePath, actuallyLong);
                 audioManager.continueSound();
             }
 
             @Override
             public void complete() {
-                if(callback != null) callback.complete();
+                callback.complete();
             }
         }, new IGetContextEventCallBack() {
             @Override
