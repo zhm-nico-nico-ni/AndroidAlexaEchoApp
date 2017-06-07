@@ -60,7 +60,7 @@ public class DeviceLinkHandler extends LinkHandler {
             GetDeviceInfoRes ack = new GetDeviceInfoRes();
             ack.seqId = received.seqId;
             ack.resCode = ProtoResult.SUCCESS;
-            ack.deviceSerialNumber = Util.getProductId(MyApplication.getContext());;
+            ack.deviceSerialNumber = Util.getProductId(MyApplication.getContext());
             ack.productId = BuildConfig.PRODUCT_ID;
             sendData(ack);
         } else if (uri == ProtoURI.SendAuth2DeviceReqURI) {

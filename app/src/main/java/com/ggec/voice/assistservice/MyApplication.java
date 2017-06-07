@@ -111,7 +111,7 @@ public class MyApplication extends Application {
                     .setReportSenderFactoryClasses(myReportSenderFactoryClasses)
                     .setCustomReportContent(reportFields)
                     .setBuildConfigClass(BuildConfig.class)
-                    .setAdditionalSharedPreferences(new String[]{"app_status", "userinfo"})
+                    .setAdditionalSharedPreferences("app_status", "userinfo")
                     .setLogcatArguments(new String[]{"-t", "100", "-v", "time"})
                     .build();
             ACRA.init(this, cfg);

@@ -20,13 +20,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by ggec on 2017/4/10.
  */
 
 public class SetAlertHelper {
-    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.getDefault());
 
     public static void sendSetAlertSucceeded(@NonNull AlexaManager manager, String token, AsyncCallback<AvsResponse, Exception> callback) {
         manager.sendEvent(Event.getSetAlertSucceededEvent(token), callback);

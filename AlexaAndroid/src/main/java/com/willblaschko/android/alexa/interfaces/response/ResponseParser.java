@@ -205,9 +205,6 @@ public class ResponseParser {
      * @return true if headers state the response is JSON, false otherwise
      */
     private static boolean isJson(String headers) {
-        if (headers.contains("application/json")) {
-            return true;
-        }
-        return false;
+        return headers.contains("application/json");
     }
 }

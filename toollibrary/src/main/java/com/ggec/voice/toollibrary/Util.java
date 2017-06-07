@@ -97,11 +97,8 @@ public class Util {
         } catch (NullPointerException e) {
             Log.i("Log.TAG_NETWORK", "Exception thrown when getActiveNetworkInfo. " + e.getMessage());
         }
-        if (activeInfo != null && activeInfo.isConnectedOrConnecting()) {
-            return true;
-        }
+        return activeInfo != null && activeInfo.isConnectedOrConnecting();
 
-        return false;
     }
 
     public static boolean isExternalStorageExists() {
@@ -335,7 +332,7 @@ public class Util {
     }
 
     public static String recupAdresseMAC(Context context) {
-        WifiManager wifiMan = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        WifiManager wifiMan = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         @SuppressLint("MissingPermission") WifiInfo wifiInf = wifiMan.getConnectionInfo();
         String mac = wifiInf.getMacAddress();
 

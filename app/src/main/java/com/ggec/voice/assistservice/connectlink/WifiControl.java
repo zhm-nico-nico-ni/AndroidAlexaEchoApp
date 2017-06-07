@@ -54,7 +54,7 @@ public class WifiControl {
 
     private WifiControl(Context context) {
         this.mContext = context;
-        mWifiManager = (WifiManager) this.mContext.getSystemService(Context.WIFI_SERVICE);
+        mWifiManager = (WifiManager) this.mContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
     }
 
     public void addNetwork(String ssid, String password, String authAlgorithm, IAddNetWorkCallBack callBack) {
@@ -231,7 +231,7 @@ public class WifiControl {
             if (!localIterator.hasNext()) {
                 return null;
             }
-            localWifiConfiguration = (WifiConfiguration) localIterator.next();
+            localWifiConfiguration = localIterator.next();
         } while (!localWifiConfiguration.SSID.equals("\"" + str + "\""));
         return localWifiConfiguration;
     }

@@ -129,7 +129,7 @@ public final class ProtoHelper
                     marshall(bb, (String)elem);
                 }
                 else if (elemClass == byte[].class) {
-                    marshall(bb, (byte[])(Object)elem);
+                    marshall(bb, (byte[]) elem);
                 }
                 else {
                     if (!(elem instanceof Marshallable)) {
@@ -164,7 +164,7 @@ public final class ProtoHelper
                         elem = (T)unMarshallShortString(bb);
                     }
                     else if (elemClass == byte[].class) {
-                        elem = (T)(Object)unMarshallByteArray(bb);
+                        elem = (T) unMarshallByteArray(bb);
                     }
                     else {
                         elem = elemClass.newInstance();
@@ -213,7 +213,7 @@ public final class ProtoHelper
                     if (!(elem instanceof byte[])) {
                         throw new IllegalStateException("IProtoHelper::calcMarshallSize invalid T type:" + elem);
                     }
-                    pkgSize += calcMarshallSize((byte[])(Object)elem);
+                    pkgSize += calcMarshallSize((byte[]) elem);
                 }
             }
         }
@@ -247,7 +247,7 @@ public final class ProtoHelper
                     if (!(key instanceof byte[])) {
                         throw new IllegalStateException("marshall Map but unknown key type: " + key.getClass().getName());
                     }
-                    marshall(bb, (byte[])(Object)key);
+                    marshall(bb, (byte[]) key);
                 }
                 final T elem = entry.getValue();
                 if (elemClass == Integer.class) {
@@ -272,7 +272,7 @@ public final class ProtoHelper
                     if (!(elem instanceof byte[])) {
                         throw new IllegalStateException("marshall Map but unknown value type: " + elem.getClass().getName());
                     }
-                    marshall(bb, (byte[])(Object)elem);
+                    marshall(bb, (byte[]) elem);
                 }
             }
         }
@@ -297,7 +297,7 @@ public final class ProtoHelper
                     key = (K)Long.valueOf(bb.getLong());
                 }
                 else if (keyClass == byte[].class) {
-                    key = (K)(Object)unMarshallByteArray(bb);
+                    key = (K) unMarshallByteArray(bb);
                 }
                 else {
                     if (keyClass != String.class) {
@@ -320,7 +320,7 @@ public final class ProtoHelper
                         elem = (T)Long.valueOf(bb.getLong());
                     }
                     else if (elemClass == byte[].class) {
-                        elem = (T)(Object)unMarshallByteArray(bb);
+                        elem = (T) unMarshallByteArray(bb);
                     }
                     else if (elemClass == String.class) {
                         elem = (T)unMarshallShortString(bb);
@@ -359,7 +359,7 @@ public final class ProtoHelper
                     pkgSize += 8;
                 }
                 else if (key instanceof byte[]) {
-                    pkgSize += calcMarshallSize((byte[])(Object)key);
+                    pkgSize += calcMarshallSize((byte[]) key);
                 }
                 else if (key instanceof String) {
                     pkgSize += calcMarshallSize((String)key);
@@ -387,7 +387,7 @@ public final class ProtoHelper
                     pkgSize += calcMarshallSize((String)value);
                 }
                 else if (value instanceof byte[]) {
-                    pkgSize += calcMarshallSize((byte[])(Object)value);
+                    pkgSize += calcMarshallSize((byte[]) value);
                 }
                 else {
                     if (!(value instanceof Byte)) {
@@ -419,7 +419,7 @@ public final class ProtoHelper
     }
     
     public static String limitStringLength(String input, final int length) {
-        if (TextUtils.isEmpty((CharSequence)input)) {
+        if (TextUtils.isEmpty(input)) {
             return input;
         }
         if (input.length() > length) {
@@ -435,7 +435,7 @@ public final class ProtoHelper
         for (final T key : values.keySet()) {
             final String oldValue = values.get(key);
             final String newValue = limitStringLength(oldValue, length);
-            if (!TextUtils.equals((CharSequence)oldValue, (CharSequence)newValue)) {
+            if (!TextUtils.equals(oldValue, newValue)) {
                 values.put(key, newValue);
             }
         }

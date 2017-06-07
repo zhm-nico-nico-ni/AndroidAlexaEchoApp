@@ -209,7 +209,7 @@ public class SpeechRecognizer {
 
         public void run() {
             RecognitionListener[] emptyArray = new RecognitionListener[0];
-            RecognitionListener[] var2 = (RecognitionListener[])SpeechRecognizer.this.listeners.toArray(emptyArray);
+            RecognitionListener[] var2 = SpeechRecognizer.this.listeners.toArray(emptyArray);
             int var3 = var2.length;
 
             for(int var4 = 0; var4 < var3; ++var4) {
