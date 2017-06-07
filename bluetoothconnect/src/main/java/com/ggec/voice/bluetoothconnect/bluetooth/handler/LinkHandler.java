@@ -183,6 +183,7 @@ public abstract class LinkHandler extends Handler {
         } else if(msg.what == Constants.MESSAGE_STATE_CHANGE){
             Log.d(TAG, "MESSAGE_STATE_CHANGE, state:" + msg.arg1);
             if(BluetoothChatService.STATE_CONNECTED==msg.arg1) setBuffer();
+            handleStateChange(msg.arg1);
         } else if(msg.what == Constants.MESSAGE_DEVICE_NAME){
             Bundle bundle = msg.getData();
             if(bundle!=null) {
@@ -200,6 +201,10 @@ public abstract class LinkHandler extends Handler {
         } else {
 
         }
+    }
+
+    protected void handleStateChange(int arg1) {
+
     }
 
     private void handleRawData(byte[] array, int bytes) {

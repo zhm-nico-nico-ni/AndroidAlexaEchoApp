@@ -340,8 +340,8 @@ public class BgProcessIntentService extends IntentService {
                 @Override
                 public void failure(Exception error) {
                     super.failure(error);
-                    if(error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()){
-                         com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).edit().remove(TokenManager.PREF_TOKEN_EXPIRES).apply();
+                    if (error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()) {
+                        SharedPreferenceUtil.clearUtcTimeKey(MyApplication.getContext());
                     }
                     cancelTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING);
                     cancelTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN);
