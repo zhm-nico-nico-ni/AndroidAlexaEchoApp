@@ -352,6 +352,7 @@ public class BluetoothChatService {
 
             // Listen to the server socket if we're not connected
             while (mState != STATE_CONNECTED) {
+                if(mmServerSocket == null)break;
                 try {
                     // This is a blocking call and will only return on a
                     // successful connection or an exception
@@ -390,6 +391,7 @@ public class BluetoothChatService {
 
         public void cancel() {
             Log.d(TAG, "Socket Type" + mSocketType + "cancel " + this);
+            if(mmServerSocket == null) return;
             try {
                 mmServerSocket.close();
             } catch (IOException e) {
@@ -530,7 +532,8 @@ public class BluetoothChatService {
          *
          * @param buffer The bytes to write
          */
-        public int write(byte[] buffer) throws IOException {
+        public synchronized int write(byte[] buffer) throws IOException {
+
             mmOutStream.write(buffer);
 
             // Share the sent message back to the UI Activity

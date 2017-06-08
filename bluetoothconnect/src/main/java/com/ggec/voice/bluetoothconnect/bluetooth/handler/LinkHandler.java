@@ -13,6 +13,7 @@ import com.ggec.voice.bluetoothconnect.proto.ProtoHelper;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 /**
  * Created by ggec on 2017/5/9.
@@ -176,7 +177,7 @@ public abstract class LinkHandler extends Handler {
     @Override
     public final void handleMessage(Message msg) {
         if (msg.what == Constants.MESSAGE_WRITE){
-            Log.d(TAG, "write success");
+            Log.d(TAG, "write success bufferlength:" + msg.arg1 +" byte:" + Arrays.toString((byte[]) msg.obj));
         } else if(msg.what == Constants.MESSAGE_READ){
             Log.d(TAG, "read success, size:" + msg.arg1);
             handleRawData((byte[]) msg.obj, msg.arg1);
@@ -207,24 +208,37 @@ public abstract class LinkHandler extends Handler {
 
     }
 
-    private void handleRawData(byte[] array, int bytes) {
-        ByteBuffer buf = ByteBuffer.wrap(array, 0, bytes);
+    protected void handleToastMessage(String msg){
 
-        if (this.mProtoBuf.capacity() - this.mProtoBuf.position() < buf.limit()) {
-            final ByteBuffer nbuf = ByteBuffer.allocate(this.mProtoBuf.position() + buf.limit());
-            this.mProtoBuf.flip();
-            nbuf.put(this.mProtoBuf);
+    }
+
+    protected void handleConnect(String deviceName){
+
+    }
+
+    private void handleRawData(byte[] array, int limit) {
+        Log.d(TAG, "read success, size:" + limit + " byte:" + Arrays.toString(array));
+        if (this.mProtoBuf.capacity() - this.mProtoBuf.position() < limit) {
+            ByteBuffer nbuf = ByteBuffer.allocate(this.mProtoBuf.position() + limit);
+            nbuf.put(this.mProtoBuf.array(), 0, mProtoBuf.position());
             this.mProtoBuf = nbuf;
         }
-
-        this.mProtoBuf.put(buf);
-        buf.clear();
+        this.mProtoBuf.put(array, 0, limit);
         this.mProtoBuf.order(ByteOrder.LITTLE_ENDIAN);
-        while (this.mProtoBuf.position() >= 4) {
+
+        Log.d(TAG, "mProtoBuf:"+mProtoBuf.getInt(0)+"-"+ProtoHelper.peekLength(this.mProtoBuf)+mProtoBuf.toString()+"\n"+Arrays.toString(mProtoBuf.array()));
+
+        if (this.mProtoBuf.capacity() >= 4) {
             final int protoLen = ProtoHelper.peekLength(this.mProtoBuf);
-            if (this.mProtoBuf.position() < protoLen) {
-                Log.e(TAG, "peek length exceed buf position," + protoLen + " " +mProtoBuf.position());
-                break;
+
+            if(protoLen<=0 || protoLen > 10000) {
+                Log.e(TAG, "receive a large result, discard:"+protoLen+ "\n"+Arrays.toString(mProtoBuf.array()));
+                setBuffer();
+                return;
+            }
+            if (this.mProtoBuf.capacity() < protoLen) {
+                Log.e(TAG, "peek length exceed buf capacity," + protoLen + " " +mProtoBuf.capacity());
+                return;
             }
             if (this.mBytesBuf.length < protoLen) {
                 this.mBytesBuf = new byte[protoLen];
@@ -234,6 +248,8 @@ public abstract class LinkHandler extends Handler {
             this.mProtoBuf.compact();
             if (this.mOutBuf.capacity() < protoLen) {
                 this.mOutBuf = ByteBuffer.allocate(protoLen);
+            } else {
+                this.mOutBuf.limit(protoLen);
             }
             this.mOutBuf.clear();
             this.mOutBuf.put(this.mBytesBuf, 0, protoLen);
@@ -244,27 +260,17 @@ public abstract class LinkHandler extends Handler {
             data.put(this.mOutBuf);
             this.mOutBuf.rewind();
             data.flip();
-//            if (this.mLinkHandler == null) {
-//                continue;
-//            }
-//            this.mLinkHandler.onData(data);
             onData(data);
+            setBuffer();
         }
-
     }
 
-    protected void handleToastMessage(String msg){
 
-    }
-
-    protected void handleConnect(String deviceName){
-
-    }
 
     private void setBuffer(){
-        int baseSize = 1034;
+        int baseSize = 0;
         this.mOutBuf = ByteBuffer.allocate(baseSize);
-        this.mProtoBuf = ByteBuffer.allocate(2* baseSize);
+        this.mProtoBuf = ByteBuffer.allocate(baseSize);
         mBytesBuf = new byte[2* baseSize];
     }
 }
