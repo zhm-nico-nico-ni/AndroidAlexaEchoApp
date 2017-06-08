@@ -13,7 +13,6 @@ import com.ggec.voice.bluetoothconnect.proto.ProtoHelper;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 /**
  * Created by ggec on 2017/5/9.
@@ -177,7 +176,7 @@ public abstract class LinkHandler extends Handler {
     @Override
     public final void handleMessage(Message msg) {
         if (msg.what == Constants.MESSAGE_WRITE){
-            Log.d(TAG, "write success bufferlength:" + msg.arg1 +" byte:" + Arrays.toString((byte[]) msg.obj));
+            Log.d(TAG, "write success bufferlength:" + msg.arg1);
         } else if(msg.what == Constants.MESSAGE_READ){
             Log.d(TAG, "read success, size:" + msg.arg1);
             handleRawData((byte[]) msg.obj, msg.arg1);
@@ -217,7 +216,6 @@ public abstract class LinkHandler extends Handler {
     }
 
     private void handleRawData(byte[] array, int limit) {
-        Log.d(TAG, "read success, size:" + limit + " byte:" + Arrays.toString(array));
         if (this.mProtoBuf.capacity() - this.mProtoBuf.position() < limit) {
             ByteBuffer nbuf = ByteBuffer.allocate(this.mProtoBuf.position() + limit);
             nbuf.put(this.mProtoBuf.array(), 0, mProtoBuf.position());
@@ -226,13 +224,11 @@ public abstract class LinkHandler extends Handler {
         this.mProtoBuf.put(array, 0, limit);
         this.mProtoBuf.order(ByteOrder.LITTLE_ENDIAN);
 
-        Log.d(TAG, "mProtoBuf:"+mProtoBuf.getInt(0)+"-"+ProtoHelper.peekLength(this.mProtoBuf)+mProtoBuf.toString()+"\n"+Arrays.toString(mProtoBuf.array()));
-
         if (this.mProtoBuf.capacity() >= 4) {
             final int protoLen = ProtoHelper.peekLength(this.mProtoBuf);
 
             if(protoLen<=0 || protoLen > 10000) {
-                Log.e(TAG, "receive a large result, discard:"+protoLen+ "\n"+Arrays.toString(mProtoBuf.array()));
+                Log.e(TAG, "receive a large result, discard:"+protoLen);
                 setBuffer();
                 return;
             }

@@ -40,7 +40,7 @@ public class ImplAsyncCallback implements AsyncCallback<AvsResponse, Exception> 
 
     @Override
     public void failure(Exception error) {
-        Log.e(TAG, "Event " + name + "  Error", error);
+        Log.w(TAG, "Event " + name + "  Error", error);
     }
 
     @Override
