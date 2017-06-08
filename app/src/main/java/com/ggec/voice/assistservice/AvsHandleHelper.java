@@ -178,7 +178,7 @@ public class AvsHandleHelper {
         return audioManager.getAudioAndSpeechState();
     }
 
-    private void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
+    public void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
         if (myNearTalkVoiceRecord != null && !myNearTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
                 myNearTalkVoiceRecord.interrupt(false);

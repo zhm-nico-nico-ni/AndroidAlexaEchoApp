@@ -36,7 +36,6 @@ import com.willblaschko.android.alexa.interfaces.audioplayer.AvsLocalResumeItem;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
 import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
-import com.willblaschko.android.alexa.interfaces.speechrecognizer.SpeechSendAudio;
 
 import java.io.File;
 import java.io.IOException;
@@ -127,6 +126,7 @@ public class BgProcessIntentService extends IntentService {
             MyApplication.mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    pauseSoundAndRecordAudio();
                     AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertPlayItem(token, messageId));
                 }
             });
@@ -186,10 +186,7 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void startNearTalkRecord(String rawPath , final long waitMicTimeOut, String strInitiator) {
-        AvsHandleHelper.getAvsHandleHelper().pauseSound();
-        AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
-        SpeechSendAudio audio = alexaManager.getSpeechSendAudio();
-        if (audio != null) audio.cancelRequest();
+        pauseSoundAndRecordAudio();
         if(!Util.isNetworkAvailable(this)){
             //TODO play no net work
             Log.e(TAG, "return because no net work");
@@ -203,6 +200,11 @@ public class BgProcessIntentService extends IntentService {
 
         AvsHandleHelper.getAvsHandleHelper().startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator);
 
+    }
+
+    private void pauseSoundAndRecordAudio() {
+        AvsHandleHelper.getAvsHandleHelper().pauseSound();
+        AvsHandleHelper.getAvsHandleHelper().stopCaptureNearTalkVoiceRecord(false);
     }
 
     private void textTest() {
