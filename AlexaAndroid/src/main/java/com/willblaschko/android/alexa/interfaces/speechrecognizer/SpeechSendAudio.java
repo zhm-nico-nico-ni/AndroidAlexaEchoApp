@@ -87,6 +87,6 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
     }
 
     private boolean isSuccessful(int code){
-        return code >= 200 && code < 300;
+        return code >= 200 && code < 300 && code!=204;
     }
 }
