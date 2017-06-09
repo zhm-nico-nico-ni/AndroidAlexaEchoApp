@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
 import android.net.wifi.ScanResult;
+import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -14,6 +14,7 @@ import android.text.TextUtils;
 
 import com.ggec.voice.bluetoothconnect.proto.common.ProtoResult;
 import com.ggec.voice.bluetoothconnect.proto.data.WifiScanInfo;
+import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 
 import java.util.ArrayList;
@@ -38,9 +39,18 @@ public class WifiControl {
         return sInstance;
     }
 
+    public static void deInit() {
+        if (sInstance != null) {
+            sInstance.release();
+            sInstance = null;
+        }
+    }
+
     private Context mContext;
     private final WifiManager mWifiManager;
     private BroadcastReceiver mWifiConnectBroadCast;
+    private IControlListener mIControlListener;
+    private String mConnectingSSID;
 
     private IAddNetWorkCallBack mIAddNetWorkCallBack;
     private Handler handler = new Handler();
@@ -48,7 +58,8 @@ public class WifiControl {
         @Override
         public void run() {
             Log.e(TAG, "wifi connected time out");
-            unRegisterListener(ProtoResult.TIME_OUT, null);
+            unRegisterListener(ProtoResult.TIME_OUT, null, null);
+            mIAddNetWorkCallBack = null;
         }
     };
 
@@ -62,8 +73,17 @@ public class WifiControl {
             callBack.onConnect(ProtoResult.FAIL, "Wifi now is disable.");
             mIAddNetWorkCallBack = null;
             return;
+        } else if (Util.isWifiAvailable(mContext)) { // 当前ssid 是同一个
+            Log.d(TAG, "ConnectionInfo:"+mWifiManager.getConnectionInfo().toString() + " \n co:"+ssid);
+            if (TextUtils.equals("\"" + ssid + "\"", mWifiManager.getConnectionInfo().getSSID())) {
+                Log.d(TAG, "Same Wifi already connected");
+                callBack.onConnect(ProtoResult.SUCCESS, "Same Wifi already connected.");
+                mIAddNetWorkCallBack = null;
+                return;
+            }
+            Log.d(TAG, "current wifi available, but not same ssid");
         }
-        if(authAlgorithm == null) authAlgorithm = "";
+        if (authAlgorithm == null) authAlgorithm = "";
         mIAddNetWorkCallBack = callBack;
 
         // 配置网络信息类
@@ -84,7 +104,7 @@ public class WifiControl {
             }
 
 
-            if(authAlgorithm.contains("WPA")){ // WPA_PSK加密
+            if (authAlgorithm.contains("WPA")) { // WPA_PSK加密
                 customerWifiConfig.preSharedKey = ("\"" + password + "\"");
                 customerWifiConfig.hiddenSSID = true;
                 customerWifiConfig.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
@@ -99,7 +119,7 @@ public class WifiControl {
                 customerWifiConfig.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
                 customerWifiConfig.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
 
-            } else if (authAlgorithm .contains("WEP")) { // WEP密码
+            } else if (authAlgorithm.contains("WEP")) { // WEP密码
                 customerWifiConfig.hiddenSSID = true;
                 customerWifiConfig.wepKeys[0] = ("\"" + password + "\"");
 
@@ -142,38 +162,51 @@ public class WifiControl {
             mWifiConnectBroadCast = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    boolean wifiAvailable = com.ggec.voice.toollibrary.Util.isWifiAvailable(context);
                     WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
-                    Log.d(TAG, "isWifiAvailable " + wifiAvailable + wifiInfo.toString());
-                    if (!"00:00:00:00:00:00".equals(wifiInfo.getBSSID()) && !TextUtils.isEmpty(wifiInfo.getBSSID()) && !wifiAvailable) {
-                        Log.i(TAG, "wifi connect fail, " + wifiInfo.getSupplicantState().describeContents());
-                        unRegisterListener(ProtoResult.FAIL, "Connect fail, Please check your password.");
-                    } else if (wifiAvailable) {
-                        Log.i(TAG, "wifi connected");
-                        unRegisterListener(ProtoResult.SUCCESS, null);
+
+                    Log.d(TAG, "isWifiAvailable connecting:"+mConnectingSSID+" " + wifiInfo.toString());
+                    if(TextUtils.equals(mConnectingSSID, wifiInfo.getSSID())){
+                        boolean isValidState = SupplicantState.isValidState(wifiInfo.getSupplicantState());
+                        if(!isValidState){
+                            Log.i(TAG, "wifi connect fail, " + wifiInfo.getSupplicantState().describeContents());
+                            unRegisterListener(ProtoResult.FAIL, "Connect fail, Please check your password.", null);
+                        } else if(SupplicantState.COMPLETED.equals(wifiInfo.getSupplicantState())){
+                            Log.i(TAG, "wifi connected");
+                            unRegisterListener(ProtoResult.SUCCESS, null, wifiInfo.getSSID());
+                        }
                     }
                 }
             };
-            mContext.registerReceiver(mWifiConnectBroadCast, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+            mContext.registerReceiver(mWifiConnectBroadCast, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION));
         }
 
+        mConnectingSSID = paramWifiConfiguration.SSID;
         WifiConfiguration tempConfiguration = isExists(paramWifiConfiguration.SSID);
         if (tempConfiguration != null) {
             mWifiManager.removeNetwork(tempConfiguration.networkId); // 从列表中删除指定的网络配置网络
         }
         int i = mWifiManager.addNetwork(paramWifiConfiguration);
         boolean isEnable = mWifiManager.enableNetwork(i, true);
-        if(!isEnable){
-            unRegisterListener(ProtoResult.FAIL, "Can not enable network.");
+        if (!isEnable) {
+            unRegisterListener(ProtoResult.FAIL, "Can not enable network.", null);
+        } else {
+            handler.postDelayed(timeOutRunner, 10000);
         }
     }
 
-    private void unRegisterListener(byte result, String message) {
+    private void unRegisterListener(byte result, String message, String ssid) {
         handler.removeCallbacks(timeOutRunner);
-        mContext.unregisterReceiver(mWifiConnectBroadCast);
-        mWifiConnectBroadCast = null;
-        if(mIAddNetWorkCallBack != null) mIAddNetWorkCallBack.onConnect(result, message);
-        mIAddNetWorkCallBack = null;
+
+        if (mIAddNetWorkCallBack != null) {
+            mIAddNetWorkCallBack.onConnect(result, message);
+            mIAddNetWorkCallBack = null;
+        } else if (mIControlListener != null) {
+            mIControlListener.onConnectStateChange(result, message, ssid);
+        }
+
+        if(ProtoResult.SUCCESS == result){
+            release();
+        }
     }
 
     /**
@@ -251,7 +284,24 @@ public class WifiControl {
         return result;
     }
 
+    public void setIControlListener(IControlListener listener) {
+        mIControlListener = listener;
+    }
+
+    private void release() {
+        handler.removeCallbacksAndMessages(null);
+        mIControlListener = null;
+        if (mWifiConnectBroadCast != null) {
+            mContext.unregisterReceiver(mWifiConnectBroadCast);
+            mWifiConnectBroadCast = null;
+        }
+    }
+
     public interface IAddNetWorkCallBack {
         void onConnect(byte result, String message);
+    }
+
+    public interface IControlListener {
+        void onConnectStateChange(byte state, String msg, String ssid);
     }
 }
