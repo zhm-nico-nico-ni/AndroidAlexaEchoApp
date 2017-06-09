@@ -5,6 +5,7 @@ import android.content.Intent;
 
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
+import com.ggec.voice.bluetoothconnect.bluetooth.BluetoothChatService;
 import com.ggec.voice.bluetoothconnect.bluetooth.handler.LinkHandler;
 import com.ggec.voice.bluetoothconnect.proto.InvalidProtocolData;
 import com.ggec.voice.bluetoothconnect.proto.common.ProtoResult;
@@ -27,7 +28,7 @@ import java.nio.ByteBuffer;
  * Created by ggec on 2017/5/9.
  */
 
-public class DeviceLinkHandler extends LinkHandler {
+public class DeviceLinkHandler extends LinkHandler implements WifiControl.IControlListener {
     private final IDeviceLinkCallback mIDeviceLinkCallback;
     public DeviceLinkHandler(IDeviceLinkCallback callback) {
         super();
@@ -92,6 +93,7 @@ public class DeviceLinkHandler extends LinkHandler {
             GetDeviceWifiScanRes ack = new GetDeviceWifiScanRes();
             ack.seqId = received.seqId;
             ack.resCode = ProtoResult.SUCCESS;
+            WifiControl.getInstance(MyApplication.getContext()).openWifi();
             ack.data.addAll(WifiControl.getInstance(MyApplication.getContext()).getScanResult());
 
             Log.d(TAG, "Scan size:"+ack.data.size());
@@ -117,7 +119,25 @@ public class DeviceLinkHandler extends LinkHandler {
                     sendData(ack);
                 }
             });
+            WifiControl.getInstance(MyApplication.getContext()).setIControlListener(this);
             mIDeviceLinkCallback.onConnectingWifi();
+        }
+    }
+
+    @Override
+    public void onConnectStateChange(byte state, String msg, String ssid) {
+        // 这个还是先不发了
+//        DeviceConnectStateBroadcast req = new DeviceConnectStateBroadcast();
+//        req.state = state;
+//        req.msg = msg;
+//        req.ssid = ssid;
+//        sendData(req);
+    }
+
+    @Override
+    protected void handleStateChange(int arg1) {
+        if(BluetoothChatService.STATE_CONNECTED != arg1){
+            WifiControl.deInit();
         }
     }
 

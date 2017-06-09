@@ -19,4 +19,9 @@ public class ProtoURI {
 
     public final static int SendWifiConfig2DeviceReqURI = (7 << 8) | GROUP_PHONE_TO_DEVICE;
     public final static int SendWifiConfig2DeviceResURI = (8 << 8) | GROUP_PHONE_TO_DEVICE;
+
+
+    ////////////////// device to phone
+    public final static int GROUP_DEVICE_TO_PHONE = 0x01;
+    public final static int DeviceConnectStateBroadcastURI = (1 << 8) | GROUP_DEVICE_TO_PHONE;
 }
