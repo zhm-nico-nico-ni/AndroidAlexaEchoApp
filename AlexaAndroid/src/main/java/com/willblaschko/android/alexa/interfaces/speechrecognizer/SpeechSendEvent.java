@@ -27,7 +27,7 @@ public abstract class SpeechSendEvent extends SendEvent {
 
     @Override
     protected void addFormDataParts(MultipartBody.Builder builder){
-        builder.addFormDataPart("audio", ""/*"speech.wav"*/, getRequestBody());
+        builder.addFormDataPart("audio", null/*"speech.wav"*/, getRequestBody());
     }
 
     @NotNull

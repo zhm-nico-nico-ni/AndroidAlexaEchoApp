@@ -53,7 +53,7 @@ public abstract class SendEvent {
 
         mBodyBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("metadata", "metadata", RequestBody.create(MediaType.parse("application/json; charset=UTF-8"), getEvent()));
+                .addFormDataPart("metadata", null, RequestBody.create(MediaType.parse("application/json; charset=UTF-8"), getEvent()));
     }
 
     /**
