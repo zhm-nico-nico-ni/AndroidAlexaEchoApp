@@ -13,6 +13,7 @@ import com.willblaschko.android.alexa.utility.Util;
 
 public class SpeakerUtil {
     private static final String TAG = "SpeakerUtil";
+    public static int VOLUME = -1;
 
     public static void setVolume(Context context, AlexaManager alexaManager, final long volume, final boolean adjust, AsyncCallback<AvsResponse, Exception> callback) {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -77,12 +78,23 @@ public class SpeakerUtil {
         return vol* 100 / max ;
     }
 
+    public static void setConvertVolumeState(Context context){
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        VOLUME = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+    }
+
     public static Pair<Long, Boolean> getConvertVolumeState(Context context){
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        long vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+        long vol;
+        if(VOLUME > -1){
+            vol = VOLUME;
+        } else {
+            vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+        }
+
         long av = vol* 100 / max;
-        boolean ismute = am.getStreamVolume(AudioManager.STREAM_MUSIC) >= 0;
+        boolean ismute = vol >= 0;
         Log.d(TAG, "getConvertVolumeState v:"+av +" mute:"+ismute);
         return new Pair<>(av, ismute) ;
     }

@@ -31,7 +31,8 @@ public class VolumeChangeBroadcastReceiver extends BroadcastReceiver {
     };
     @Override
     public void onReceive(Context context, Intent intent) {
-        if(AudioManager.STREAM_MUSIC ==intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", 0)) {
+        if(AudioManager.STREAM_MUSIC == intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", 0)) {
+            SpeakerUtil.VOLUME = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_VALUE", -1);
             sMainHandler.removeCallbacks(setVolumeChange);
             sMainHandler.postDelayed(setVolumeChange, 3000); //这里由于系统发broadcast并不快，建议至少等2s
         }

@@ -22,6 +22,7 @@ import com.ggec.voice.assistservice.wakeword.WakeWordAgent;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
+import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 
 /**
  * Created by ggec on 2017/3/29.
@@ -53,6 +54,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         super.onCreate();
 
         Log.i(TAG, "AssistService # onCreate");
+        SpeakerUtil.setConvertVolumeState(this);
         startForeground(21940, new Notification.Builder(this)
                 .setContentText("GGEC Assist Service")
                 .build());
