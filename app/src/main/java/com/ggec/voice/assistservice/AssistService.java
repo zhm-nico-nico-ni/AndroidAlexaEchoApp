@@ -13,7 +13,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
-import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent;
@@ -33,7 +32,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
 
     private WakeWordAgent mWakeWordAgent;
     private DeviceLinkHandler mDeviceLinkHandler;
-    private MyShortAudioPlayer mMyShortAudioPlayer;
+
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -63,7 +62,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
 
         mDeviceLinkHandler = new DeviceLinkHandler(this);
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
-        mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.mp3");
+
 
         startService(
                 BackGroundProcessServiceControlCommand.createIntentByType(this,
@@ -73,24 +72,14 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
 
     @Override
     public void onDetectWakeWord(final String rawPath, final long startIndexInSamples, final long endIndexInSamples) {
-        MyApplication.mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                Log.w(TAG, "onDetectWakeWord");
-                playStart(new MyShortAudioPlayer.IOnCompletionListener() {
-                    @Override
-                    public void onCompletion() {
-                        Intent it = BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
-                                BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
-                        if (!TextUtils.isEmpty(rawPath)) {
-                            it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
-                            it.putExtra("rawPath", rawPath);
-                        }
-                        startService(it);
-                    }
-                });
-            }
-        });
+        Log.w(TAG, "onDetectWakeWord");
+        Intent it = BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
+                BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
+        if (!TextUtils.isEmpty(rawPath)) {
+            it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
+            it.putExtra("rawPath", rawPath);
+        }
+        startService(it);
     }
 
 
@@ -102,7 +91,4 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         }
     }
 
-    private void playStart(final MyShortAudioPlayer.IOnCompletionListener listener) {
-        mMyShortAudioPlayer.play(listener);
-    }
 }

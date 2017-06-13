@@ -1,24 +1,33 @@
 package com.ggec.voice.assistservice;
 
+import android.accounts.AuthenticatorException;
+import android.content.Intent;
 import android.support.annotation.MainThread;
 import android.text.TextUtils;
 
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
+import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
+import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
 import com.ggec.voice.toollibrary.log.Log;
+import com.google.gson.Gson;
 import com.willblaschko.android.alexa.AlexaManager;
+import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.callbacks.IGetContextEventCallBack;
 import com.willblaschko.android.alexa.data.Event;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
+import com.willblaschko.android.alexa.interfaces.AvsAudioException;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.AvsResponse;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsDeleteAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsSetAlertItem;
 import com.willblaschko.android.alexa.interfaces.alerts.SetAlertHelper;
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsLocalResumeItem;
 import com.willblaschko.android.alexa.interfaces.context.ContextUtil;
+import com.willblaschko.android.alexa.interfaces.errors.AvsResponseException;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsAdjustVolumeItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetMuteItem;
 import com.willblaschko.android.alexa.interfaces.speaker.AvsSetVolumeItem;
@@ -28,11 +37,17 @@ import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityIt
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
 import com.willblaschko.android.alexa.interfaces.system.AvsUnableExecuteItem;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
 
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
+
 /**
  * Created by ggec on 2017/3/31.
+ * handle
  */
 
 public class AvsHandleHelper {
@@ -40,10 +55,16 @@ public class AvsHandleHelper {
     private static volatile AvsHandleHelper sAvsHandleHelper;
     private GGECMediaManager audioManager;
     private NearTalkVoiceRecord myNearTalkVoiceRecord;
-
+    private MyShortAudioPlayer mMyShortAudioPlayer;
 
     private AvsHandleHelper() {
         audioManager = new GGECMediaManager();
+        MyApplication.mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.mp3");
+            }
+        });
     }
 
     public static synchronized AvsHandleHelper getAvsHandleHelper() {
@@ -67,12 +88,6 @@ public class AvsHandleHelper {
             for (int i = 0; i < response.size(); i++) {
                 handleAvsItem(response.get(i));
             }
-//            if (BuildConfig.DEBUG) {
-//                Log.i(TAG, "Adding " + response.size() + " items to our queue, " + " old is: " + audioManager.getQueueSize());
-//                for (int i = 0; i < response.size(); i++) {
-//                    Log.i(TAG, "\tAdding: " + response.get(i).getToken());
-//                }
-//            }
         }
     }
 
@@ -195,9 +210,17 @@ public class AvsHandleHelper {
         audioManager.pauseSound();
     }
 
-    public void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator){
+    public void startNearTalkRecord(String rawPath , final long waitMicTimeOut, String strInitiator) {
+        Initiator initiator = TextUtils.isEmpty(strInitiator) ? null : new Gson().fromJson(strInitiator, Initiator.class);
+        String path = !TextUtils.isEmpty(rawPath) ? rawPath :
+                MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
+
+        startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, waitMicTimeOut<= 0);
+    }
+
+    private void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, boolean needTips){
         Log.d(TAG, "startNearTalkVoiceRecord");
-//        stopCaptureNearTalkVoiceRecord(false); not need here
+
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {
@@ -207,7 +230,7 @@ public class AvsHandleHelper {
             audioManager.continueSound();
             return;
         }
-        myNearTalkVoiceRecord.start();
+
         myNearTalkVoiceRecord.startHttpRequest(endIndexInSamples, new IMyVoiceRecordListener(path){
             @Override
             public void start() {
@@ -239,6 +262,105 @@ public class AvsHandleHelper {
             @Override
             public Initiator getInitiator() {
                 return initiator;
+            }
+        });
+
+        if(needTips) {
+            mMyShortAudioPlayer.play(new MyShortAudioPlayer.IOnCompletionListener() {
+                @Override
+                public void onCompletion() {
+                    Log.d(TAG, "mMyShortAudioPlayer# onCompletion");
+                    myNearTalkVoiceRecord.start();
+                }
+            });
+        } else {
+            myNearTalkVoiceRecord.start();
+        }
+    }
+
+    private IMyVoiceRecordListener getFileCallBack(final long waitMicTimeOut, final String name, String filePath) {
+        return new IMyVoiceRecordListener(filePath) {
+
+            @Override
+            public void success(AvsResponse result, String filePath) {
+                deleteFile(filePath);
+                if(result.continueWakeWordDetect) {
+                    continueWakeWordDetect();
+                }
+            }
+
+            @Override
+            public void failure(Exception error, String filePath, long actuallyLong) {
+                if(error != null) Log.w(TAG, "IMyVoiceRecordListener fail", error);
+
+                if((error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()) || error instanceof AuthenticatorException){
+                    if(needNotifyVoice()) playError("asset:///error_not_authorization.mp3");
+                } else if (waitMicTimeOut > 0 && actuallyLong == -1) {
+                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
+                    alexaManager.sendEvent(Event.getExpectSpeechTimedOutEvent(), new ImplAsyncCallback("sendExpectSpeechTimeoutEvent"){
+
+                        @Override
+                        public void success(AvsResponse result) {
+                            super.success(result);
+                            if(result.continueWakeWordDetect) {
+                                continueWakeWordDetect();
+                            }
+                        }
+
+                        @Override
+                        public void failure(Exception error) {
+                            super.failure(error);
+                            continueWakeWordDetect();
+                        }
+                    });
+                } else {
+                    if(needNotifyVoice()) playError("asset:///error.mp3");
+                }
+                deleteFile(filePath);
+
+                if(error instanceof AvsAudioException) {
+                    Log.e(TAG, "Speech Recognize event send, but receive nothing, http response code = 204");
+//                    AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
+//                    alexaManager.sendEvent(Event
+//                            .createExceptionEncounteredEvent(ContextUtil.getActuallyContextList(MyApplication.getContext()
+//                                    , AvsHandleHelper.getAvsHandleHelper().getAudioAndSpeechState())
+//                            ,"", "UNEXPECTED_INFORMATION_RECEIVED", "Speech Recognize event send, but receive nothing, http response code = 204")
+//                            , null);
+                }
+            }
+
+            private void deleteFile(String fp) {
+                if (true) {// 清除文件
+                    File file = new File(fp);
+                    if (file.exists()) {
+                        boolean res = file.delete();
+                        Log.d(TAG, "delete cache file state:" + res + " p:" + fp);
+                    }
+                } else {
+                    Log.w(TAG, "Not delete cache file p:" + fp);
+                }
+            }
+
+        };
+    }
+
+    private void continueWakeWordDetect(){
+        MyApplication.getContext().sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+        AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsLocalResumeItem());
+    }
+
+    //"asset:///error.mp3"
+    private void playError(String res) {
+        Log.d(TAG, "playError:"+res);
+        Observable.just(res).subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<String>() {
+            @Override
+            public void accept(String s) throws Exception {
+                new MyShortAudioPlayer2(s, new MyShortAudioPlayer2.IOnCompletionListener() {
+                    @Override
+                    public void onCompletion() {
+                        continueWakeWordDetect();
+                    }
+                });
             }
         });
     }
