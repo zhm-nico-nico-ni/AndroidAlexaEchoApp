@@ -38,7 +38,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     private final int MAX_WAIT_TIME = 8 * 1000;
     private final int MAX_RECORD_TIME = 10 * 1000;
-    private final int MAX_WAIT_END_TIME = 1000;
+    private final int MAX_WAIT_END_TIME = 800;
 
     private final static String TAG = "NearTalkVoiceRecord";
 
