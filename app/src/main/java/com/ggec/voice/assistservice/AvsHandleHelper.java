@@ -179,6 +179,7 @@ public class AvsHandleHelper {
     }
 
     public void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
+        Log.d(TAG, "stopCaptureNearTalkVoiceRecord called " + justStopMic);
         if (myNearTalkVoiceRecord != null && !myNearTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
                 myNearTalkVoiceRecord.interrupt(false);
@@ -187,8 +188,6 @@ public class AvsHandleHelper {
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 alexaManager.cancelAudioRequest();
             }
-
-            Log.d(TAG, "stopCaptureNearTalkVoiceRecord called");
         }
     }
 
@@ -198,7 +197,7 @@ public class AvsHandleHelper {
 
     public void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator){
         Log.d(TAG, "startNearTalkVoiceRecord");
-        stopCaptureNearTalkVoiceRecord(false);
+//        stopCaptureNearTalkVoiceRecord(false); not need here
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {

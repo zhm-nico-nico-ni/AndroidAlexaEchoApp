@@ -27,7 +27,7 @@ import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Init
  * Created by ggec on 2017/3/29.
  */
 
-public class AssistService extends Service implements IWakeWordAgentEvent ,DeviceLinkHandler.IDeviceLinkCallback {
+public class AssistService extends Service implements IWakeWordAgentEvent, DeviceLinkHandler.IDeviceLinkCallback {
     private static final String TAG = "AssistService";
 
     private WakeWordAgent mWakeWordAgent;
@@ -38,7 +38,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
         public void onReceive(Context context, Intent intent) {
             Log.w(TAG, "onReceive RECEIVE_START_WAKE_WORD_LISTENER");
 
-            if(null != mWakeWordAgent) mWakeWordAgent.continueSearch();
+            if (null != mWakeWordAgent) mWakeWordAgent.continueSearch();
         }
     };
 
@@ -57,7 +57,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
                 .setContentText("GGEC Assist Service")
                 .build());
         onConnectingWifi();
-        if(null != mWakeWordAgent) mWakeWordAgent.continueSearch();
+        if (null != mWakeWordAgent) mWakeWordAgent.continueSearch();
 
         mDeviceLinkHandler = new DeviceLinkHandler(this);
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
@@ -71,27 +71,30 @@ public class AssistService extends Service implements IWakeWordAgentEvent ,Devic
 
     @Override
     public void onDetectWakeWord(final String rawPath, final long startIndexInSamples, final long endIndexInSamples) {
-        Log.w(TAG, "onDetectWakeWord");
-
-        playStart(new MyShortAudioPlayer.IOnCompletionListener() {
+        MyApplication.mainHandler.post(new Runnable() {
             @Override
-            public void onCompletion() {
-                Intent it = BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
-                        BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
-                if(!TextUtils.isEmpty(rawPath)) {
-                    it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
-                    it.putExtra("rawPath", rawPath);
-                }
-                startService(it);
+            public void run() {
+                Log.w(TAG, "onDetectWakeWord");
+                playStart(new MyShortAudioPlayer.IOnCompletionListener() {
+                    @Override
+                    public void onCompletion() {
+                        Intent it = BackGroundProcessServiceControlCommand.createIntentByType(AssistService.this,
+                                BackGroundProcessServiceControlCommand.START_VOICE_RECORD);
+                        if (!TextUtils.isEmpty(rawPath)) {
+                            it.putExtra("initiator", new Initiator("WAKEWORD", startIndexInSamples, endIndexInSamples).toJson());
+                            it.putExtra("rawPath", rawPath);
+                        }
+                        startService(it);
+                    }
+                });
             }
         });
-
     }
 
 
     @Override
     public void onConnectingWifi() {
-        if(PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)) {
+        if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)) {
             mWakeWordAgent = new CumSphinxWakeWordAgent(this, this);
 //        mWakeWordAgent = new SnowboyWakeWordAgent(this, this);
         }
