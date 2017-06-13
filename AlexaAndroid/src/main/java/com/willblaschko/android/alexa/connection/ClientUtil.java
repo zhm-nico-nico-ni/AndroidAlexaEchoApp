@@ -4,7 +4,9 @@ import android.os.Build;
 
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.ggec.voice.toollibrary.log.Log;
+import com.willblaschko.android.alexa.BuildConfig;
 
+import java.io.IOException;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,8 +19,11 @@ import javax.net.ssl.X509TrustManager;
 
 import okhttp3.CipherSuite;
 import okhttp3.ConnectionSpec;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.TlsVersion;
 
 /**
@@ -54,19 +59,20 @@ public class ClientUtil {
                     String[] enabled = sc.getSocketFactory().getDefaultCipherSuites();
                     String[] supported = sc.getSocketFactory().getSupportedCipherSuites();
 //                    Log.d("OkHttpTLSCompat", "enable " + Arrays.toString(enabled));
-//                    Log.d("OkHttpTLSCompat", "supported " + Arrays.toString(supported));
+                    Log.d("OkHttpTLSCompat", "supported " + Arrays.toString(supported));
                     client.sslSocketFactory(new Tls12SocketFactory(sc.getSocketFactory()), trustManager);
 
                     ConnectionSpec cs = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
                             .tlsVersions(TlsVersion.TLS_1_2)
-                            .cipherSuites(//CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-                                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
-                                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-                                    CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
-                                    CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA)
+                            .cipherSuites(
+                                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 // work
+                                    , CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 // work
+                                    /*
+                                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // 已测试，无效
+                                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA, // 已测试，无效
+                                    CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,// 已测试，无效
+                                    CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA*/// 已测试，无效
+                            )
                             .build();
 
 
@@ -79,21 +85,23 @@ public class ClientUtil {
 //            client.addNetworkInterceptor(new Interceptor() {
 //                @Override
 //                public Response intercept(Chain chain) throws IOException {
-//                    Request request = chain.request().newBuilder().addHeader("Connection", "close").build();
+//                    Request request = chain.request();//.newBuilder().addHeader("Connection", "close").build();
+//                    Log.d("zhm", "connection is "+chain.connection());
 //                    return chain.proceed(request);
 //                }
 //            });
 
+            if(BuildConfig.DEBUG){
+                client.addInterceptor(new LoggingInterceptor()).addNetworkInterceptor(new StethoInterceptor());
+            }
             mHttp2Client = client
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
-                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(10, TimeUnit.SECONDS)
+                    .connectTimeout(10, TimeUnit.SECONDS)
                     .retryOnConnectionFailure(true)
 
-                    .addNetworkInterceptor(new StethoInterceptor())
 //                    .addInterceptor(new RetryInterceptor())
                     .build();
-            Log.d("zhm", "new http2 client");
         }
 
         return mHttp2Client;
@@ -102,7 +110,7 @@ public class ClientUtil {
     public static synchronized OkHttpClient getHttp1Client(){
         if(mHttp1Client == null) {
             OkHttpClient.Builder client = new OkHttpClient.Builder();
-            if (Build.VERSION.SDK_INT >= 16 && Build.VERSION.SDK_INT < 25) {
+            if (Build.VERSION.SDK_INT >= 16 && Build.VERSION.SDK_INT <= 19) {
                 try {
                     SSLContext sc = SSLContext.getInstance("TLSv1.2");
                     sc.init(null, null, null);
@@ -123,5 +131,23 @@ public class ClientUtil {
             Log.d("zhm", "new http1 client");
         }
         return mHttp1Client;
+    }
+
+    static class LoggingInterceptor implements Interceptor {
+        @Override public Response intercept(Interceptor.Chain chain) throws IOException {
+            Request request = chain.request();
+
+            long t1 = System.nanoTime();
+            android.util.Log.d("LoggingInterceptor",String.format("Sending request %s on %s%n%s",
+                    request.url(), chain.connection(), request.headers()));
+
+            Response response = chain.proceed(request);
+
+            long t2 = System.nanoTime();
+            android.util.Log.d("LoggingInterceptor",String.format("Received response for %s in %.1fms%n%s",
+                    response.request().url(), (t2 - t1) / 1e6d, response.headers()));
+
+            return response;
+        }
     }
 }
