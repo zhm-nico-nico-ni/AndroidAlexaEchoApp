@@ -266,11 +266,16 @@ public class AvsHandleHelper {
         });
 
         if(needTips) {
-            mMyShortAudioPlayer.play(new MyShortAudioPlayer.IOnCompletionListener() {
+            MyApplication.mainHandler.post(new Runnable() {
                 @Override
-                public void onCompletion() {
-                    Log.d(TAG, "mMyShortAudioPlayer# onCompletion");
-                    myNearTalkVoiceRecord.start();
+                public void run() {
+                    mMyShortAudioPlayer.play(new MyShortAudioPlayer.IOnCompletionListener() {
+                        @Override
+                        public void onCompletion() {
+                            Log.d(TAG, "mMyShortAudioPlayer# onCompletion");
+                            myNearTalkVoiceRecord.start();
+                        }
+                    });
                 }
             });
         } else {

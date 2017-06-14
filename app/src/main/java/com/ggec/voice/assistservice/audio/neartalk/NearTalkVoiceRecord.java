@@ -178,7 +178,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public boolean isInterrupted() { // means local audio record is interrupted
-        return getRecordLocalState() == RecordState.CANCEL || getRecordLocalState() == RecordState.FINISH;
+        return getRecordLocalState() == RecordState.CANCEL || getRecordLocalState() == RecordState.FINISH || getRecordLocalState() == RecordState.ERROR;
     }
 
     @Override
@@ -192,7 +192,10 @@ public class NearTalkVoiceRecord extends Thread {
 
     public void interrupt(boolean stopAll) {
 //        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
-        SingleAudioRecord.getInstance().stop();
+        if(!isInterrupted())
+            SingleAudioRecord.getInstance().stop();
+
+
         if (stopAll) { // stop mic record and http
             Log.d(TAG, "NearTalkVoiceRecord # interrupt");
             setRecordLocalState(RecordState.CANCEL);
@@ -337,8 +340,7 @@ public class NearTalkVoiceRecord extends Thread {
 //                    ioe.printStackTrace();
 //                }
                 } catch (IOException ioe) {
-                    ioe.printStackTrace();
-//                    throw ioe;
+                    throw ioe;
                 } finally {
                     IOUtils.closeQuietly(mRecordOutputStream);
                     Log.d(TAG, "writeToSink end, actually_end_point:" + mFile.getActuallyLong() + " p:" + pointer + " diff: " + (mFile.getActuallyLong() - pointer));

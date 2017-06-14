@@ -91,6 +91,7 @@ public class SpeakerUtil {
             vol = VOLUME;
         } else {
             vol = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+            Log.w(TAG, "getConvertVolumeState getStreamVolume");
         }
 
         long av = vol* 100 / max;
