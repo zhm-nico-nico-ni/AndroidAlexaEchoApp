@@ -54,8 +54,6 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
                     callback.failure(new AvsAudioException("Nothing came back"));
                 }
                 return;
-            } else if(response.responseCode == -1){ // http already cancel
-                return;
             }
 
             if (callback != null) {
@@ -86,7 +84,12 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
         return requestBody;
     }
 
-    private boolean isSuccessful(int code){
-        return code >= 200 && code < 300 && code!=204;
+    /**
+     *
+     * @param code -1 http cancel, but if set success, wake word detect will not resume
+     * @return
+     */
+    private boolean isSuccessful(int code) {
+        return code == -1 || (code >= 200 && code < 300 && code != 204);
     }
 }
