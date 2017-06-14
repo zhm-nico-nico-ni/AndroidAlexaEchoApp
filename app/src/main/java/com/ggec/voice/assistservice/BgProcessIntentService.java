@@ -118,7 +118,7 @@ public class BgProcessIntentService extends IntentService {
             MyApplication.mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    pauseSoundAndRecordAudio();
+                    AvsHandleHelper.getAvsHandleHelper().stopCaptureNearTalkVoiceRecord(false);
                     AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsAlertPlayItem(token, messageId));
                 }
             });
@@ -196,9 +196,9 @@ public class BgProcessIntentService extends IntentService {
 
     private void textTest() {
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
-        alexaManager.sendTextRequest("Read my audio book", getCallBack("textTest"));
+        alexaManager.sendTextRequest("Set a timer after 15 seconds from now", getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
-        // "Set an alarm for 9:49 morning on everyday" "How's my day look"
+        // "Set an alarm for 9:49 morning on everyday" "How's my day look" "Read my audio book"
     }
 
     private void search() {
