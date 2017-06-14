@@ -132,7 +132,7 @@ public class ResponseParser {
 
         for (Directive directive: directives) {
 
-            Log.d(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName());
+//            Log.d(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName()); //这个有点消耗性能
 
             AvsItem item = DirectiveParseHelper.parseDirective(directive, audio, response); //FIXME 根据namespace来区分
             if(item instanceof AvsExpectSpeechItem){

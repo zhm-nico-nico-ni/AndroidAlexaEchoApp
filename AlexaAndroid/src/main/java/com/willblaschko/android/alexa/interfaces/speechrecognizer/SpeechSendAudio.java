@@ -41,7 +41,6 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
         if(callback != null){
             callback.start();
         }
-        Log.i(TAG, "Starting SpeechSendAudio procedure");
         start = System.currentTimeMillis();
 
         //call the parent class's prepareConnection() in order to prepare our URL POST
