@@ -62,6 +62,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
 
         mDeviceLinkHandler = new DeviceLinkHandler(this);
         registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+        AvsHandleHelper.getAvsHandleHelper();
 
 
         startService(
