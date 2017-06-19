@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -206,5 +207,123 @@ public class ResponseParser {
      */
     private static boolean isJson(String headers) {
         return headers.contains("application/json");
+    }
+
+
+    public static AvsResponse parseResponse3(InputStream stream, String boundary, boolean checkBoundary) throws IOException, IllegalStateException, AvsException {
+        long start = System.currentTimeMillis();
+
+        List<Directive> directives = new ArrayList<>();
+        HashMap<String, byte[]> audio = new HashMap<>();
+
+        MyMultiPartResponseParser multipartStream = new MyMultiPartResponseParser(stream, boundary);
+        boolean nextPart = multipartStream.checkBeginBoundary();
+        if (nextPart) {
+            Log.d(TAG, "Found initial boundary: true");
+
+            int count = 0;
+            while (nextPart) {
+                long nanoT1 = System.currentTimeMillis();
+                String headers;
+                try {
+                    headers = multipartStream.readHeader();// process headers
+                } catch (MultipartStream.MalformedStreamException exp) {
+                    break;
+                }
+                Log.d(TAG, "count:" + count + " readHeader use: " + (System.currentTimeMillis() - nanoT1));
+
+                if (isJson(headers))  {
+                    nanoT1 = System.currentTimeMillis();
+                    String directive = multipartStream.readStringBody();
+                    Log.d(TAG, "count:" + count + " readBodyData use: " + (System.currentTimeMillis() - nanoT1) +" "+ directive);
+                    // get the json directive
+                    directives.add(getDirective(directive));
+
+                    nextPart = multipartStream.checkHasBoundary();
+                } else {
+                    nanoT1 = System.currentTimeMillis();
+                    ByteArrayOutputStream data = multipartStream.readOctetStreamBody();
+                    // get the audio data
+                    //convert our multipart into byte data
+                    String contentId = getCID(headers);
+                    if (contentId != null) {
+                        Matcher matcher = PATTERN.matcher(contentId);
+                        if (matcher.find()) {
+                            String currentId = "cid:" + matcher.group(1);
+                            audio.put(currentId, data.toByteArray());
+                        }
+                    }
+                    Log.d(TAG, "count:" + count + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
+                    nextPart = multipartStream.hasBoundary();
+                }
+
+                count++;
+
+            }
+        } else {
+            Log.e(TAG, "parseResponse2 should not into here!!!!!!!!");
+        }
+
+        AvsResponse response = sss(directives, audio);
+
+        Log.d(TAG, "Parsing response took: " + (System.currentTimeMillis() - start) + " size is " + response.size());
+
+        return response;
+    }
+
+    private static void readBoundary(InputStream stream){
+
+    }
+
+    public static AvsResponse parseResponseFail(String raw) throws IOException, IllegalStateException, AvsException{
+        List<Directive> directives = new ArrayList<>();
+        try {
+            Directive directive = getDirective(raw);
+            if(directive.isTypeException()){
+                AvsResponseException exception = new AvsResponseException(directive);
+                Log.e(TAG, "AvsResponseException -> " + exception.getMessage());
+                throw exception;
+            }else {
+                directives.add(directive);
+            }
+        }catch (JsonParseException e) {
+            e.printStackTrace();
+            throw new AvsException("Response from Alexa server malformed. ");
+        }
+        return sss(directives, null);
+    }
+
+    private static AvsResponse sss(List<Directive> directives, HashMap<String, byte[]> audio) throws IOException {
+        AvsResponse response = new AvsResponse();
+
+        for (Directive directive: directives) {
+
+//            Log.d(TAG, "Parsing directive type: "+directive.getHeaderNameSpace()+":"+directive.getHeaderName()); //这个有点消耗性能
+
+            AvsItem item = DirectiveParseHelper.parseDirective(directive, audio, response); //FIXME 根据namespace来区分
+            if(item instanceof AvsExpectSpeechItem){
+                response.continueWakeWordDetect = false;
+            }
+
+            if(item==null) {
+                if (directive.isTypeMediaPlay()) {
+                    item = new AvsMediaPlayCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaPause()) {
+                    item = new AvsMediaPauseCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaNext()) {
+                    item = new AvsMediaNextCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else if (directive.isTypeMediaPrevious()) {
+                    item = new AvsMediaPreviousCommandItem(directive.getPayload().getToken(), directive.getHeaderMessageId());
+                } else {
+                    String directiveString = new Gson().toJson(directive);
+                    String msg = "Unknown type found -> " + directive.getHeaderNameSpace() + ":" + directive.getHeaderName();
+                    Log.e(TAG, msg+ "\n directive:"+directiveString);
+                    item = new AvsUnableExecuteItem(directiveString, "UNSUPPORTED_OPERATION", msg);
+                }
+            }
+
+            response.add(item);
+        }
+        return response;
     }
 }

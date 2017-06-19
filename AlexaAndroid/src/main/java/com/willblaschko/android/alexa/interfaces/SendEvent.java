@@ -82,17 +82,30 @@ public abstract class SendEvent {
     }
 
     private AvsResponse parseResponse() throws IOException, AvsException, RuntimeException {
+        long t1 = System.nanoTime();
         Request request = mRequestBuilder.build();
         currentCall = ClientUtil.getHttp2Client().newCall(request);
         Response response = null;
         try {
             response = currentCall.execute();
+            long t2 = System.nanoTime();
             int statusCode = response.code();
-            Log.d(TAG, "response:" + statusCode + "  "+ response.message());
-            Log.d(TAG, "Response headers: {}" + response.headers().toString());
 
-            final AvsResponse val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
-                    ResponseParser.parseResponse(response.body().bytes(), getBoundary(response), false);
+            Log.d(TAG, String.format("Received response for %s in %.1fms%n%s",
+                    response.request().url(), (t2 - t1) / 1e6d, response.headers()));
+            Log.d(TAG, "response:" + statusCode + " handshake:" + response.handshake().cipherSuite()+ " receivedResponseAtMillis:" + response.receivedResponseAtMillis()
+                    + " send:" + response.sentRequestAtMillis() + "\n diff:" + (response.receivedResponseAtMillis() - response.sentRequestAtMillis())
+                    + "  " + response.message());
+            final String boundary = getBoundary(response);
+
+            AvsResponse val;
+            if(response.isSuccessful()) {
+                val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
+//                        ResponseParser.parseResponse(response.body().bytes(), boundary, false);
+                        ResponseParser.parseResponse3(response.body().byteStream(), boundary, false);
+            } else {
+                val = ResponseParser.parseResponseFail(response.body().string());
+            }
 
             if(val != null) val.responseCode = statusCode;
 
