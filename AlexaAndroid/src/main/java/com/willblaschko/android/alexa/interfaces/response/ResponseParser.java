@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import okio.Buffer;
+
 import static okhttp3.internal.Util.UTF_8;
 
 /**
@@ -163,25 +165,28 @@ public class ResponseParser {
                     }
 
                 } else {
-
+                    Log.d(TAG, "begin  read audio binary");
                     nanoT1 = System.currentTimeMillis();
                     String contentId = getCID(headers);
                     if (contentId != null) {
                         Matcher matcher = PATTERN.matcher(contentId);
                         if (matcher.find()) {
                             String filePath = ConstParam.OctetStreamPath + File.separator + matcher.group(1);
-                            final RandomAccessFile finalWriteFile = new RandomAccessFile(filePath, "rwd");
+                            final RandomAccessFile finalWriteFile = new RandomAccessFile(filePath, "rw");
 
                             SingleFileLockHelper.getHelper().put(filePath);
+                            final Buffer temp = new Buffer();
                             multipartStream.readOctetStream(new MyMultiPartResponseParser.IReadOctetStreamCallBack() {
                                 int total = 0;
                                 @Override
                                 public void onData(byte[] array) {
                                     try {
-                                        finalWriteFile.write(array);
+                                        temp.write(array);
+                                        if (temp.size() >  6 * 1024) {
+                                            finalWriteFile.write(temp.readByteArray());
+                                        }
                                         total += array.length;
-
-                                        if (total >= 16 * 1024 && !hasHandleDirectives.get()) {
+                                        if (total >= 8 * 1024 && !hasHandleDirectives.get()) {
                                             hasHandleDirectives.set(true);
                                             Log.d(TAG, "Handle now");
                                             // Handle now
@@ -193,8 +198,11 @@ public class ResponseParser {
                                     }
                                 }
                             });
+                            if (temp.size() > 0){
+                                finalWriteFile.write(temp.readByteArray());
+                            }
                             SingleFileLockHelper.getHelper().removeWritingFlag(filePath);
-                            Log.d(TAG, "count:" + count + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
+                            Log.d(TAG, "count:" + count + " filesize:"+finalWriteFile.length() + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
                         } else {
                             Log.w(TAG, "breaking:");
                             break;
