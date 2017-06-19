@@ -30,6 +30,12 @@ public abstract class IMyVoiceRecordListener extends ImplAsyncCallback {
     }
 
     @Override
+    public void handle(AvsResponse result) {
+        super.handle(result);
+        success(result, mPath);
+    }
+
+    @Override
     public void failure(Exception error) {
         failure(error, mPath, -1);
     }

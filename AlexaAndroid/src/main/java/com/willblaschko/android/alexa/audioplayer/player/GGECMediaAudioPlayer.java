@@ -12,6 +12,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.willblaschko.android.alexa.ConstParam;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.MyAVSAudioParser;
 import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
@@ -20,12 +21,9 @@ import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayAudioItem;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsPlayRemoteItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
-import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -327,24 +325,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private void playitem(AvsSpeakItem playItem, long offset) {
         //write out our raw audio data to a file
         beginOffset = offset;
-        File path = new File(mContext.getCacheDir(), playItem.messageID);
-        if (path.exists()) {
-            prepare(buildMediaSource(Uri.fromFile(path), null), false, path);
-            return;
-        }
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(path);
-            fos.write(playItem.getAudio());
-            fos.close();
-            //play our newly-written file
-            prepare(buildMediaSource(Uri.fromFile(path), null), false, path);
-        } catch (IOException e) {
-            //bubble up our error
-            bubbleUpError(e);
-        } finally {
-            if (fos != null) IOUtils.closeQuietly(fos);
-        }
+        prepare(buildMediaSource(Uri.parse("cid://" + playItem.getUrl()), null), true, new File(ConstParam.OctetStreamPath + File.separator + playItem.getUrl()));
     }
 
     public long getCurrentPosition() {

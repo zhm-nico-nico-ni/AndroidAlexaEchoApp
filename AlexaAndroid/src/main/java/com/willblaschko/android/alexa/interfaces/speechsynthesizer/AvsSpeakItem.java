@@ -1,6 +1,9 @@
 package com.willblaschko.android.alexa.interfaces.speechsynthesizer;
 
+import com.willblaschko.android.alexa.ConstParam;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
+
+import java.io.File;
 
 /**
  * Directive to play a local, returned audio item from the Alexa post/get response
@@ -12,13 +15,11 @@ import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
  */
 public class AvsSpeakItem extends AvsAudioItem {
     private final String mCid;
-    private byte[] mAudio;
     private final String format;
 
-    public AvsSpeakItem(String token, String cid, byte[] audio,String messageID, String format){
+    public AvsSpeakItem(String token, String cid, String messageID, String format){
         super(token,messageID);
         mCid = cid;
-        mAudio = audio;
         this.format = format;
     }
 
@@ -26,15 +27,12 @@ public class AvsSpeakItem extends AvsAudioItem {
         return mCid;
     }
 
-    public byte[] getAudio() {
-        return mAudio;
-    }
-
     public String getFormat(){
         return format;
     }
 
     public void releaseAudio(){
-        mAudio = null;
+        File file = new File(ConstParam.OctetStreamPath + File.separator + mCid);
+        file.delete();
     }
 }

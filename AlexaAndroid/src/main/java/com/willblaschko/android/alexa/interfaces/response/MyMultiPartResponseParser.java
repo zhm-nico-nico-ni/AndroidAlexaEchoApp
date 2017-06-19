@@ -221,6 +221,36 @@ public class MyMultiPartResponseParser {
         return baos;
     }
 
+    public void readOctetStream(IReadOctetStreamCallBack callBack) throws IOException {
+        Buffer temp = new Buffer();
+
+        int i = 0;
+        while (i < BodyEndBoundary.length) {
+            byte b = readByte();
+
+            if (b == BodyEndBoundary[i]) {
+                i++;
+                temp.writeByte(b);
+            } else {
+                i = 0;
+                if(temp.size()>0){
+                    callBack.onData(temp.readByteArray());
+                }
+                callBack.onData(new byte[]{b});
+            }
+        }
+
+        byte[] raw = new byte[2];
+        if (-1 == input.read(raw, 0, raw.length)) {
+            throw new IOException("No more data is available");
+        } else if(Arrays.equals(STREAM_TERMINATOR, raw)) {
+            hasBoundary.set(false);
+        } else if(Arrays.equals(FIELD_SEPARATOR, raw)){
+            hasBoundary.set(true);
+        }
+
+    }
+
     AtomicBoolean hasBoundary = new AtomicBoolean(false);
 
     public boolean hasBoundary(){
@@ -274,8 +304,7 @@ public class MyMultiPartResponseParser {
     }
 
 
-//    interface IParseEvent{
-//        void onHeader();
-//        void onBodyData
-//    }
+    public interface IReadOctetStreamCallBack{
+        void onData(byte[] array);
+    }
 }

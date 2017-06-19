@@ -5,8 +5,6 @@ import android.text.TextUtils;
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
-import java.io.IOException;
-
 /**
  * Directive to play a local, returned audio item
  * <p>
@@ -20,8 +18,8 @@ import java.io.IOException;
 public class AvsPlayAudioItem extends AvsSpeakItem implements IAvsPlayDirectiveBaseItem {
     public final Directive.Stream mStream;
 
-    public AvsPlayAudioItem(String token, String cid, byte[] audio, String messageID, Directive.Stream stream) throws IOException {
-        super(token, cid, audio, messageID, stream.getStreamFormat());
+    public AvsPlayAudioItem(String token, String cid, String messageID, Directive.Stream stream) {
+        super(token, cid, messageID, stream.getStreamFormat());
         mStream = stream;
     }
 

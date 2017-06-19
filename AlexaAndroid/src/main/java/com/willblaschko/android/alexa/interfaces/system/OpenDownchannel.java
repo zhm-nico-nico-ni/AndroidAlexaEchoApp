@@ -74,7 +74,7 @@ public class OpenDownchannel extends SendEvent {
                 AvsResponse val = new AvsResponse();
 
                 try {
-                    val = ResponseParser.parseResponse(buffer.readByteArray(), boundary, true);
+                    val = ResponseParser.parseResponse(buffer.readByteArray(), boundary, true, callback);
                 } catch (AvsResponseException ex){
                     if(ex.isUnAuthorized()) {
                         onError(callback, ex);

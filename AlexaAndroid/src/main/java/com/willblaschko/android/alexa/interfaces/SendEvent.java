@@ -29,7 +29,7 @@ public abstract class SendEvent {
 
     private final static String TAG = "SendEvent";
 
-    protected AsyncCallback<Void, Exception> mCallback;
+    protected AsyncCallback<AvsResponse, Exception> mCallback;
 
     private Call currentCall;
 
@@ -102,7 +102,7 @@ public abstract class SendEvent {
             if(response.isSuccessful()) {
                 val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
 //                        ResponseParser.parseResponse(response.body().bytes(), boundary, false);
-                        ResponseParser.parseResponse3(response.body().byteStream(), boundary, false);
+                        ResponseParser.parseResponse3(response.body().byteStream(), boundary, mCallback);
             } else {
                 val = ResponseParser.parseResponseFail(response.body().string());
             }

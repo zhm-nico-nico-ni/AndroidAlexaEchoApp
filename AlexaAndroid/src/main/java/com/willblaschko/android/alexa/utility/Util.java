@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
@@ -19,6 +20,7 @@ import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.willblaschko.android.alexa.datepersisted.MultiprocessSharedPreferences;
+import com.willblaschko.android.alexa.interfaces.response.MyDataSource;
 
 import java.util.UUID;
 
@@ -63,9 +65,17 @@ public class Util {
     }
 
     public static MediaSource buildMediaSource(Context mContext, Uri uri, String overrideExtension) {
+        if ("cid".equals(uri.getScheme())){
+            return new ExtractorMediaSource(uri,
+                    new DefaultDataSourceFactory(mContext, null, MyDataSource.FACTORY)
+                    , Mp3Extractor.FACTORY,
+                    null, null);
+        }
+
+
+        DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(mContext, "GGEC");
         int type = TextUtils.isEmpty(overrideExtension) ? com.google.android.exoplayer2.util.Util.inferContentType(uri)
                 : com.google.android.exoplayer2.util.Util.inferContentType("." + overrideExtension);
-        DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(mContext, "GGEC");
         switch (type) {
             case C.TYPE_SS:
                 return new SsMediaSource(uri, dataSourceFactory,

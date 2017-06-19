@@ -36,6 +36,7 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
      */
     public void sendAudio(final String profile, final String url, final String accessToken, @NotNull RequestBody requestBody,
                           final AsyncCallback<AvsResponse, Exception> callback) throws AvsException {
+        mCallback = callback;
         mProfile = profile;
         this.requestBody = requestBody;
         if(callback != null){

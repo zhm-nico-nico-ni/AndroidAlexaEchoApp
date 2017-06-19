@@ -24,9 +24,6 @@ import com.willblaschko.android.alexa.interfaces.system.AvsResetUserInactivityIt
 import com.willblaschko.android.alexa.interfaces.system.AvsSetEndPointItem;
 import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
-import java.io.IOException;
-import java.util.HashMap;
-
 /**
  * Created by ggec on 2017/4/10.
  */
@@ -34,7 +31,7 @@ import java.util.HashMap;
 public class DirectiveParseHelper {
     private static String TAG = "DirectiveParseHelper";
 
-    public static final AvsItem parseDirective(@NonNull Directive directive, @NonNull HashMap<String, byte[]> audio, AvsResponse response) throws IOException {
+    public static final AvsItem parseDirective(@NonNull Directive directive, AvsResponse response)  {
         AvsItem item = null;
         final String headNameSpace = directive.getHeaderNameSpace();
         final String headName = directive.getHeaderName();
@@ -47,9 +44,8 @@ public class DirectiveParseHelper {
             }
         } else if (AVSAPIConstants.SpeechSynthesizer.NAMESPACE.equals(headNameSpace)) {
             if (AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME.equals(headName)) {
-                String cid = directive.getPayload().getUrl();
-                byte[] sound = audio.get(cid);
-                item = new AvsSpeakItem(directive.getPayload().getToken(), cid, sound, directive.getHeaderMessageId(), directive.getPayload().getFormat());
+                String cid = directive.getPayload().getUrl().substring(4);
+                item = new AvsSpeakItem(directive.getPayload().getToken(), cid, directive.getHeaderMessageId(), directive.getPayload().getFormat());
             }
         } else if (AVSAPIConstants.Alerts.NAMESPACE.equals(headNameSpace)) {
             if (AVSAPIConstants.Alerts.Directives.SetAlert.NAME.equals(headName)) {
@@ -84,8 +80,7 @@ public class DirectiveParseHelper {
 
                 String url = directive.getPayload().getAudioItem().getStream().getUrl();
                 if (url.contains("cid:")) {
-                    byte[] sound = audio.get(url);
-                    item = new AvsPlayAudioItem(directive.getPayload().getToken(), url, sound, directive.getHeaderMessageId()
+                    item = new AvsPlayAudioItem(directive.getPayload().getToken(), url.substring(4), directive.getHeaderMessageId()
                             , directive.getPayload().getAudioItem().getStream());
                 } else {
                     item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url,

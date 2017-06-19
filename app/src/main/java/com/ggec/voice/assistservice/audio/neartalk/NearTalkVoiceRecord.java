@@ -231,6 +231,11 @@ public class NearTalkVoiceRecord extends Thread {
                     }
 
                     @Override
+                    public void handle(AvsResponse result) {
+                        if (callback != null) callback.handle(result);
+                    }
+
+                    @Override
                     public void success(AvsResponse result) {
                         setRecordHttpState(RecordState.FINISH);
                         if (callback != null) callback.success(result);

@@ -9,18 +9,16 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.willblaschko.android.alexa.ConstParam;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
 import com.willblaschko.android.alexa.interfaces.AvsItem;
 import com.willblaschko.android.alexa.interfaces.alerts.AvsAlertPlayItem;
 import com.willblaschko.android.alexa.interfaces.speechsynthesizer.AvsSpeakItem;
 
-import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
 
 /**
@@ -242,25 +240,9 @@ public class GGECSpeechSynthesizerPlayer implements MyExoPlayer.IMyExoPlayerList
 
 
     private void playitem(AvsSpeakItem playItem) {
-        //write out our raw audio data to a file
-        File path = new File(mContext.getCacheDir(), playItem.messageID);
-        if (path.exists()) {
-            prepare(buildMediaSource(Uri.fromFile(path), null), true, path);
-            return;
-        }
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(path);
-            fos.write(playItem.getAudio());
-            fos.close();
-            //play our newly-written file
-            prepare(buildMediaSource(Uri.fromFile(path), null), true, path);
-        } catch (IOException e) {
-            //bubble up our error
-            bubbleUpError(e);
-        } finally {
-            if (fos != null) IOUtils.closeQuietly(fos);
-        }
+        //play our newly-written file
+        String path = ConstParam.OctetStreamPath + File.separator + playItem.getUrl();
+        prepare(buildMediaSource(Uri.parse("cid://" + path), null), true, new File(path));
     }
 
     public long getCurrentPosition() {

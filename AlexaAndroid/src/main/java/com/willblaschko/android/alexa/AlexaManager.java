@@ -478,6 +478,11 @@ public class AlexaManager {
         }
 
         @Override
+        public void handle(AvsResponse result) {
+            if(callback != null) callback.handle(result);
+        }
+
+        @Override
         public void success(AvsResponse result) {
             //parse our response
             if (callback != null) {
