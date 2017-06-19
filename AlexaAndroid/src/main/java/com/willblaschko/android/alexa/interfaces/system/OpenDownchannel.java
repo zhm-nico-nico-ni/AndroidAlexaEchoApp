@@ -69,7 +69,7 @@ public class OpenDownchannel extends SendEvent {
                 callback.start();
             }
             while (!source.exhausted()) {
-                long all = source.read(buffer, 8192);
+                long all = source.read(buffer, 8192);// okio.Segment.SIZE
                 Log.d(TAG, "on response 1. " +all);
                 AvsResponse val = new AvsResponse();
 
