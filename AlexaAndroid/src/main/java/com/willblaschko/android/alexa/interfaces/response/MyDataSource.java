@@ -90,7 +90,6 @@ public class MyDataSource implements DataSource {
     private long bytesToRead;
 
     private long bytesSkipped;
-    private long bytesRead;
     private RandomAccessFile randomAccessFile;
     private String mFilePath;
 
@@ -173,7 +172,6 @@ public class MyDataSource implements DataSource {
     @Override
     public long open(DataSpec dataSpec) throws HttpDataSource.HttpDataSourceException {
         this.dataSpec = dataSpec;
-        this.bytesRead = 0;
         this.bytesSkipped = 0;
 
         try {
@@ -226,8 +224,6 @@ public class MyDataSource implements DataSource {
     public void close() throws HttpDataSource.HttpDataSourceException {
         try {
             if (randomAccessFile != null) {
-                //TODO delete
-                maybeTerminateInputStream(randomAccessFile, bytesRemaining());
                 try {
                     randomAccessFile.close();
                 } catch (IOException e) {
@@ -245,31 +241,6 @@ public class MyDataSource implements DataSource {
             }
         }
     }
-
-
-    /**
-     * Returns the number of bytes that have been read since the most recent call to
-     * {@link #open(DataSpec)}.
-     *
-     * @return The number of bytes read.
-     */
-    protected final long bytesRead() {
-        return bytesRead;
-    }
-
-    /**
-     * Returns the number of bytes that are still to be read for the current {@link DataSpec}.
-     * <p>
-     * If the total length of the data being read is known, then this length minus {@code bytesRead()}
-     * is returned. If the total length is unknown, {@link C#LENGTH_UNSET} is returned.
-     *
-     * @return The remaining length, or {@link C#LENGTH_UNSET}.
-     */
-    @Deprecated
-    protected final long bytesRemaining() {
-        return bytesToRead == C.LENGTH_UNSET ? bytesToRead : bytesToRead - bytesRead;
-    }
-
 
     /**
      * Skips any bytes that need skipping. Else does nothing.
@@ -327,13 +298,13 @@ public class MyDataSource implements DataSource {
         if (readLength == 0) {
             return 0;
         }
-        if (bytesToRead != C.LENGTH_UNSET) {
-            long bytesRemaining = bytesToRead - bytesRead;
-            if (bytesRemaining == 0) {
-                return C.RESULT_END_OF_INPUT;
-            }
-            readLength = (int) Math.min(readLength, bytesRemaining);
-        }
+//        if (bytesToRead != C.LENGTH_UNSET) {
+//            long bytesRemaining = bytesToRead - bytesRead;
+//            if (bytesRemaining == 0) {
+//                return C.RESULT_END_OF_INPUT;
+//            }
+//            readLength = (int) Math.min(readLength, bytesRemaining);
+//        }
 
         int read = randomAccessFile.read(buffer, offset, readLength);
         if (read < readLength) {
@@ -346,26 +317,37 @@ public class MyDataSource implements DataSource {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    if (read > 0) {
-                        read += randomAccessFile.read(buffer,
+                    if (read >= 0) {
+                        int r = randomAccessFile.read(buffer,
                                 offset + read, readLength - read);
-                    } else {
+                        if(r > 0) read += r;
+                    } else if (read < 0) {
                         read = randomAccessFile.read(buffer, offset, readLength);
                     }
                 } else {
                     long filePointer = randomAccessFile.getFilePointer();
                     long fileLength = randomAccessFile.length();
                     Log.d(TAG, "get lock " + filePointer + "   " + fileLength + " read:" + read);
-                    if (filePointer < fileLength || read > 0) {
-                        if (read > 0) {
-                            if (fileLength - filePointer > readLength) {
-                                if (read > 0) {
-                                    read += randomAccessFile.read(buffer, offset + read, readLength - read);
-                                } else {
-                                    read = randomAccessFile.read(buffer, offset, readLength);
-                                }
+                    if (filePointer < fileLength) {
+                        int needRead = read <= 0 ? readLength : readLength - read;
+                        int remaining = (int) (fileLength - filePointer);
+                        if (remaining >= needRead) {
+                            if (read >= 0) {
+                                read += randomAccessFile.read(buffer, offset + read, readLength - read);
+                            } else {
+                                read = randomAccessFile.read(buffer, offset, readLength);
                             }
+                        } else if (remaining == 0){
+
+                        } else if(remaining < needRead) {
+                            if (read >= 0) {
+                                read += randomAccessFile.read(buffer, offset + read, remaining);
+                            } else {
+                                read = randomAccessFile.read(buffer, offset, remaining);
+                            }
+
                         }
+
                         Log.d(TAG, "get lock break");
 //                        isFileAlreadyLock = false;
                         break;
@@ -383,7 +365,9 @@ public class MyDataSource implements DataSource {
 
         }
 
-        bytesRead += read;
+        if(read < readLength){
+            Log.w(TAG, "read < readLength " + read +"    "+ readLength);
+        }
         if (listener != null) {
             listener.onBytesTransferred(this, read);
         }
