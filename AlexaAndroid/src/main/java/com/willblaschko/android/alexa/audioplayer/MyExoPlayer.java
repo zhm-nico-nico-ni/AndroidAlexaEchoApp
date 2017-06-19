@@ -32,7 +32,7 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     public MyExoPlayer(Context context, IMyExoPlayerListener listener, boolean needLogger) {
         mListener = listener;
         DefaultTrackSelector trackSelector = new DefaultTrackSelector();
-        mMediaPlayer = ExoPlayerFactory.newSimpleInstance(context, new DefaultTrackSelector());
+        mMediaPlayer = ExoPlayerFactory.newSimpleInstance(context, trackSelector);
 
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         setPlayWhenReady(false);
