@@ -41,7 +41,6 @@ public class SingleAudioRecord {
             Log.e("SingleAudioRecord","Failed to initialize recorder. Microphone might be already in use.");
         }
 
-        startRecording();
     }
 
     public static synchronized SingleAudioRecord getInstance(){

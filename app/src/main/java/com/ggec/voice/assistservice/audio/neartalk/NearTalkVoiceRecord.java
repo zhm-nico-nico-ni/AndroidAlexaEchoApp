@@ -70,13 +70,13 @@ public class NearTalkVoiceRecord extends Thread {
         mFilePath = filepath;
         mShareFile = new NearTalkRandomAccessFile(mFilePath);
 
-        if (!SingleAudioRecord.getInstance().isRecording()) {
-            SingleAudioRecord.getInstance().startRecording();
-        }
     }
 
     @Override
     public void run() {
+        if (!SingleAudioRecord.getInstance().isRecording()) {
+            SingleAudioRecord.getInstance().startRecording();
+        }
         setRecordLocalState(RecordState.START);
         int numberOfReadFloat;
         int bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
