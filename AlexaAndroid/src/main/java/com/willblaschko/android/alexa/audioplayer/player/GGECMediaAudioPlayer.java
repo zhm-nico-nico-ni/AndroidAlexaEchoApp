@@ -239,7 +239,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if (reportComplete) {
             onComplete(duration);
         }
-        if(mItem instanceof AvsSpeakItem) ((AvsSpeakItem) mItem).releaseAudio();
+//        if(mItem instanceof AvsSpeakItem) ((AvsSpeakItem) mItem).releaseAudio();
     }
 
     //Sets the audio volume, with 0 being silence and 1 being unity gain.
@@ -325,7 +325,8 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private void playitem(AvsSpeakItem playItem, long offset) {
         //write out our raw audio data to a file
         beginOffset = offset;
-        prepare(buildMediaSource(Uri.parse("cid://" + playItem.getUrl()), null), true, new File(ConstParam.OctetStreamPath + File.separator + playItem.getUrl()));
+        String path = ConstParam.OctetStreamPath + File.separator + playItem.getUrl();
+        prepare(buildMediaSource(Uri.parse("cid://" + path), null), true, new File(path));
     }
 
     public long getCurrentPosition() {

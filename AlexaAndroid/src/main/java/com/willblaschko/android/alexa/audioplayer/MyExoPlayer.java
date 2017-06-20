@@ -3,7 +3,6 @@ package com.willblaschko.android.alexa.audioplayer;
 import android.content.Context;
 import android.media.AudioManager;
 
-import com.ggec.voice.toollibrary.log.Log;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -101,11 +100,11 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     private void deletePlayFile() {
-        if (mDeleteWhenFinishPath != null && mDeleteWhenFinishPath.exists()) {
-            boolean del = mDeleteWhenFinishPath.delete();
-            if (del) mDeleteWhenFinishPath = null;
-            Log.d("MyExoPlayer", "delete file:" + del);
-        }
+//        if (mDeleteWhenFinishPath != null && mDeleteWhenFinishPath.exists()) {
+//            boolean del = mDeleteWhenFinishPath.delete();
+//            if (del) mDeleteWhenFinishPath = null;
+//            Log.d("MyExoPlayer", "delete file:" + del);
+//        }
     }
 
     public int getPlaybackState() {

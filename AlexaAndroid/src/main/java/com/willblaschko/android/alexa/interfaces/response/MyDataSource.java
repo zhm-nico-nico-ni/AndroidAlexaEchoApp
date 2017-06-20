@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.android.exoplayer2.C;
@@ -13,6 +14,7 @@ import com.google.android.exoplayer2.util.Predicate;
 import com.google.android.exoplayer2.util.Util;
 
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -232,7 +234,10 @@ public class MyDataSource implements DataSource {
             }
         } finally {
             randomAccessFile = null;
-            closeConnectionQuietly();
+            if(!TextUtils.isEmpty(mFilePath)){
+                boolean d = new File(mFilePath).delete();
+                Log.d(TAG, "ddddddddddddddddd  "+d + " " + mFilePath);
+            }
             if (opened) {
                 opened = false;
                 if (listener != null) {
@@ -418,17 +423,4 @@ public class MyDataSource implements DataSource {
     }
 
 
-    /**
-     * Closes the current connection quietly, if there is one.
-     */
-    private void closeConnectionQuietly() {
-        if (randomAccessFile != null) {
-            try {
-                randomAccessFile.close();
-            } catch (Exception e) {
-                Log.e(TAG, "Unexpected error while disconnecting", e);
-            }
-            randomAccessFile = null;
-        }
-    }
 }
