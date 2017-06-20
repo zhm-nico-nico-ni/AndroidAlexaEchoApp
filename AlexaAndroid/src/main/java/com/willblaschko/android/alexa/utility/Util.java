@@ -10,6 +10,8 @@ import android.widget.Toast;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.extractor.Extractor;
+import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -68,7 +70,11 @@ public class Util {
         if ("cid".equals(uri.getScheme())){
             return new ExtractorMediaSource(uri,
                     new DefaultDataSourceFactory(mContext, null, MyDataSource.FACTORY)
-                    , Mp3Extractor.FACTORY,
+                    , new ExtractorsFactory() {
+                public Extractor[] createExtractors() {
+                    return new Extractor[]{new Mp3Extractor(Mp3Extractor.FLAG_DISABLE_ID3_METADATA)};
+                }
+            },
                     null, null);
         }
 
