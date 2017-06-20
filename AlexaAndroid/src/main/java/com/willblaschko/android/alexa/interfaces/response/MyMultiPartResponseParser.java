@@ -2,7 +2,6 @@ package com.willblaschko.android.alexa.interfaces.response;
 
 import android.support.annotation.NonNull;
 
-import org.apache.commons.fileupload.MultipartStream;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -129,7 +128,7 @@ public class MyMultiPartResponseParser {
         while (i < HEADER_SEPARATOR.length) {
             byte b = readByte();
             if (++size > HEADER_PART_SIZE_MAX) {
-                throw new MultipartStream.MalformedStreamException(String.format("Header section has more than %s bytes (maybe it is not properly terminated)",
+                throw new IOException(String.format("Header section has more than %s bytes (maybe it is not properly terminated)",
                         HEADER_PART_SIZE_MAX));
             }
             if (b == HEADER_SEPARATOR[i]) {
