@@ -12,6 +12,7 @@ import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.crashreport.LogSenderFactory;
 import com.ggec.voice.toollibrary.log.DebugFileLogger;
 import com.ggec.voice.toollibrary.log.Log;
+import com.willblaschko.android.alexa.ConstParam;
 
 import org.acra.ACRA;
 import org.acra.ReportField;
@@ -60,6 +61,7 @@ public class MyApplication extends Application {
         final String processName = Util.getMyProcessName(this);
         boolean sIsUIProcess = Util.isUIProcess(processName);
 
+        ConstParam.OctetStreamPath = this.getExternalFilesDir("xx321").getPath();
         sContext = this;
 //        AppResCopy.copyResFromAssetsToSD(this);
         Stetho.initializeWithDefaults(this);
