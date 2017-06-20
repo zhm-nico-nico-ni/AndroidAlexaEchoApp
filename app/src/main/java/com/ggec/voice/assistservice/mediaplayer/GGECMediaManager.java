@@ -448,6 +448,26 @@ public class GGECMediaManager {
         return true;
     }
 
+    public boolean cancelAvsItem(List<AvsItem> list) {
+        boolean result = false;
+        for (AvsItem item : list) {
+            if (!TextUtils.isEmpty(item.messageID)) {
+                AvsItem current = avsQueue1.remove(item.messageID);
+                if (null != current && current == mSpeechSynthesizerPlayer.getCurrentItem()) {
+                    mSpeechSynthesizerPlayer.release(false);
+                    result = true;
+                } else {
+                    current = avsQueue2.remove(item.messageID);
+                    if (null != current && current == mMediaAudioPlayer.getCurrentItem()) {
+                        mMediaAudioPlayer.release(false);
+                        result = true;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     private void sendPlaybackStoppedEvent(AvsItem playingItem, long position){
         if(playingItem!=null) {
             Log.d(TAG, "sendPlaybackStoppedEvent");

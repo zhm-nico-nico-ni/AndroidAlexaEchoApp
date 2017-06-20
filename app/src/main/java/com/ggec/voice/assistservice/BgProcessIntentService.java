@@ -242,7 +242,7 @@ public class BgProcessIntentService extends IntentService {
                 super.success(result);
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 if (!alexaManager.hasOpenDownchannel()) {
-                    alexaManager.sendOpenDownchannelDirective(getCallBack("{opendownchannel}"));
+                    openDownChannel(alexaManager);
                     return;
                 } else {
                     setTimerEvent(MyApplication.getContext(), PING_JOB_ID, BackGroundProcessServiceControlCommand.SEND_PING, SEND_PING_INTERVAL);
@@ -270,6 +270,10 @@ public class BgProcessIntentService extends IntentService {
                     setTimerEvent(MyApplication.getContext(), REFRESH_TOKEN_DELAY_JOB_ID, BackGroundProcessServiceControlCommand.REFRESH_TOKEN
                             , nextRefreshTime < 2 * REFRESH_TOKEN_MIN_INTERVAL? 3000 : nextRefreshTime);
                     Log.i(TAG, "opendownchannel connected");
+                }
+
+                @Override
+                public void handle(AvsResponse result) {
                 }
 
                 @Override

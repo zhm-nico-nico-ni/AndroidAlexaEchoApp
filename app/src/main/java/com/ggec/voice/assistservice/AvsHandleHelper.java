@@ -238,14 +238,14 @@ public class AvsHandleHelper {
             }
 
             @Override
-            public void success(AvsResponse result, String filePath) {
-                callback.success(result, filePath);
-                if(result.continueAudio) audioManager.continueSound();
+            public void success(AvsResponse result, String filePath, boolean isAllSuccess) {
+                callback.success(result, filePath, isAllSuccess);
+                if(isAllSuccess && result.continueAudio) audioManager.continueSound();
             }
 
             @Override
-            public void failure(Exception error, String filePath, long actuallyLong) {
-                callback.failure(error, filePath, actuallyLong);
+            public void failure(Exception error, String filePath, long actuallyLong, AvsResponse response) {
+                callback.failure(error, filePath, actuallyLong, response);
                 audioManager.continueSound();
             }
 
@@ -282,16 +282,20 @@ public class AvsHandleHelper {
         return new IMyVoiceRecordListener(filePath) {
 
             @Override
-            public void success(AvsResponse result, String filePath) {
+            public void success(AvsResponse result, String filePath, boolean allSuccess) {
                 deleteFile(filePath);
-                if(result.continueWakeWordDetect) {
+                if(allSuccess && result.continueWakeWordDetect) {
                     continueWakeWordDetect();
                 }
             }
 
             @Override
-            public void failure(Exception error, String filePath, long actuallyLong) {
+            public void failure(Exception error, String filePath, long actuallyLong, AvsResponse response) {
                 if(error != null) Log.w(TAG, "IMyVoiceRecordListener fail", error);
+                if(response != null){
+                    boolean r = audioManager.cancelAvsItem(response);
+                    Log.w(TAG, "audioManager.cancelAvsItem "+r);
+                }
 
                 if((error instanceof AvsResponseException && ((AvsResponseException) error).isUnAuthorized()) || error instanceof AuthenticatorException){
                     if(needNotifyVoice()) playError("asset:///error_not_authorization.mp3");

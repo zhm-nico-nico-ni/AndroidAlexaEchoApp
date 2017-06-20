@@ -313,7 +313,7 @@ public class MyDataSource implements DataSource {
                 boolean notFinish = SingleFileLockHelper.getHelper().getIsWriting(mFilePath);
                 if (notFinish) {
                     try {
-                        new CountDownLatch(1).await(100, TimeUnit.MILLISECONDS);
+                        new CountDownLatch(1).await(80, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

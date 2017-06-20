@@ -11,4 +11,10 @@ public class AvsResponse extends ArrayList<AvsItem> {
     public boolean continueAudio = true;
     public int responseCode;
 
+    public void addOtherAvsResponse(AvsResponse other){
+        continueWakeWordDetect = other.continueWakeWordDetect;
+        continueAudio = other.continueAudio;
+        responseCode = other.responseCode;
+        addAll(other);
+    }
 }

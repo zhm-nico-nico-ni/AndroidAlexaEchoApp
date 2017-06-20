@@ -19,25 +19,25 @@ public abstract class IMyVoiceRecordListener extends ImplAsyncCallback {
         mPath = filePath;
     }
 
-    public abstract void success(AvsResponse result, String filePath);
+    public abstract void success(AvsResponse result, String filePath, boolean isAllSuccess);
 
-    public abstract void failure(Exception error, String filePath, long actuallyLong);
+    public abstract void failure(Exception error, String filePath, long actuallyLong, AvsResponse response);
 
     @Override
     public void success(final AvsResponse result) {
         super.success(result);
-        success(result, mPath);
+        success(result, mPath, true);
     }
 
     @Override
     public void handle(AvsResponse result) {
         super.handle(result);
-        success(result, mPath);
+        success(result, mPath, false);
     }
 
     @Override
     public void failure(Exception error) {
-        failure(error, mPath, -1);
+        failure(error, mPath, -1, getHandledResponse());
     }
 
 

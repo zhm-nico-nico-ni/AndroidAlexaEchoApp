@@ -131,7 +131,7 @@ public class ResponseParser {
     public static AvsResponse parseResponse3(InputStream stream, String boundary, final AsyncCallback<AvsResponse, Exception> callback) throws IOException, IllegalStateException, AvsException {
         long start = System.currentTimeMillis();
 
-        AvsResponse response = null;
+        final AvsResponse response = new AvsResponse();
         MyMultiPartResponseParser multipartStream = new MyMultiPartResponseParser(stream, boundary);
 
         final AtomicBoolean hasHandleDirectives = new AtomicBoolean(false);
@@ -176,32 +176,39 @@ public class ResponseParser {
 
                             SingleFileLockHelper.getHelper().put(filePath);
                             final Buffer temp = new Buffer();
-                            multipartStream.readOctetStream(new MyMultiPartResponseParser.IReadOctetStreamCallBack() {
-                                int total = 0;
-                                @Override
-                                public void onData(byte[] array) {
-                                    try {
+                            try {
+                                multipartStream.readOctetStream(new MyMultiPartResponseParser.IReadOctetStreamCallBack() {
+                                    int total = 0;
+                                    @Override
+                                    public void onData(byte[] array) {
                                         temp.write(array);
-                                        if (temp.size() >  6 * 1024) {
-                                            finalWriteFile.write(temp.readByteArray());
+                                        if (temp.size() >= 4 * 1024) {
+                                            try {
+                                                finalWriteFile.write(temp.readByteArray());
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                            }
                                         }
                                         total += array.length;
-                                        if (total >= 8 * 1024 && !hasHandleDirectives.get()) {
+                                        if (total >= 4 * 1024 && !hasHandleDirectives.get() && callback != null) {
                                             hasHandleDirectives.set(true);
-                                            Log.d(TAG, "Handle now");
-                                            // Handle now
-                                            if (callback != null)
-                                                callback.handle(sss(directives));
+                                            response.addOtherAvsResponse(sss(directives));
+                                            callback.handle(response);
                                         }
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
                                     }
+                                });
+                                if (temp.size() > 0){
+                                    finalWriteFile.write(temp.readByteArray());
                                 }
-                            });
-                            if (temp.size() > 0){
-                                finalWriteFile.write(temp.readByteArray());
+                            } catch (IOException e){
+                                finalWriteFile.close();
+                                boolean deleted = new File(filePath).delete();
+                                Log.d(TAG, " err!  delete "+deleted);
+
+                                throw e;
+                            } finally {
+                                SingleFileLockHelper.getHelper().removeWritingFlag(filePath);
                             }
-                            SingleFileLockHelper.getHelper().removeWritingFlag(filePath);
                             Log.d(TAG, "count:" + count + " filesize:"+finalWriteFile.length() + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
                         } else {
                             Log.w(TAG, "breaking:");
@@ -218,11 +225,10 @@ public class ResponseParser {
 
             }
         } else {
-            response = new AvsResponse();
             Log.e(TAG, "parseResponse2 should not into here!!!!!!!!");
         }
         if(!hasHandleDirectives.getAndSet(true)){
-            response = sss(directives);
+            response.addOtherAvsResponse(sss(directives));
         }
 
         Log.d(TAG, "Parsing response took: " + (System.currentTimeMillis() - start) + " size is " + response.size());

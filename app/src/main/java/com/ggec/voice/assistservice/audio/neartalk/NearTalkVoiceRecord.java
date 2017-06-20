@@ -173,7 +173,7 @@ public class NearTalkVoiceRecord extends Thread {
         if (!success) {
             new File(mFilePath).delete();
             if (getRecordLocalState() == RecordState.ERROR)
-                mListener.failure(null, "", -1);
+                mListener.failure(null, "", -1, null);
         }
     }
 

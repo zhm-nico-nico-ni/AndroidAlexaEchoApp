@@ -17,6 +17,7 @@ public class ImplAsyncCallback implements AsyncCallback<AvsResponse, Exception> 
     private final String name;
     private long startTime;
     private boolean handled;
+    private AvsResponse mHandledResponse;
 
     public ImplAsyncCallback(String tag) {
         this.name = tag;
@@ -30,6 +31,7 @@ public class ImplAsyncCallback implements AsyncCallback<AvsResponse, Exception> 
 
     @Override
     public void handle(final AvsResponse result) {
+        mHandledResponse = result;
         Log.i(TAG, "Event " + name + " handle");
         handled = true;
         sMainHandler.post(new Runnable() {
@@ -61,5 +63,9 @@ public class ImplAsyncCallback implements AsyncCallback<AvsResponse, Exception> 
     public void complete() {
         long totalTime = System.currentTimeMillis() - startTime;
         Log.i(TAG, "Event " + name + " Complete, " + "Total request time: " + totalTime + " miliseconds");
+    }
+
+    public AvsResponse getHandledResponse() {
+        return mHandledResponse;
     }
 }

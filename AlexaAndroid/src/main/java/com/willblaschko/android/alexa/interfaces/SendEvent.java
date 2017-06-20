@@ -101,7 +101,6 @@ public abstract class SendEvent {
             AvsResponse val;
             if(response.isSuccessful()) {
                 val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
-//                        ResponseParser.parseResponse(response.body().bytes(), boundary, false);
                         ResponseParser.parseResponse3(response.body().byteStream(), boundary, mCallback);
             } else {
                 val = ResponseParser.parseResponseFail(response.body().string());
