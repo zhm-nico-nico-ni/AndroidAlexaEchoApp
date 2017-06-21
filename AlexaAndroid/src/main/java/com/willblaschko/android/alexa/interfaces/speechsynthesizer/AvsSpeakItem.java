@@ -1,9 +1,6 @@
 package com.willblaschko.android.alexa.interfaces.speechsynthesizer;
 
-import com.willblaschko.android.alexa.ConstParam;
 import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
-
-import java.io.File;
 
 /**
  * Directive to play a local, returned audio item from the Alexa post/get response
@@ -31,8 +28,4 @@ public class AvsSpeakItem extends AvsAudioItem {
         return format;
     }
 
-    public void releaseAudio(){
-        File file = new File(ConstParam.OctetStreamPath + File.separator + mCid);
-        file.delete();
-    }
 }

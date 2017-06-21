@@ -12,7 +12,6 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.willblaschko.android.alexa.ConstParam;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.MyAVSAudioParser;
 import com.willblaschko.android.alexa.audioplayer.MyExoPlayer;
@@ -239,7 +238,6 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if (reportComplete) {
             onComplete(duration);
         }
-//        if(mItem instanceof AvsSpeakItem) ((AvsSpeakItem) mItem).releaseAudio();
     }
 
     //Sets the audio volume, with 0 being silence and 1 being unity gain.
@@ -325,8 +323,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
     private void playitem(AvsSpeakItem playItem, long offset) {
         //write out our raw audio data to a file
         beginOffset = offset;
-        String path = ConstParam.OctetStreamPath + File.separator + playItem.getUrl();
-        prepare(buildMediaSource(Uri.parse("cid://" + path), null), true, new File(path));
+        prepare(buildMediaSource(Uri.parse("cid://" + playItem.getUrl()), null), true, null);
     }
 
     public long getCurrentPosition() {

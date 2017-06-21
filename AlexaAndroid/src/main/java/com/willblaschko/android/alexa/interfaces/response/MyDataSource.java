@@ -1,9 +1,9 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
 import android.net.Uri;
-import android.text.TextUtils;
 import android.util.Log;
 
+import com.ggec.voice.toollibrary.DiskLruCache;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
@@ -12,10 +12,9 @@ import com.google.android.exoplayer2.upstream.TransferListener;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Predicate;
 import com.google.android.exoplayer2.util.Util;
+import com.willblaschko.android.alexa.DishLruCacheHelper;
 
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -93,7 +92,7 @@ public class MyDataSource implements DataSource {
 
     private long bytesSkipped;
     private RandomAccessFile randomAccessFile;
-    private String mFilePath;
+    private String mCid;
 
     /**
      * @param userAgent            The User-Agent string that should be used.
@@ -168,7 +167,7 @@ public class MyDataSource implements DataSource {
 
     @Override
     public Uri getUri() {
-        return mFilePath == null ? null : Uri.parse(mFilePath);
+        return mCid == null ? null : Uri.parse(mCid);
     }
 
     @Override
@@ -176,11 +175,17 @@ public class MyDataSource implements DataSource {
         this.dataSpec = dataSpec;
         this.bytesSkipped = 0;
 
+        mCid = dataSpec.uri.toString().substring(6);
         try {
-            randomAccessFile = new RandomAccessFile(dataSpec.uri.getPath(), "r");
-            mFilePath = dataSpec.uri.getPath();
-        } catch (FileNotFoundException e) {
-            throw new HttpDataSource.HttpDataSourceException("Unable to connect to " + dataSpec.uri.toString(), e,
+            DiskLruCache.Snapshot snapShot = DishLruCacheHelper.getHelper().get(mCid);
+            if (snapShot != null) {
+                randomAccessFile = new RandomAccessFile(snapShot.getPath(0), "r");
+            } else {
+                throw new IOException();
+            }
+
+        } catch (IOException e) {
+            throw new HttpDataSource.HttpDataSourceException("Unable to connect to " + dataSpec.uri, e,
                     dataSpec, HttpDataSource.HttpDataSourceException.TYPE_OPEN);
         }
 
@@ -234,10 +239,6 @@ public class MyDataSource implements DataSource {
             }
         } finally {
             randomAccessFile = null;
-            if(!TextUtils.isEmpty(mFilePath)){
-                boolean d = new File(mFilePath).delete();
-                Log.d(TAG, "ddddddddddddddddd  "+d + " " + mFilePath);
-            }
             if (opened) {
                 opened = false;
                 if (listener != null) {
@@ -315,12 +316,12 @@ public class MyDataSource implements DataSource {
         if (read < readLength) {
             boolean isFileAlreadyLock = true;
             do {
-                boolean notFinish = SingleFileLockHelper.getHelper().getIsWriting(mFilePath);
+                boolean notFinish = SingleFileLockHelper.getHelper().getIsWriting(mCid);
                 if (notFinish) {
                     try {
                         new CountDownLatch(1).await(80, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
                     }
                     if (read >= 0) {
                         int r = randomAccessFile.read(buffer,

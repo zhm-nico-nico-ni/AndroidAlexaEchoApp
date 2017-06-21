@@ -1,9 +1,10 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
+import com.ggec.voice.toollibrary.DiskLruCache;
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.willblaschko.android.alexa.ConstParam;
+import com.willblaschko.android.alexa.DishLruCacheHelper;
 import com.willblaschko.android.alexa.callbacks.AsyncCallback;
 import com.willblaschko.android.alexa.data.Directive;
 import com.willblaschko.android.alexa.interfaces.AvsException;
@@ -21,7 +22,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -171,50 +171,55 @@ public class ResponseParser {
                     if (contentId != null) {
                         Matcher matcher = PATTERN.matcher(contentId);
                         if (matcher.find()) {
-                            String filePath = ConstParam.OctetStreamPath + File.separator + matcher.group(1);
-                            final RandomAccessFile finalWriteFile = new RandomAccessFile(filePath, "rw");
+                            String filePath = matcher.group(1);
+                            DiskLruCache.Editor editor = DishLruCacheHelper.getHelper().edit(filePath);
+                            if (editor != null) {
+                                final RandomAccessFile finalWriteFile = editor.newRandomAccessFile(0);
+                                SingleFileLockHelper.getHelper().put(filePath);
+                                final Buffer temp = new Buffer();
+                                try {
+                                    multipartStream.readOctetStream(new MyMultiPartResponseParser.IReadOctetStreamCallBack() {
+                                        int total = 0;
 
-                            SingleFileLockHelper.getHelper().put(filePath);
-                            final Buffer temp = new Buffer();
-                            try {
-                                multipartStream.readOctetStream(new MyMultiPartResponseParser.IReadOctetStreamCallBack() {
-                                    int total = 0;
-                                    @Override
-                                    public void onData(byte[] array) {
-                                        temp.write(array);
-                                        if (temp.size() >= 4 * 1024) {
-                                            try {
-                                                finalWriteFile.write(temp.readByteArray());
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
+                                        @Override
+                                        public void onData(byte[] array) {
+                                            temp.write(array);
+                                            if (temp.size() >= 4 * 1024) {
+                                                try {
+                                                    finalWriteFile.write(temp.readByteArray());
+                                                } catch (IOException e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                            total += array.length;
+                                            if (total >= 4 * 1024 && !hasHandleDirectives.get() && callback != null) {
+                                                hasHandleDirectives.set(true);
+                                                response.addOtherAvsResponse(sss(directives));
+                                                callback.handle(response);
                                             }
                                         }
-                                        total += array.length;
-                                        if (total >= 4 * 1024 && !hasHandleDirectives.get() && callback != null) {
-                                            hasHandleDirectives.set(true);
-                                            response.addOtherAvsResponse(sss(directives));
-                                            callback.handle(response);
-                                        }
-                                    }
-                                });
-                                if (temp.size() > 0){
-                                    finalWriteFile.write(temp.readByteArray());
-                                }
-                            } catch (IOException e){
-                                finalWriteFile.close();
-                                boolean deleted = new File(filePath).delete();
-                                Log.d(TAG, " err!  delete "+deleted);
+                                    });
 
-                                throw e;
-                            } finally {
-                                SingleFileLockHelper.getHelper().removeWritingFlag(filePath);
+                                    if (temp.size() > 0) {
+                                        finalWriteFile.write(temp.readByteArray());
+                                    }
+                                    editor.commit();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    finalWriteFile.close();
+                                    editor.abort();
+                                    throw e;
+                                } finally {
+                                    SingleFileLockHelper.getHelper().removeWritingFlag(filePath);
+                                }
+                                Log.d(TAG, "count:" + count + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
                             }
-                            Log.d(TAG, "count:" + count + " filesize:"+finalWriteFile.length() + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
                         } else {
                             Log.w(TAG, "breaking:");
                             break;
                         }
                     }
+
 
                     // get the audio data
                     //convert our multipart into byte data
