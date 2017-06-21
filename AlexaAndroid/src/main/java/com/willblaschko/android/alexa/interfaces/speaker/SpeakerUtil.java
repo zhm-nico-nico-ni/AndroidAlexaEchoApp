@@ -21,7 +21,7 @@ public class SpeakerUtil {
         long oldVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
         long vol = 0;
         if (adjust) {
-            vol += volume * max / 100;
+            vol = oldVolume + volume * max / 100;
         } else {
             vol = volume * max / 100;
         }
