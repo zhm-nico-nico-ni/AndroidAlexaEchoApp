@@ -38,7 +38,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     private final int MAX_WAIT_TIME = 8 * 1000;
     private final int MAX_RECORD_TIME = 10 * 1000;
-    private final int MAX_WAIT_END_TIME = 800;
+    private final int MAX_WAIT_END_TIME = 500;
 
     private final static String TAG = "NearTalkVoiceRecord";
 
@@ -167,7 +167,7 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     private void stopRecord(long actuallyLong) {
-        SingleAudioRecord.getInstance().getAudioRecorder().stop();
+        SingleAudioRecord.getInstance().stop();
         Log.d(TAG, " record finish, success:" + recordState + " file:" + mFilePath + " state:" + mState.toString() + " actuallyLong:" + actuallyLong);
         boolean success = getRecordLocalState() != RecordState.CANCEL;
         if (!success) {

@@ -192,7 +192,7 @@ public class ResponseParser {
                                                 }
                                             }
                                             total += array.length;
-                                            if (total >= 4 * 1024 && !hasHandleDirectives.get() && callback != null) {
+                                            if (total >= 8 * 1024 && !hasHandleDirectives.get() && callback != null) {
                                                 hasHandleDirectives.set(true);
                                                 response.addOtherAvsResponse(sss(directives));
                                                 callback.handle(response);
