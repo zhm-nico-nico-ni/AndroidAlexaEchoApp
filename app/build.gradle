@@ -14,6 +14,9 @@ android {
         applicationId project.APPLICATION_ID
         versionCode 1
         versionName "1.0"
+        applicationVariants.all {
+            variant -> changeApkName(variant)
+        }
 
         buildConfigField "String", "PRODUCT_ID", "\"" + project.PRODUCT_ID + "\""
         buildConfigField "String", "APP_PACKAGE_NAME", "\"" + project.APPLICATION_ID + "\""
@@ -74,7 +77,7 @@ android {
 
         release {
             signingConfig signingConfigs.lwa
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg', 'proguard-rules.pro'
         }
     }
@@ -102,4 +105,20 @@ dependencies {
     compile project(':wakewordassest')
     compile project(':wakeworddetectmodule')
     compile project(':bluetoothconnect')
+}
+
+def releaseTime() {
+    return new Date().format("yyyy-MM-dd ", TimeZone.getTimeZone("UTC"))
+}
+
+def changeApkName(variant) {
+    def apk = variant.outputs[0].outputFile
+    def newName = apk.name.replace(project.name, "GGEC_ALEXA" + "-" + android.defaultConfig.versionName + "." + android.defaultConfig.versionCode +"_"+ releaseTime())
+    if (variant.buildType.name == "release") {
+        newName = newName.replace("-" + variant.buildType.name, "")
+    }
+    variant.outputs[0].outputFile = new File(apk.parentFile, newName)
+    if (variant.outputs[0].zipAlign) {
+        variant.outputs[0].zipAlign.outputFile = new File(apk.parentFile, newName.replace("-unaligned", ""))
+    }
 }
