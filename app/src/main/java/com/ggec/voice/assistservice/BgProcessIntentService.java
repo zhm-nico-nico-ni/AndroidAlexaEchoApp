@@ -33,6 +33,7 @@ import com.willblaschko.android.alexa.interfaces.speaker.SpeakerUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Random;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -178,7 +179,9 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void startNearTalkRecord(String rawPath , final long waitMicTimeOut, String strInitiator) {
-        pauseSoundAndRecordAudio();
+        if(waitMicTimeOut<=0) {
+            pauseSoundAndRecordAudio();
+        }
         if(!Util.isNetworkAvailable(this)){
             //TODO play no net work
             Log.e(TAG, "return because no net work");
@@ -195,8 +198,23 @@ public class BgProcessIntentService extends IntentService {
     }
 
     private void textTest() {
+        String [] strings = new String[]{"Set a timer after 15 seconds from now","How's my day look",
+                "Read my audio book","play i heart radio",
+                "set a reminder",  "play a game", "what movies play nearby me",
+                "what were yesterday's MLB scores", "When is the next Mariner game",
+                "what's on my calendar today" , "How's my day look",
+                "how's traffic", "tell me the weather forecast",
+                 "what are the MLB standings", "what time is it",  "What time is it in tokyo"
+        };
+        int max=strings.length;
+        int min=0;
+        Random random = new Random(System.currentTimeMillis());
+
+        int s = random.nextInt(max)%(max-min+1) + min;
+        String msg = strings[s];
+        Log.d(TAG, "textTest: "+msg);
         AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
-        alexaManager.sendTextRequest("Set a timer after 15 seconds from now", getCallBack("textTest"));
+        alexaManager.sendTextRequest(msg, getCallBack("textTest"));
         //Set a timer after 15 seconds from now" "Tell me some news" "Tell me the baseball news" Play TuneIn music radio"
         // "Set an alarm for 9:49 morning on everyday" "How's my day look" "Read my audio book"
     }

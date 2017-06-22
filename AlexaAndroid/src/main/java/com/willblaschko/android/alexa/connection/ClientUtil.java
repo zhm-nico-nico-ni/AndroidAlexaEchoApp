@@ -4,9 +4,7 @@ import android.os.Build;
 
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.ggec.voice.toollibrary.log.Log;
-import com.willblaschko.android.alexa.BuildConfig;
 
-import java.io.IOException;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,11 +17,8 @@ import javax.net.ssl.X509TrustManager;
 
 import okhttp3.CipherSuite;
 import okhttp3.ConnectionSpec;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
-import okhttp3.Request;
-import okhttp3.Response;
 import okhttp3.TlsVersion;
 
 /**
@@ -82,17 +77,9 @@ public class ClientUtil {
                     Log.e("OkHttpTLSCompat", "Error while setting TLS 1.2", exc);
                 }
             }
-//            client.addNetworkInterceptor(new Interceptor() {
-//                @Override
-//                public Response intercept(Chain chain) throws IOException {
-//                    Request request = chain.request();//.newBuilder().addHeader("Connection", "close").build();
-//                    Log.d("zhm", "connection is "+chain.connection());
-//                    return chain.proceed(request);
-//                }
-//            });
 
-            if(BuildConfig.DEBUG){
-                client.addInterceptor(new LoggingInterceptor()).addNetworkInterceptor(new StethoInterceptor());
+            if(true){
+                client.addNetworkInterceptor(new StethoInterceptor());
             }
             mHttp2Client = client
                     .readTimeout(10, TimeUnit.SECONDS)
@@ -133,21 +120,4 @@ public class ClientUtil {
         return mHttp1Client;
     }
 
-    static class LoggingInterceptor implements Interceptor {
-        @Override public Response intercept(Interceptor.Chain chain) throws IOException {
-            Request request = chain.request();
-
-            long t1 = System.nanoTime();
-            android.util.Log.d("LoggingInterceptor",String.format("Sending request %s on %s%n%s",
-                    request.url(), chain.connection(), request.headers()));
-
-            Response response = chain.proceed(request);
-
-            long t2 = System.nanoTime();
-            android.util.Log.d("LoggingInterceptor",String.format("Received response for %s in %.1fms%n%s",
-                    response.request().url(), (t2 - t1) / 1e6d, response.headers()));
-
-            return response;
-        }
-    }
 }

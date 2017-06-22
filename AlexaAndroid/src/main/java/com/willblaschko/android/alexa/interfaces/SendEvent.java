@@ -136,8 +136,6 @@ public abstract class SendEvent {
             if (matcher.find()) {
                 boundary = matcher.group(1);
             }
-        } else {
-            Log.i(TAG, "Body: " + response.body().string());
         }
         return boundary;
     }

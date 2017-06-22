@@ -63,6 +63,7 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
         Config config = Decoder.defaultConfig();
         config.setString("-hmm", new File(assetsDir, "en-us-ptm").getPath());
         config.setString("-dict", new File(assetsDir, "cmudict-en-us.dict").getPath());
+//        config.setString("-rawlogdir", mContext.getExternalFilesDir("rawlog2").getPath());
         recognizer = new SpeechRecognizer(config);
 //        recognizer = SpeechRecognizerSetup.defaultSetup()
 //                .setAcousticModel(new File(assetsDir, "en-us-ptm"))
