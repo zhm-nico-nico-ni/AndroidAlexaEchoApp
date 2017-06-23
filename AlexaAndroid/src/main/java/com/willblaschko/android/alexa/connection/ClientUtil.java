@@ -79,7 +79,10 @@ public class ClientUtil {
             }
 
             if(true){
-                client.addNetworkInterceptor(new StethoInterceptor());
+//                client.addNetworkInterceptor(new StethoInterceptor());
+//                HttpLoggingInterceptor logger = new HttpLoggingInterceptor();
+//                logger.setLevel(HttpLoggingInterceptor.Level.BASIC);
+//                 client.addNetworkInterceptor(logger);
             }
             mHttp2Client = client
                     .readTimeout(10, TimeUnit.SECONDS)

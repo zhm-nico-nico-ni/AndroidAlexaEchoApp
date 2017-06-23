@@ -9,7 +9,9 @@ import com.willblaschko.android.alexa.interfaces.response.ResponseParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -82,7 +84,6 @@ public abstract class SendEvent {
     }
 
     private AvsResponse parseResponse() throws IOException, AvsException, RuntimeException {
-        long t1 = System.nanoTime();
         Request request = mRequestBuilder.build();
         currentCall = ClientUtil.getHttp2Client().newCall(request);
         Response response = null;
@@ -91,8 +92,6 @@ public abstract class SendEvent {
             long t2 = System.nanoTime();
             int statusCode = response.code();
 
-            Log.d(TAG, String.format("Received response for %s in %.1fms%n%s",
-                    response.request().url(), (t2 - t1) / 1e6d, response.headers()));
             Log.d(TAG, "response:" + statusCode + " handshake:" + response.handshake().cipherSuite()+ " receivedResponseAtMillis:" + response.receivedResponseAtMillis()
                     + " send:" + response.sentRequestAtMillis() + "\n diff:" + (response.receivedResponseAtMillis() - response.sentRequestAtMillis())
                     + "  " + response.message());
@@ -100,8 +99,11 @@ public abstract class SendEvent {
 
             AvsResponse val;
             if(response.isSuccessful()) {
+//                InputStream inputStream = new ByteArrayInputStream(response.body().bytes());
+                InputStream inputStream = response.body().byteStream();
+                Log.d(TAG, "read all data use " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t2));
                 val = response.code() == HttpURLConnection.HTTP_NO_CONTENT ? getResponseWhenHttpNoContent() :
-                        ResponseParser.parseResponse3(response.body().byteStream(), boundary, mCallback);
+                        ResponseParser.parseResponse3(inputStream, boundary, mCallback);
             } else {
                 val = ResponseParser.parseResponseFail(response.body().string());
             }
