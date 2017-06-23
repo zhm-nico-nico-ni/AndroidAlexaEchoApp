@@ -93,14 +93,15 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
             if (mOnCompleteListener != null) {
                 mOnCompleteListener.onCompletion();
                 mOnCompleteListener = null;
+
+                sMainHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        exoPlayer.seekTo(0);
+                    }
+                }, 2000);
+                Log.d("MyShortAudioPlayer", "play and release use:"+ (SystemClock.elapsedRealtime() - begin));
             }
-            sMainHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    exoPlayer.seekTo(0);
-                }
-            }, 2000);
-            Log.d("MyShortAudioPlayer", "play and release use:"+ (SystemClock.elapsedRealtime() - begin));
         }
     }
 
@@ -120,6 +121,10 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
     }
 
     public void play(IOnCompletionListener listener){
+        if(exoPlayer.getPlaybackState() == ExoPlayer.STATE_IDLE){
+            listener.onCompletion();
+            return;
+        }
         begin = SystemClock.elapsedRealtime();
         mOnCompleteListener = listener;
         exoPlayer.setPlayWhenReady(true);

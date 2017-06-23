@@ -38,7 +38,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     private final int MAX_WAIT_TIME = 8 * 1000;
     private final int MAX_RECORD_TIME = 10 * 1000;
-    private final int MAX_WAIT_END_TIME = 500;
+    private int MAX_WAIT_END_TIME = 500;
 
     private final static String TAG = "NearTalkVoiceRecord";
 
@@ -53,10 +53,10 @@ public class NearTalkVoiceRecord extends Thread {
     private IMyVoiceRecordListener mListener;
     private final long mBeginPosition;
 
-    public NearTalkVoiceRecord(long beginPosition, String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener) throws FileNotFoundException {
+    public NearTalkVoiceRecord(long beginPosition, String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener, int waitTimeOut) throws FileNotFoundException {
         mBeginPosition = beginPosition;
         mListener = listener;
-
+        MAX_WAIT_END_TIME = waitTimeOut;
         tarsosDSPAudioFormat = new TarsosDSPAudioFormat(
                 16000
                 , 16
@@ -74,12 +74,16 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public void run() {
+        long bt = SystemClock.elapsedRealtime();
         if (!SingleAudioRecord.getInstance().isRecording()) {
             SingleAudioRecord.getInstance().startRecording();
+            Log.d(TAG, "startRecording use " +(SystemClock.elapsedRealtime() - bt));
+
         }
+
         setRecordLocalState(RecordState.START);
         int numberOfReadFloat;
-        int bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
+        int bufferSizeInBytes = 320;//SingleAudioRecord.getInstance().getBufferSizeInBytes();
         byte audioBuffer[] = new byte[bufferSizeInBytes];
         float tempFloatBuffer[] = new float[bufferSizeInBytes / 2];
 
@@ -221,7 +225,7 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     public void startHttpRequest(long endIndexInSamples, final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
-        AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest("NEAR_FIELD"
+        AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest("FAR_FIELD"
                 , new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples)
                 , new AsyncCallback<AvsResponse, Exception>() {
                     @Override

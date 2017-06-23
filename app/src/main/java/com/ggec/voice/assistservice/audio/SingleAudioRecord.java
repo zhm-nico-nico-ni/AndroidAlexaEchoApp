@@ -29,7 +29,7 @@ public class SingleAudioRecord {
                 recorder_audio_encoding
         );
 
-        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT,
+        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
                 recorder_sample_rate,
                 recorder_channels,
                 recorder_audio_encoding,
@@ -51,7 +51,10 @@ public class SingleAudioRecord {
     }
 
     public void startRecording(){
-        audioRecorder.startRecording();
+        isRecording = true;
+        if(audioRecorder.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) {
+            audioRecorder.startRecording();
+        }
     }
 
     public int getState(){
@@ -59,15 +62,22 @@ public class SingleAudioRecord {
     }
 
     public boolean isRecording(){
-        return audioRecorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING;
+        return isRecording;
+//        return audioRecorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING;
     }
 
     public AudioRecord getAudioRecorder(){
         return audioRecorder;
     }
 
+    boolean isRecording;
     public void stop(){
-        audioRecorder.stop();
+        isRecording = false;
+//        audioRecorder.stop();
+        Log.d(Log.TAG_APP, "stop and read " );
+    }
+
+    public void clearBuffer() {
     }
 
     public void release(){

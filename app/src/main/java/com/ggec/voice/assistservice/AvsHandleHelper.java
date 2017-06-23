@@ -209,16 +209,17 @@ public class AvsHandleHelper {
         String path = !TextUtils.isEmpty(rawPath) ? rawPath :
                 MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
 
-        startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, waitMicTimeOut<= 0);
+        startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, (int) waitMicTimeOut);
     }
 
-    private void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, boolean needTips){
-        Log.d(TAG, "startNearTalkVoiceRecord " + path +  " initiator:"+initiator+" "+ needTips );
+    private void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, int waitMicTimeOut){
+        boolean needTips = waitMicTimeOut<= 0;
+        Log.d(TAG, "startNearTalkVoiceRecord " + path +  " initiator:"+initiator+" "+ needTips + "  "+waitMicTimeOut);
 
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {
-            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback);
+            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
         } catch (FileNotFoundException e) {
             callback.failure(e);
             audioManager.continueSound();
