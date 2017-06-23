@@ -219,7 +219,7 @@ public class AvsHandleHelper {
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {
-            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
+            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 300 : waitMicTimeOut );
         } catch (FileNotFoundException e) {
             callback.failure(e);
             audioManager.continueSound();

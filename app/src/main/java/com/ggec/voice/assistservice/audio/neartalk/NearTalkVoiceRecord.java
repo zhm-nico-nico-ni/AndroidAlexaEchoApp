@@ -83,7 +83,7 @@ public class NearTalkVoiceRecord extends Thread {
 
         setRecordLocalState(RecordState.START);
         int numberOfReadFloat;
-        int bufferSizeInBytes = 320;//SingleAudioRecord.getInstance().getBufferSizeInBytes();
+        int bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
         byte audioBuffer[] = new byte[bufferSizeInBytes];
         float tempFloatBuffer[] = new float[bufferSizeInBytes / 2];
 
