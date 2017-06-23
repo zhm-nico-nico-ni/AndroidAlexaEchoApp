@@ -116,7 +116,7 @@ public class BgProcessIntentService extends IntentService {
             final String messageId = intent.getStringExtra("messageId");
             Log.i(TAG, "BEGIN_ALARM: "+ messageId+ " ,token:"+token);
             SetAlertHelper.sendAlertStarted(alexaManager, token, getCallBack("sendAlertStarted"));
-            MyApplication.mainHandler.post(new Runnable() {
+            MyApplication.mainHandler.postAtFrontOfQueue(new Runnable() {
                 @Override
                 public void run() {
                     AvsHandleHelper.getAvsHandleHelper().stopCaptureNearTalkVoiceRecord(false);

@@ -340,7 +340,7 @@ public class AlexaManager {
                                 return new Object();
                             }
                         })
-                        .subscribeOn(Schedulers.io())
+                        .subscribeOn(Schedulers.newThread())
                         .subscribe();
             }
         });
