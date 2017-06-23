@@ -59,12 +59,6 @@ public class AvsHandleHelper {
 
     private AvsHandleHelper() {
         audioManager = new GGECMediaManager();
-        MyApplication.mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.mp3");
-            }
-        });
     }
 
     public static synchronized AvsHandleHelper getAvsHandleHelper() {
@@ -219,7 +213,7 @@ public class AvsHandleHelper {
     }
 
     private void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, boolean needTips){
-        Log.d(TAG, "startNearTalkVoiceRecord");
+        Log.d(TAG, "startNearTalkVoiceRecord " + path +  " initiator:"+initiator+" "+ needTips );
 
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
@@ -273,7 +267,7 @@ public class AvsHandleHelper {
                     myNearTalkVoiceRecord.start();
                 }
             });
-        } else {
+        } else {// FIXME 这里很慢。。。
             myNearTalkVoiceRecord.start();
         }
     }
@@ -367,5 +361,10 @@ public class AvsHandleHelper {
                 });
             }
         });
+    }
+    public void initAudioPlayer(){
+        if(mMyShortAudioPlayer== null){
+            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.mp3");
+        }
     }
 }

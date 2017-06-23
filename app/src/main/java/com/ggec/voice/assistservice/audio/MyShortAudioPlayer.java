@@ -21,6 +21,8 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 
+import java.io.IOException;
+
 /**
  * Created by ggec on 2017/4/5.
  */
@@ -30,6 +32,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
     private IOnCompletionListener mOnCompleteListener;
     private SimpleExoPlayer exoPlayer;
     private long begin;
+    private String path;
 
     //        path = "asset:///start.mp3";  use this
     public MyShortAudioPlayer(String path){
@@ -41,15 +44,27 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
         exoPlayer.setPlayWhenReady(false);
         exoPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
+        this.path = path;
+        loadMedia();
+
 //        path = "asset:///start.mp3";  use this
+
+        Log.d("MyShortAudioPlayer", "init use:"+ (SystemClock.elapsedRealtime() - begin));
+    }
+
+    private void loadMedia(){
         ExtractorMediaSource mediaSource = new ExtractorMediaSource(
                 Uri.parse(path),
                 new DefaultDataSourceFactory(MyApplication.getContext(), "GGEC"),
                 Mp3Extractor.FACTORY,
                 null,
-                null);
+                new ExtractorMediaSource.EventListener() {
+                    @Override
+                    public void onLoadError(IOException e) {
+                        e.printStackTrace();
+                    }
+                });
         exoPlayer.prepare(mediaSource);
-        Log.d("MyShortAudioPlayer", "init use:"+ (SystemClock.elapsedRealtime() - begin));
     }
 
     @Override
@@ -78,20 +93,20 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
             if (mOnCompleteListener != null) {
                 mOnCompleteListener.onCompletion();
                 mOnCompleteListener = null;
-                sMainHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        exoPlayer.seekTo(0);
-                    }
-                }, 2000);
-                Log.d("MyShortAudioPlayer", "play and release use:"+ (SystemClock.elapsedRealtime() - begin));
             }
+            sMainHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    exoPlayer.seekTo(0);
+                }
+            }, 2000);
+            Log.d("MyShortAudioPlayer", "play and release use:"+ (SystemClock.elapsedRealtime() - begin));
         }
     }
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
-
+        error.printStackTrace();
     }
 
     @Override
@@ -108,6 +123,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
         begin = SystemClock.elapsedRealtime();
         mOnCompleteListener = listener;
         exoPlayer.setPlayWhenReady(true);
+        Log.d(Log.TAG_APP,"playplayplay" );
     }
 
     public interface IOnCompletionListener{
