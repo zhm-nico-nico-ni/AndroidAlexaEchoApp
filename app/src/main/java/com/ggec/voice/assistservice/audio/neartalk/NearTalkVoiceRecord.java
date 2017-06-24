@@ -83,7 +83,7 @@ public class NearTalkVoiceRecord extends Thread {
 
         setRecordLocalState(RecordState.START);
         int numberOfReadFloat;
-        int bufferSizeInBytes = SingleAudioRecord.getInstance().getBufferSizeInBytes();
+        int bufferSizeInBytes = 320;// 10ms chunk
         byte audioBuffer[] = new byte[bufferSizeInBytes];
         float tempFloatBuffer[] = new float[bufferSizeInBytes / 2];
 
@@ -137,7 +137,7 @@ public class NearTalkVoiceRecord extends Thread {
                         break;
                     }
 
-                    if (mState.beginSpeakTime > 0) {
+                    if (!mIsSilent && mState.beginSpeakTime > 0) {
                         try {
                             mShareFile.seek(currentDataPointer);
                             //write file
