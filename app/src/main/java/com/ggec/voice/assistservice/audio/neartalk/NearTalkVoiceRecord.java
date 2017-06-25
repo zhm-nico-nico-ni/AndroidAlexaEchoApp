@@ -327,7 +327,8 @@ public class NearTalkVoiceRecord extends Thread {
 
                     Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled()
                             + " interrupted:" + isInterrupted() + " http:"+getRecordHttpState() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
-                    if (!mFile.isCanceled() && !isInterrupted()) {
+                    if (!mFile.isCanceled() && getRecordLocalState() != RecordState.CANCEL && getRecordLocalState() != RecordState.ERROR
+                            && getRecordHttpState() != RecordState.ERROR && getRecordHttpState() != RecordState.CANCEL) {
                         while (pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
