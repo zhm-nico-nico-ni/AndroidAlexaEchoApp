@@ -183,7 +183,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public boolean isInterrupted() { // means local audio record is interrupted
-        return getRecordLocalState() == RecordState.CANCEL || getRecordLocalState() == RecordState.FINISH || getRecordLocalState() == RecordState.ERROR;
+        return getRecordLocalState() == RecordState.CANCEL || getRecordLocalState() == RecordState.FINISH || getRecordLocalState() == RecordState.ERROR || getRecordLocalState() == RecordState.STOP_CAPTURE;
     }
 
     @Override
@@ -206,9 +206,9 @@ public class NearTalkVoiceRecord extends Thread {
             setRecordLocalState(RecordState.CANCEL);
             setRecordHttpState(RecordState.CANCEL);
         } else { // just stop mic
-            Log.d(TAG, "NearTalkVoiceRecord # stop");
+            Log.d(TAG, "NearTalkVoiceRecord # stop capture");
             setRecordHttpState(RecordState.CANCEL);
-            setRecordLocalState(RecordState.FINISH);
+            setRecordLocalState(RecordState.STOP_CAPTURE);
         }
 
         if(!mShareFile.isCanceled() && !mShareFile.isClose()) {
@@ -341,7 +341,7 @@ public class NearTalkVoiceRecord extends Thread {
                         setRecordHttpState(RecordState.CANCEL);
                         AlexaManager.getInstance(MyApplication.getContext()).cancelAudioRequest();
                     }
-                    if(getRecordHttpState() != RecordState.CANCEL) {
+                    if(getRecordHttpState() != RecordState.CANCEL && getRecordLocalState() != RecordState.STOP_CAPTURE) {
                         int actl = (int) mFile.getActuallyLong();
                         if (actl > 0 && actl < mByteArrayStream.size()) {
                             Log.d(TAG, "trying change ByteArrayStream size to " + actl);
@@ -367,7 +367,7 @@ public class NearTalkVoiceRecord extends Thread {
         }
 
         private synchronized boolean writeToSink(byte[] buffer, BufferedSink sink) throws IOException {
-            if (mFile.getActuallyLong() > 0 && pointer > mFile.getActuallyLong()) {
+            if (mFile.getActuallyLong() > 0 && pointer > mFile.getActuallyLong() || getRecordLocalState() == RecordState.STOP_CAPTURE) {
                 return true;
             }
             mFile.seek(pointer);
