@@ -38,6 +38,7 @@ public abstract class SendEvent {
     //OkHttpClient for transfer of data
     Request.Builder mRequestBuilder = new Request.Builder();
     MultipartBody.Builder mBodyBuilder;
+    public long recordend;
 
     /**
      * Set up all the headers that we need in our OkHttp POST/GET, this prepares the connection for
@@ -92,9 +93,13 @@ public abstract class SendEvent {
             long t2 = System.nanoTime();
             int statusCode = response.code();
 
+            long diff=-1;
+            if(recordend != 0){
+                diff = System.currentTimeMillis() - recordend;
+            }
             Log.d(TAG, "response:" + statusCode + " handshake:" + response.handshake().cipherSuite()+ " receivedResponseAtMillis:" + response.receivedResponseAtMillis()
                     + " send:" + response.sentRequestAtMillis() + "\n diff:" + (response.receivedResponseAtMillis() - response.sentRequestAtMillis())
-                    + "  " + response.message());
+                    + (diff != -1 ? (" http Diff:"+diff):"") + "  "+response.body().source().getClass());
             final String boundary = getBoundary(response);
 
             AvsResponse val;

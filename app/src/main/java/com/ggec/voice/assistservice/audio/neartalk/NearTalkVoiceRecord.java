@@ -114,9 +114,10 @@ public class NearTalkVoiceRecord extends Thread {
                         if (isSilent != mIsSilent) {
 
                             if (!mIsSilent) {
+                                Log.d(TAG, "record silent time :" + (currentTime - mState.lastSilentTime) + " spl:" + continuingSilenceDetector.currentSPL());
                                 mState.lastSilentTime = currentTime;
                                 mState.lastSilentRecordIndex = currentDataPointer;
-                                Log.d(TAG, "record silent time :" + currentTime + " spl:" + continuingSilenceDetector.currentSPL());
+
                             } else {
                                 Log.d(TAG, "current is slient:" + continuingSilenceDetector.currentSPL());
                             }
@@ -172,7 +173,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     private void stopRecord(long actuallyLong) {
         SingleAudioRecord.getInstance().stop();
-        Log.d(TAG, " record finish, success:" + recordState + " file:" + mFilePath + " state:" + mState.toString() + " actuallyLong:" + actuallyLong);
+        Log.d(TAG, " record finish, success:" + recordState + " file:" + mFilePath + "\n state:" + mState.toString() + " actuallyLong:" + actuallyLong);
         boolean success = getRecordLocalState() != RecordState.CANCEL;
         if (!success) {
             new File(mFilePath).delete();
@@ -312,12 +313,12 @@ public class NearTalkVoiceRecord extends Thread {
             } else {
                 //We encourage streaming captured audio to AVS in 10ms chunks at 320 bytes (320 byte DATA frames sent as single units).
                 // Larger chunk sizes create unnecessary buffering, which negatively impacts AVS’ ability to process audio and may result in higher latencies.
-                byte[] buffer = new byte[320];
-                Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.length());
+                byte[] buffer = new byte[320*5];
+                Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.getWriteLength());
                 try {
                     while (!mFile.isClose()) {
                         long act = mFile.getActuallyLong();
-                        if ((act == 0 && mFile.length() > pointer) || pointer < mFile.getActuallyLong()) {
+                        if ((act == 0 && mFile.getWriteLength() > pointer) || pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
@@ -335,7 +336,7 @@ public class NearTalkVoiceRecord extends Thread {
                             }
                         }
                         Log.d(TAG, "write remaining end");
-                    } else if (mFile.isClose() && mFile.length() == 0) {
+                    } else if (mFile.isClose() && mFile.getWriteLength() == 0) {
                         //is cancel here
                         Log.d(TAG, "writeTo1 cancel http!");
                         setRecordHttpState(RecordState.CANCEL);
@@ -360,6 +361,7 @@ public class NearTalkVoiceRecord extends Thread {
 //                } catch (IOException ioe) {
 //                    throw ioe;
                 } finally {
+                    AlexaManager.getInstance(MyApplication.getContext()).getSpeechSendAudio().recordend = System.currentTimeMillis();
                     IOUtils.closeQuietly(mRecordOutputStream);
                     Log.d(TAG, "writeToSink end, actually_end_point:" + mFile.getActuallyLong() + " p:" + pointer + " diff: " + (mFile.getActuallyLong() - pointer));
                 }

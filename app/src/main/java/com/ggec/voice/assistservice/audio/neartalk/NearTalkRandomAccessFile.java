@@ -12,6 +12,7 @@ import java.io.RandomAccessFile;
 public class NearTalkRandomAccessFile extends RandomAccessFile {
     private boolean mIsClose, mCanceled;
     private volatile long actuallyLong;
+    private volatile long writeLength;
 
     public NearTalkRandomAccessFile(String name) throws FileNotFoundException {
         super(name, "rwd");
@@ -52,13 +53,12 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
         return actuallyLong;
     }
 
-    @Override
-    public long length() {
-        try{
-            return super.length();
-        } catch (IOException ioe){
-            ioe.printStackTrace();
-        }
-        return 0;
+    public long getWriteLength(){
+        return writeLength;
+    }
+
+    public void write(byte b[], int off, int len) throws IOException {
+        super.write(b, off, len);
+        writeLength += len;
     }
 }
