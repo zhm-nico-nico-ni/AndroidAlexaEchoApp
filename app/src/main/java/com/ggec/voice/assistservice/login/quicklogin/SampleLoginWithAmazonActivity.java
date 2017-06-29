@@ -198,8 +198,8 @@ public class SampleLoginWithAmazonActivity extends Activity {
             ActivityCompat.requestPermissions(this, new String[]{RECORD_AUDIO}, 3001);
         }
 
-        if(PackageManager.PERMISSION_GRANTED != ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION))
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 3002);
+        if(PackageManager.PERMISSION_GRANTED != ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION))
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 3002);
     }
 
     private void doAuth(String productId, String dsn){
