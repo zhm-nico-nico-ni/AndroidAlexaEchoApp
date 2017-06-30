@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
 
+import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
@@ -143,6 +144,7 @@ public class GGECMediaManager {
 
         @Override
         public void playerPrepared(AvsItem pendingItem) {
+            LedControl.myLedCtl(5);
             if (pendingItem instanceof AvsSpeakItem) {
                 Log.i(TAG, "Sending SpeechStartedEvent");
                 AlexaManager.getInstance(MyApplication.getContext())
@@ -159,6 +161,7 @@ public class GGECMediaManager {
 
         @Override
         public void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds) {
+            LedControl.myLedCtl(4);
             boolean isRemove = avsQueue1.remove(completedItem.messageID) != null;
             if (BuildConfig.DEBUG) {
                 Log.i(TAG, "SpeechSynthesizerCallback Complete " + completedItem.getToken() + " fired, remove old:" + isRemove);
@@ -193,6 +196,7 @@ public class GGECMediaManager {
 
         @Override
         public void playerPrepared(AvsItem pendingItem) {
+            LedControl.myLedCtl(5);
             almostDoneFired = false;
             playbackStartedFired = false;
             if(pendingItem instanceof AvsPlayRemoteItem){
@@ -225,6 +229,7 @@ public class GGECMediaManager {
 
         @Override
         public void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds) {
+            LedControl.myLedCtl(4);
             if (BuildConfig.DEBUG) {
                 Log.i(TAG, "MediaAudioPlayerCallback Complete " + completedItem.getToken() + " fired");
             }

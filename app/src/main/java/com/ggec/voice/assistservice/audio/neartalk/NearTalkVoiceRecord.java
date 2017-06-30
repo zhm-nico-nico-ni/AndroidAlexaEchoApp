@@ -3,6 +3,7 @@ package com.ggec.voice.assistservice.audio.neartalk;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 
+import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.SingleAudioRecord;
@@ -74,6 +75,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public void run() {
+        LedControl.myLedCtl(2);
         long bt = SystemClock.elapsedRealtime();
         if (!SingleAudioRecord.getInstance().isRecording()) {
             SingleAudioRecord.getInstance().startRecording();
@@ -335,6 +337,7 @@ public class NearTalkVoiceRecord extends Thread {
                                 break;
                             }
                         }
+                        LedControl.myLedCtl(3);
                         Log.d(TAG, "write remaining end");
                     } else if (mFile.isClose() && mFile.getWriteLength() == 0) {
                         //is cancel here

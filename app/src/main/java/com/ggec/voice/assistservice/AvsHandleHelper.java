@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.support.annotation.MainThread;
 import android.text.TextUtils;
 
+import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
@@ -282,6 +283,9 @@ public class AvsHandleHelper {
                 if(allSuccess && result.continueWakeWordDetect) {
                     continueWakeWordDetect();
                 }
+                if(!allSuccess){
+                    LedControl.myLedCtl(4);
+                }
             }
 
             @Override
@@ -350,6 +354,7 @@ public class AvsHandleHelper {
 
     //"asset:///error.mp3"
     private void playError(String res) {
+        LedControl.myLedCtl(5);
         Log.d(TAG, "playError:"+res);
         Observable.just(res).subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<String>() {
             @Override
@@ -357,6 +362,7 @@ public class AvsHandleHelper {
                 new MyShortAudioPlayer2(s, new MyShortAudioPlayer2.IOnCompletionListener() {
                     @Override
                     public void onCompletion() {
+                        LedControl.myLedCtl(6);
                         continueWakeWordDetect();
                     }
                 });
