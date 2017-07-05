@@ -87,4 +87,109 @@ public class SingleAudioRecord {
     public int getBufferSizeInBytes(){
         return bufferSizeInBytes;
     }
+
+
+    public static double[] bytesToValues(byte[] byteArray,
+                                         int offset,
+                                         int length,
+                                         int bytesPerValue,
+                                         boolean signedData)
+            throws ArrayIndexOutOfBoundsException {
+
+        if (0 < length && (offset + length) <= byteArray.length) {
+            assert (length % bytesPerValue == 0);
+            double[] doubleArray = new double[length / bytesPerValue];
+
+            int i = offset;
+
+            for (int j = 0; j < doubleArray.length; j++) {
+                int val = byteArray[i++];
+                if (!signedData) {
+                    val &= 0xff; // remove the sign extension
+                }
+                for (int c = 1; c < bytesPerValue; c++) {
+                    int temp = byteArray[i++] & 0xff;
+                    val = (val << 8) + temp;
+                }
+
+                doubleArray[j] = val;
+            }
+
+            return doubleArray;
+        } else {
+            throw new ArrayIndexOutOfBoundsException
+                    ("offset: " + offset + ", length: " + length
+                            + ", array length: " + byteArray.length);
+        }
+    }
+
+
+    /**
+     * Converts a little-endian byte array into an array of doubles. Each consecutive bytes of a float are converted
+     * into a double, and becomes the next element in the double array. The number of bytes in the double is specified
+     * as an argument. The size of the returned array is (data.length/bytesPerValue).
+     *
+     * @param data          a byte array
+     * @param offset        which byte to start from
+     * @param length        how many bytes to convert
+     * @param bytesPerValue the number of bytes per value
+     * @param signedData    whether the data is signed
+     * @return a double array, or <code>null</code> if byteArray is of zero length
+     * @throws java.lang.ArrayIndexOutOfBoundsException if index goes out of bounds
+     *
+     */
+    public static double[] littleEndianBytesToValues(byte[] data,
+                                                     int offset,
+                                                     int length,
+                                                     int bytesPerValue,
+                                                     boolean signedData)
+            throws ArrayIndexOutOfBoundsException {
+
+        if (0 < length && (offset + length) <= data.length) {
+            assert (length % bytesPerValue == 0);
+            double[] doubleArray = new double[length / bytesPerValue];
+
+            int i = offset + bytesPerValue - 1;
+
+            for (int j = 0; j < doubleArray.length; j++) {
+                int val = data[i--];
+                if (!signedData) {
+                    val &= 0xff; // remove the sign extension
+                }
+                for (int c = 1; c < bytesPerValue; c++) {
+                    int temp = data[i--] & 0xff;
+                    val = (val << 8) + temp;
+                }
+
+                // advance 'i' to the last byte of the next value
+                i += (bytesPerValue * 2);
+
+                doubleArray[j] = val;
+            }
+
+            return doubleArray;
+
+        } else {
+            throw new ArrayIndexOutOfBoundsException
+                    ("offset: " + offset + ", length: " + length
+                            + ", array length: " + data.length);
+        }
+    }
+
+    public static byte[] littleEndianBytesToValues(double data)
+            throws ArrayIndexOutOfBoundsException {
+
+        byte[] result = new byte[2];
+        result[1] = (byte)(( (int) data >> 8) & 0xFF);
+        result[0] = (byte) (data);
+
+
+        return result;
+    }
+
+    public static void littleEndianBytesToValues(double data, byte [] out, int index)
+            throws ArrayIndexOutOfBoundsException {
+        out[index + 1] = (byte)(( (int) data >> 8) & 0xFF);
+        out[index] = (byte) (data);
+    }
 }
