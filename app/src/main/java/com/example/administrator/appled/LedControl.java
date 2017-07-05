@@ -15,4 +15,5 @@ public class LedControl {
 
     public static native void myLedCtl(int state);
 
+    public static native void getInt();
 }
