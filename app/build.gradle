@@ -14,9 +14,9 @@ android {
         applicationId project.APPLICATION_ID
         versionCode 1
         versionName "1.0"
-        applicationVariants.all {
-            variant -> changeApkName(variant)
-        }
+//        applicationVariants.all {
+//            variant -> changeApkName(variant)
+//        }
 
         buildConfigField "String", "PRODUCT_ID", "\"" + project.PRODUCT_ID + "\""
         buildConfigField "String", "APP_PACKAGE_NAME", "\"" + project.APPLICATION_ID + "\""

@@ -10,6 +10,7 @@ import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord;
+import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord2;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
@@ -55,7 +56,7 @@ public class AvsHandleHelper {
     private static final String TAG = "GGECAvsHandleHelper";
     private static volatile AvsHandleHelper sAvsHandleHelper;
     private GGECMediaManager audioManager;
-    private NearTalkVoiceRecord myNearTalkVoiceRecord;
+    private NearTalkVoiceRecord2 myNearTalkVoiceRecord;
     private MyShortAudioPlayer mMyShortAudioPlayer;
 
     private AvsHandleHelper() {
@@ -220,7 +221,7 @@ public class AvsHandleHelper {
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {
-            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path ,NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
+            myNearTalkVoiceRecord = new NearTalkVoiceRecord2(endIndexInSamples, path , NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
         } catch (FileNotFoundException e) {
             callback.failure(e);
             audioManager.continueSound();
