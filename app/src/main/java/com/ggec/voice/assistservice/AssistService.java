@@ -14,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
+import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent;
@@ -84,6 +85,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
             it.putExtra("rawPath", rawPath);
         }
         startService(it);
+        LedControl.myLedCtl(1);
     }
 
 

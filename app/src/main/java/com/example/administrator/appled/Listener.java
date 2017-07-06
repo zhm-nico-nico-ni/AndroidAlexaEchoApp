@@ -27,6 +27,7 @@ public class Listener {
 //            it.putExtra("rawPath", rawPath);
 //        }
             MyApplication.getContext().startService(it);
+            LedControl.myLedCtl(1);
 
         }
     }

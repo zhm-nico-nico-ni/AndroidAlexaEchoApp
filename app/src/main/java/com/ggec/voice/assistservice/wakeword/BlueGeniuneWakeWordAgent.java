@@ -18,10 +18,11 @@ public class BlueGeniuneWakeWordAgent extends WakeWordAgent {
 
     @Override
     protected void init() {
+        Log.w("BlueGeniuneWakeWordAgent", " init" );
         new Thread(){
             @Override
             public void run() {
-                Log.d("BlueGeniuneWakeWordAgent", " start" );
+                Log.w("BlueGeniuneWakeWordAgent", " start" );
                 LedControl.getInt();
             }
         }.start();
