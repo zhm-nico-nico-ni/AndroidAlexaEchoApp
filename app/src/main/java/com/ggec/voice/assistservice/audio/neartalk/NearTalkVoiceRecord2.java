@@ -2,6 +2,8 @@
 
 package com.ggec.voice.assistservice.audio.neartalk;
 
+import android.os.Handler;
+import android.os.Message;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 
@@ -34,6 +36,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -75,12 +78,71 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
         mFilePath = filepath;
         mShareFile = new NearTalkRandomAccessFile2(mFilePath);
 
-        classifier = new SpeechClassifier(10, 0.01, 10, 10);
+        classifier = new SpeechClassifier(10, 0.003, 13, 0);
         classifier.setPredecessor(this);
-         speechMarker = new SpeechMarker(150, 400, 50);
+         speechMarker = new SpeechMarker(150, 1000, 50);
         speechMarker.setPredecessor(classifier);
         speechMarker.reset();
     }
+
+    boolean handleBreak = false;
+    boolean mIsSilent = true;
+    Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if(handleBreak) return;
+
+            Data raw = new DoubleData(SingleAudioRecord.littleEndianBytesToValues((byte[]) msg.obj, 0, msg.arg1, 2, true));
+            Data data = classifier.getConvertData(raw);
+            speechMarker.handle(data);
+
+            boolean isSilent = !speechMarker.inSpeech();
+            long currentTime = SystemClock.elapsedRealtime();
+
+            if (!isSilent && mState.beginSpeakTime == 0) {
+                Log.d(TAG, "begin "+ " snr:" + classifier.getSNR());
+                mState.beginSpeakTime = currentTime;
+            } else {
+                if (isSilent != mIsSilent) {
+
+                    if (!mIsSilent) {
+                        Log.d(TAG, "record silent time :" + (currentTime - mState.lastSilentTime) + " snr:" + classifier.getSNR());
+                        mState.lastSilentTime = currentTime;
+                        mState.lastSilentRecordIndex = currentDataPointer;
+
+                    } else {
+                        Log.d(TAG, "current is slient, snr:" + classifier.getSNR());
+                    }
+                    mIsSilent = isSilent;
+                }
+            }
+
+            if (mState.beginSpeakTime == 0 &&
+                    currentTime - mState.initTime >= MAX_WAIT_TIME) {
+                Log.d(TAG, "finish: wait to long ");
+                setRecordLocalState(RecordState.ERROR);
+                handleBreak = true;
+                return;
+            } else if (isSilent &&
+                    mState.lastSilentTime != 0 &&
+                    currentTime - mState.lastSilentTime >= MAX_WAIT_END_TIME) {
+                setRecordLocalState(RecordState.FINISH);
+                Log.d(TAG, "OK: complete after speak ");
+                handleBreak = true;
+                return;
+            }
+
+            if (!mIsSilent && mState.beginSpeakTime > 0) {
+
+                writeDoubleToFile(speechMarker.getOutPutData());
+                if (currentTime - mState.beginSpeakTime > MAX_RECORD_TIME) {
+                    handleBreak = true;
+                    return;
+                }
+
+            }
+        }
+    };
 
     @Override
     public void run() {
@@ -99,62 +161,23 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
 
         mState = new NearTalkState();
         mState.initTime = SystemClock.elapsedRealtime();
-        boolean mIsSilent = true;
+
 
         currentDataPointer = mBeginPosition;
         classifier.getConvertData(new DataStartSignal(16000));
         try {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
-            while (SingleAudioRecord.getInstance().isRecording()) {
+            while (SingleAudioRecord.getInstance().isRecording() && !handleBreak) {
 //                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
                 numberByteRead = SingleAudioRecord.getInstance().getAudioRecorder().read(audioBuffer, 0, bufferSizeInBytes);
 
                 if (numberByteRead > 0) {
-                    Data data = classifier.getConvertData(new DoubleData(SingleAudioRecord.littleEndianBytesToValues(audioBuffer, 0, numberByteRead, 2, true)));
-                    speechMarker.handle(data);
-
-                    boolean isSilent = !speechMarker.inSpeech();
                     long currentTime = SystemClock.elapsedRealtime();
-
-                    if (!isSilent && mState.beginSpeakTime == 0) {
-                        Log.d(TAG, "begin "+ " snr:" + classifier.getSNR());
-                        mState.beginSpeakTime = currentTime;
-                    } else {
-                        if (isSilent != mIsSilent) {
-
-                            if (!mIsSilent) {
-                                Log.d(TAG, "record silent time :" + (currentTime - mState.lastSilentTime) + " snr:" + classifier.getSNR());
-                                mState.lastSilentTime = currentTime;
-                                mState.lastSilentRecordIndex = currentDataPointer;
-
-                            } else {
-                                Log.d(TAG, "current is slient, snr:" + classifier.getSNR());
-                            }
-                            mIsSilent = isSilent;
-                        }
-                    }
-
-                    if (mState.beginSpeakTime == 0 &&
-                            currentTime - mState.initTime >= MAX_WAIT_TIME) {
-                        Log.d(TAG, "finish: wait to long ");
-                        setRecordLocalState(RecordState.ERROR);
-                        break;
-                    } else if (isSilent &&
-                            mState.lastSilentTime != 0 &&
-                            currentTime - mState.lastSilentTime >= MAX_WAIT_END_TIME) {
-                        setRecordLocalState(RecordState.FINISH);
-                        Log.d(TAG, "OK: complete after speak ");
-                        break;
-                    }
-
-                    if (!mIsSilent && mState.beginSpeakTime > 0) {
-                        writeDoubleToFile(speechMarker.getOutPutData());
-                        if (currentTime - mState.beginSpeakTime > MAX_RECORD_TIME) {
-                            break;
-                        }
-
-                    }
+                    handler.obtainMessage(1, numberByteRead, 0, Arrays.copyOf(audioBuffer, numberByteRead)).sendToTarget();
+                    long diff = SystemClock.elapsedRealtime() - currentTime;
+                    if(diff > 5)
+                    Log.w(TAG, "process use to long !!      " + diff);
                 }
             }
 
