@@ -24,12 +24,12 @@ public class SingleAudioRecord {
         int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
 
 //        bufferSizeInBytes = Math.round((float)recorder_sample_rate * BUFFER_SIZE_SECONDS);
-        bufferSizeInBytes = AudioRecord.getMinBufferSize(recorder_sample_rate,
+        bufferSizeInBytes = 2* AudioRecord.getMinBufferSize(recorder_sample_rate,
                 recorder_channels,
                 recorder_audio_encoding
         );
 
-        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
                 recorder_sample_rate,
                 recorder_channels,
                 recorder_audio_encoding,
@@ -73,11 +73,8 @@ public class SingleAudioRecord {
     boolean isRecording;
     public void stop(){
         isRecording = false;
-//        audioRecorder.stop();
+        audioRecorder.stop();
         Log.d(Log.TAG_APP, "stop and read " );
-    }
-
-    public void clearBuffer() {
     }
 
     public void release(){

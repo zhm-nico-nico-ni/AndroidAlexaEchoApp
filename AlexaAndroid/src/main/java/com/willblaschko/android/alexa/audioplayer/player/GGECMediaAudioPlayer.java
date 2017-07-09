@@ -158,6 +158,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         //if we're playing, stop playing before we continue
         getMediaPlayer().stop();
 
+        mMediaState = STATE_PLAYING;
         if (mItem instanceof AvsPlayRemoteItem) {
             handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
         } else if (mItem instanceof AvsPlayAudioItem) {
