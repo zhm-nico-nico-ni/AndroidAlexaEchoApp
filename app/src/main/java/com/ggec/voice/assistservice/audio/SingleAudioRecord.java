@@ -24,7 +24,7 @@ public class SingleAudioRecord {
         int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
 
 //        bufferSizeInBytes = Math.round((float)recorder_sample_rate * BUFFER_SIZE_SECONDS);
-        bufferSizeInBytes = 2* AudioRecord.getMinBufferSize(recorder_sample_rate,
+        bufferSizeInBytes = AudioRecord.getMinBufferSize(recorder_sample_rate,
                 recorder_channels,
                 recorder_audio_encoding
         );

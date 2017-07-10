@@ -36,7 +36,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -80,7 +79,7 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
 
         classifier = new SpeechClassifier(10, 0.003, 13, 0);
         classifier.setPredecessor(this);
-         speechMarker = new SpeechMarker(150, 1000, 50);
+         speechMarker = new SpeechMarker(100, 800, 50);
         speechMarker.setPredecessor(classifier);
         speechMarker.reset();
     }
@@ -174,9 +173,9 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
 
                 if (numberByteRead > 0) {
                     long currentTime = SystemClock.elapsedRealtime();
-                    handler.obtainMessage(1, numberByteRead, 0, Arrays.copyOf(audioBuffer, numberByteRead)).sendToTarget();
+                    handler.obtainMessage(1, numberByteRead, 0, audioBuffer.clone() /*Arrays.copyOf(audioBuffer, numberByteRead)*/).sendToTarget();
                     long diff = SystemClock.elapsedRealtime() - currentTime;
-                    if(diff > 5)
+                    if(diff >= 5)
                     Log.w(TAG, "process use to long !!      " + diff);
                 }
             }
