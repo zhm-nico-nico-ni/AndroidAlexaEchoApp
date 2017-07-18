@@ -53,8 +53,12 @@ public class SpeakerUtil {
 
         boolean localIsMute = localVolume == 0;
         if(localIsMute != isMute) {
+            if(localIsMute){
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (max * 0.4f), 0);
+            } else {
+                am.setStreamMute(AudioManager.STREAM_MUSIC, isMute);
+            }
             Log.i(TAG, "Mute set to : "+isMute);
-            am.setStreamMute(AudioManager.STREAM_MUSIC, isMute);
             Util.getPreferences(context).edit().putLong("lastSetMuteTime", System.currentTimeMillis()).apply();
         } else {
             Log.i(TAG, "just sendMutedEvent : "+isMute);
