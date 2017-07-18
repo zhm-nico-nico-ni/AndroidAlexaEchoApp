@@ -95,7 +95,7 @@ public class SpeakerUtil {
         }
 
         long av = vol* 100 / max;
-        boolean ismute = vol >= 0;
+        boolean ismute = vol <= 0;
         Log.d(TAG, "getConvertVolumeState v:"+av +" mute:"+ismute);
         return new Pair<>(av, ismute) ;
     }
