@@ -104,7 +104,7 @@ public class PayloadFactory {
         payload.activeAlerts = new ArrayList<>();
         long currentTime = System.currentTimeMillis();
         for(AvsSetAlertItem item : list){
-            if(SetAlertHelper.isScheduledTimeAvailable(item.getScheduledTime(), currentTime)){
+            if(!SetAlertHelper.isScheduledTimeAvailable(item.getScheduledTime(), currentTime)){
                 payload.activeAlerts.add(item);
             }
         }
