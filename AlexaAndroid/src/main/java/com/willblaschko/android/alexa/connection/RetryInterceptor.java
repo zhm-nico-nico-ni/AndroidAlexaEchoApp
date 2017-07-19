@@ -20,6 +20,9 @@ public class RetryInterceptor implements Interceptor {
         // try the request
         Response response = chain.proceed(request);
 
+        if (response.code() >=400 && response.code() < 500){
+            return response;
+        }
         int tryCount = 0;
         while (!response.isSuccessful() && tryCount < 3) {
 
