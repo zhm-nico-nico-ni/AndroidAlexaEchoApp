@@ -53,7 +53,7 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
     private final int MAX_RECORD_TIME = 10 * 1000;
     private int MAX_WAIT_END_TIME = 500;
 
-    private final static String TAG = "NearTalkVoiceRecord";
+    private final static String TAG = "NearTalkVoiceRecord2";
 
     private NearTalkState mState;
     private final String mFilePath;
@@ -79,7 +79,7 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
 
         classifier = new SpeechClassifier(10, 0.003, 13, 0);
         classifier.setPredecessor(this);
-         speechMarker = new SpeechMarker(100, 800, 50);
+         speechMarker = new SpeechMarker(200, 300, 50); // echo 大部分时候只等待不够300ms
         speechMarker.setPredecessor(classifier);
         speechMarker.reset();
     }
@@ -402,9 +402,9 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
                     }
 
                     Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled()
-                            + " interrupted:" + isInterrupted() + " http:" + getRecordHttpState() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
+                            + " interrupted:" + isInterrupted() + " http:" + getRecordHttpState()+" local:"+getRecordLocalState() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
                     if (!mFile.isCanceled() && getRecordLocalState() != RecordState.CANCEL && getRecordLocalState() != RecordState.ERROR
-                            && getRecordHttpState() != RecordState.ERROR && getRecordHttpState() != RecordState.CANCEL) {
+                            && getRecordHttpState() != RecordState.ERROR && getRecordHttpState() != RecordState.CANCEL && getRecordLocalState() != RecordState.STOP_CAPTURE) {
                         while (pointer < mFile.getActuallyLong()) {
                             if (writeToSink(sink)) {
                                 break;
@@ -419,7 +419,7 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
                         AlexaManager.getInstance(MyApplication.getContext()).cancelAudioRequest();
                     }
                     if (getRecordHttpState() != RecordState.CANCEL && getRecordLocalState() != RecordState.STOP_CAPTURE) {
-                        int actl = (int) mFile.getActuallyLong();
+                        int actl = (int) (2* mFile.getActuallyLong()); // Double convert byte array
                         if (actl > 0 && actl < mByteArrayStream.size()) {
                             Log.d(TAG, "trying change ByteArrayStream size to " + actl);
                             byte[] raw = mByteArrayStream.toByteArray();
