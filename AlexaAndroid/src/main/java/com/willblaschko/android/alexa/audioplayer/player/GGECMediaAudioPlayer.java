@@ -154,11 +154,12 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
                 return;
             }
         }
-        mItem = item;
         //if we're playing, stop playing before we continue
-        getMediaPlayer().stop();
+        pause();
 
+        mItem = item;
         mMediaState = STATE_PLAYING;
+
         if (mItem instanceof AvsPlayRemoteItem) {
             handleRemoteAVSItem((AvsPlayRemoteItem) mItem);
         } else if (mItem instanceof AvsPlayAudioItem) {
@@ -183,12 +184,10 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @return true playing, false not
      */
     public boolean isPlaying() {
-        if(mMediaState == STATE_PLAYING) {
+        if(mMediaState == STATE_PLAYING || mMediaState == STATE_BUFFER_UNDER_RUN) {
             return true;
         } else if(mMediaPlayer == null){
             return false;
-        } else if(ExoPlayer.STATE_READY == mPlaybackState || ExoPlayer.STATE_BUFFERING == mPlaybackState) {
-            return mMediaPlayer.getPlayWhenReady();
         } else {
             return false;
         }
