@@ -30,6 +30,8 @@ public class MyAVSAudioParser {
     private static final Pattern FILE_PATTERN = Pattern.compile(".pls|.m3u", Pattern.CASE_INSENSITIVE);
     private static final Pattern M3U8_PATTERN = Pattern.compile(".m3u8", Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAY_LIST_PATTERN = Pattern.compile("audio/x-scpls|audio/x-mpegurl", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern NEED_PARSE_PATTERN = Pattern.compile("radiotime.com", Pattern.CASE_INSENSITIVE);
     private final static int MAX_REDIRECT_TIMES = 3;
 
     private AvsPlayRemoteItem mAvsPlayRemoteItem;
@@ -79,15 +81,18 @@ public class MyAVSAudioParser {
         isCancel = false;
         if(M3U8_PATTERN.matcher(url).find()){
             return url;
-        }else
+        } else if(NEED_PARSE_PATTERN.matcher(url).find()){
             return requestImpl(url);
+        } else {
+            return url;
+        }
     }
 
     private String requestImpl(String url) throws IOException {
         final HttpUrl urll = HttpUrl.parse(url);
         OkHttpClient okHttpClient;
         if (urll.isHttps()) {
-            okHttpClient = ClientUtil.getHttp2Client();
+            okHttpClient = ClientUtil.getHttp2Client().newBuilder().addNetworkInterceptor(new StethoInterceptor()).build();
         } else {
             okHttpClient = getHttpClient();
         }
@@ -131,7 +136,7 @@ public class MyAVSAudioParser {
                 mAvsPlayRemoteItem.extension = ".m3u8";
             } else {
                 // 可能是m3u 或者是m3u8
-
+                Log.d(TAG, "!!!!!!");
                 if (FILE_PATTERN.matcher(responseFirstLine).find()) {
                     if (redirectCount > 0) {
                         redirectCount--;
@@ -154,6 +159,7 @@ public class MyAVSAudioParser {
             }
 
         } else {
+            Log.d(TAG, "play directly");
             mAvsPlayRemoteItem.setConvertUrl(playUri);
         }
 
