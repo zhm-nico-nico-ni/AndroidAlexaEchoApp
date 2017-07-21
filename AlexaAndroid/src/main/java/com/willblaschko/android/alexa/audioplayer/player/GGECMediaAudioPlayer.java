@@ -79,10 +79,8 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     private MyExoPlayer getMediaPlayer() {
         if (mMediaPlayer == null) {
-            mMediaPlayer = new MyExoPlayer(mContext, this, false);
+            mMediaPlayer = new MyExoPlayer(mContext, this, true);
             handler = new Handler();
-//            mMediaPlayer.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
-//            mMediaPlayer.setPlayWhenReady(true);
         }
 
         return mMediaPlayer;
@@ -184,11 +182,11 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      * @return true playing, false not
      */
     public boolean isPlaying() {
-        if(mMediaState == STATE_PLAYING || mMediaState == STATE_BUFFER_UNDER_RUN) {
-            return true;
-        } else if(mMediaPlayer == null){
+        if(mMediaPlayer == null){
             return false;
-        } else {
+        } else if(mMediaState != STATE_PAUSED && mMediaState != STATE_STOPPED && mMediaState != STATE_FINISHED && mMediaState != STATE_IDLE){
+            return true;
+        }  else {
             return false;
         }
     }
@@ -419,21 +417,21 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
         if (ExoPlayer.STATE_BUFFERING == mPlaybackState && playbackState == ExoPlayer.STATE_READY) {
             if (bufferBeginTime > 0) {
                 long cp = mMediaPlayer.getCurrentPosition();
-                if(cp > beginOffset)
+                if(cp > beginOffset && isPlaying())
                     onBufferReady(cp, SystemClock.elapsedRealtime() - bufferBeginTime);
             }
         }
 
         mPlaybackState = playbackState;
-        if (ExoPlayer.STATE_READY == playbackState) {
+        if (ExoPlayer.STATE_READY == playbackState && isPlaying()) {
             if (beginOffset > 0 && beginOffset < mMediaPlayer.getDuration()) {
                 mMediaPlayer.getMediaPlayer().seekTo(beginOffset);
                 beginOffset = 0;
             } else {
                 // 加上正式准备好的提示
-                if (!mFiredPrepareEvent) {
+                if (isPlaying() && !mFiredPrepareEvent) {
                     mFiredPrepareEvent = true;
-                    mMediaPlayer.setPlayWhenReady(true);
+                    play();
                     if (mAsyncTask != null) {
                         mAsyncTask.cancel();
                         mAsyncTask = null;
@@ -443,9 +441,9 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
                     handler.postDelayed(mAsyncTask, 100);
                 }
             }
-        } else if (ExoPlayer.STATE_ENDED == playbackState) {
+        } else if (ExoPlayer.STATE_ENDED == playbackState && isPlaying()) {
             onComplete(mMediaPlayer.getDuration());
-        } else if (ExoPlayer.STATE_BUFFERING == playbackState) {
+        } else if (ExoPlayer.STATE_BUFFERING == playbackState && isPlaying()) {
             long current = SystemClock.elapsedRealtime();
             if (bufferBeginTime > 0 && current - bufferBeginTime > 2000) {
                 long cp = mMediaPlayer.getCurrentPosition();
