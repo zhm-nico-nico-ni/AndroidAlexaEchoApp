@@ -79,7 +79,7 @@ public class GGECMediaAudioPlayer implements MyExoPlayer.IMyExoPlayerListener {
      */
     private MyExoPlayer getMediaPlayer() {
         if (mMediaPlayer == null) {
-            mMediaPlayer = new MyExoPlayer(mContext, this, true);
+            mMediaPlayer = new MyExoPlayer(mContext, this, false);
             handler = new Handler();
         }
 
