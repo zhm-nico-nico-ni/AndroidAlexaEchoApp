@@ -47,24 +47,26 @@ public class NearTalkRandomAccessFile2 {
 //        return mIsActuallyClose;
 //    }
 
-    public void setActuallyLong(long actuallyLong){
+    public synchronized void setActuallyLong(long actuallyLong){
         this.actuallyLong = actuallyLong;
     }
 
-    public long getActuallyLong() {
+    public synchronized long getActuallyLong() {
         return actuallyLong;
     }
 
-    public long getWriteLength(){
+    public synchronized long getWriteLength(){
         return writeLength;
     }
 
-    public void write(DoubleData data){
+    public synchronized void write(DoubleData data){
         audioList.add(data);
         writeLength += 1;
     }
 
-    public DoubleData take(){
+    public synchronized DoubleData take(){
+        if(audioList.isEmpty()) return null;
+
         DoubleData output = null;
         try {
             output = audioList.take();

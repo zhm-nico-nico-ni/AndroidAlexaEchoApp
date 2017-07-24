@@ -36,7 +36,7 @@ public class SingleAudioRecord {
                 bufferSizeInBytes);
 
 
-        if(this.audioRecorder.getState() == 0) {
+        if(this.audioRecorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
             this.audioRecorder.release();
             Log.e("SingleAudioRecord","Failed to initialize recorder. Microphone might be already in use.");
         }
@@ -73,7 +73,7 @@ public class SingleAudioRecord {
     boolean isRecording;
     public void stop(){
         isRecording = false;
-        audioRecorder.stop();
+//        audioRecorder.stop();
         Log.d(Log.TAG_APP, "stop and read " );
     }
 
