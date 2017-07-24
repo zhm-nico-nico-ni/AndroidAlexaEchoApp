@@ -17,7 +17,6 @@ import android.text.TextUtils;
 import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.connectlink.DeviceLinkHandler;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
-import com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent;
 import com.ggec.voice.assistservice.wakeword.IWakeWordAgentEvent;
 import com.ggec.voice.assistservice.wakeword.WakeWordAgent;
 import com.ggec.voice.toollibrary.log.Log;
@@ -99,9 +98,9 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
                 }
             });
 
-            mWakeWordAgent = new BlueGeniuneWakeWordAgent(this, this);
-//            mWakeWordAgent = new CumSphinxWakeWordAgent(this, this);
-//        mWakeWordAgent = new SnowboyWakeWordAgent(this, this);
+//            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent(this, this);
+            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
+//        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
         }
     }
 

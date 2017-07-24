@@ -164,18 +164,21 @@ public class SpeechClassifier extends AbstractVoiceActivityDetector {
             if (level < background) {
                 level = background;
             }
-            isSpeech = (level - background > threshold);
+            if(isSpeech && getNoisy()){
+//                isSpeech = true;
+            } else {
+                isSpeech = (level - background > threshold);
+            }
         }
 
         SpeechClassifiedData labeledAudio = new SpeechClassifiedData(audio, isSpeech);
 
 //        if (logger.isLoggable(Level.FINEST)) {
 //            String speech = "";
-//            if (!labeledAudio.isSpeech()) {
-//                speech = "*";
+//            if (labeledAudio.isSpeech()) {
 //
-//                System.out.println("Bkg: " + background + ", level: " + level +
-//                        ", current: " + current + ' ' + speech);
+//                System.out.println("Bkg: " + background + ", level: " + level + "   t:" +(level - background) +
+//                        ", current: " + current + " snr:" + getSNR());
 //            }
 //        }
 

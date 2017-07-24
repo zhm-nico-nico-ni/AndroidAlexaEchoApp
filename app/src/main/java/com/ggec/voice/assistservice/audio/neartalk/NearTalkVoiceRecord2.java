@@ -13,12 +13,8 @@ import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.SingleAudioRecord;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.Data;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.DataEndSignal;
-import com.ggec.voice.assistservice.wakeword.sphinx.frontend.DataProcessingException;
-import com.ggec.voice.assistservice.wakeword.sphinx.frontend.DataProcessor;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.DataStartSignal;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.DoubleData;
-import com.ggec.voice.assistservice.wakeword.sphinx.frontend.PropertyException;
-import com.ggec.voice.assistservice.wakeword.sphinx.frontend.PropertySheet;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.endpoint.SpeechClassifier;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.endpoint.SpeechEndSignal;
 import com.ggec.voice.assistservice.wakeword.sphinx.frontend.endpoint.SpeechMarker;
@@ -46,7 +42,7 @@ import okio.BufferedSink;
  * Near Talk, use stop capture directive
  */
 
-public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
+public class NearTalkVoiceRecord2 extends Thread {
 
 
     private final int MAX_WAIT_TIME = 8 * 1000;
@@ -77,9 +73,8 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
         mFilePath = filepath;
         mShareFile = new NearTalkRandomAccessFile2(mFilePath);
 
-        classifier = new SpeechClassifier(10, 0.003, 13, 0);
-        classifier.setPredecessor(this);
-         speechMarker = new SpeechMarker(200, 300, 50); // echo 大部分时候只等待不够300ms
+        classifier = new SpeechClassifier(10, 0.003, 13, 0); //13, 50 ;// pc 40
+        speechMarker = new SpeechMarker(100, 300, 50); // echo 大部分时候只等待不够300ms
         speechMarker.setPredecessor(classifier);
         speechMarker.reset();
     }
@@ -145,6 +140,7 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
 
     @Override
     public void run() {
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
         LedControl.myLedCtl(2);
         long bt = SystemClock.elapsedRealtime();
         if (!SingleAudioRecord.getInstance().isRecording()) {
@@ -328,30 +324,6 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
         return recordHttpState;
     }
 
-    @Override
-    public void initialize() {
-
-    }
-
-    @Override
-    public Data getData() throws DataProcessingException {
-            throw new DataProcessingException("cannot take Data from audioList");
-    }
-
-    @Override
-    public DataProcessor getPredecessor() {
-        return null;
-    }
-
-    @Override
-    public void setPredecessor(DataProcessor predecessor) {
-
-    }
-
-    @Override
-    public void newProperties(PropertySheet ps) throws PropertyException {
-
-    }
 
     private class NearTalkFileDataRequestBody extends RequestBody {
         private NearTalkRandomAccessFile2 mFile;
@@ -365,12 +337,12 @@ public class NearTalkVoiceRecord2 extends Thread implements DataProcessor {
             mByteArrayStream = new ByteArrayOutputStream();
             pointer = beginPosition;
 //            if (BuildConfig.DEBUG) { // Record wav
-                try {
-                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
-                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
+//                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
+//                } catch (FileNotFoundException e) {
+//                    e.printStackTrace();
+//                }
 //            }
         }
 
