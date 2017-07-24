@@ -37,9 +37,13 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.w(TAG, "onReceive RECEIVE_START_WAKE_WORD_LISTENER");
-
-            if (null != mWakeWordAgent) mWakeWordAgent.continueSearch();
+            if(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER.equals(intent.getAction())) {
+                Log.w(TAG, "onReceive RECEIVE_START_WAKE_WORD_LISTENER " + mWakeWordAgent);
+                if (null != mWakeWordAgent) mWakeWordAgent.continueSearch();
+            } else if(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER.equals(intent.getAction())){
+                Log.w(TAG, "onReceive RECEIVE_PAUSE_WAKE_WORD_LISTENER " + mWakeWordAgent);
+                if (null != mWakeWordAgent) mWakeWordAgent.pauseSearch();
+            }
         }
     };
 
@@ -62,7 +66,9 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         if (null != mWakeWordAgent) mWakeWordAgent.continueSearch();
 
         mDeviceLinkHandler = new DeviceLinkHandler(this);
-        registerReceiver(receiver, new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+        IntentFilter filter = new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER);
+        filter.addAction(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER);
+        registerReceiver(receiver, filter);
 
         startService(
                 BackGroundProcessServiceControlCommand.createIntentByType(this,

@@ -19,4 +19,6 @@ public abstract class WakeWordAgent {
     protected abstract void init();
 
     public abstract void continueSearch();
+
+    public abstract void pauseSearch();
 }

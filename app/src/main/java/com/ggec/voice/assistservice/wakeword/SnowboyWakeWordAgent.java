@@ -32,6 +32,10 @@ public class SnowboyWakeWordAgent extends WakeWordAgent {
         recordingThread.startRecording();
     }
 
+    @Override
+    public void pauseSearch() {
+        recordingThread.stopRecording();
+    }
 
 
     public Handler handle = new Handler() {

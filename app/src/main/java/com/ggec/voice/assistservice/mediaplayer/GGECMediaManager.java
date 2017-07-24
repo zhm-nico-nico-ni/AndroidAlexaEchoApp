@@ -13,6 +13,7 @@ import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.AlexaManager;
+import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.audioplayer.Callback;
 import com.willblaschko.android.alexa.audioplayer.player.GGECMediaAudioPlayer;
 import com.willblaschko.android.alexa.audioplayer.player.GGECSpeechSynthesizerPlayer;
@@ -382,7 +383,7 @@ public class GGECMediaManager {
                 clear(false);
             }
             Log.d(TAG, "send PlaybackQueueCleared Event");
-            AlexaManager.getInstance(MyApplication.getContext()).sendEvent(Event.getPlaybackQueueClearedEvent(), new ImplAsyncCallback("PlaybackQueueCleared"));
+            AlexaManager.getInstance(MyApplication.getContext()).sendEvent(Event.getPlaybackQueueClearedEvent(), null);
         } else if (response instanceof AvsReplaceAllItem) {
             //clear our queue
             Log.w(TAG, "Immediately begin playback of the stream returned with the Play directive, and replace current and enqueued streams");
@@ -563,6 +564,7 @@ public class GGECMediaManager {
 
         @Override
         public synchronized void handleMessage(Message msg) {
+            Log.d(TAG, "handleMessage " + msg.what);
             if (msg.what == QUEUE_STATE_START) {
                 checkIsFinish();
 
@@ -646,6 +648,7 @@ public class GGECMediaManager {
 //            setState(STATE_SPEAKING);
             } else if (current instanceof AvsExpectSpeechItem) {
                 //listen for user input
+                MyApplication.getContext().sendBroadcast(new Intent(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER));
                 pauseSound();
                 AvsExpectSpeechItem speechItem = (AvsExpectSpeechItem) current;
                 startListening(speechItem.getTimeoutInMiliseconds(), speechItem.initiator);

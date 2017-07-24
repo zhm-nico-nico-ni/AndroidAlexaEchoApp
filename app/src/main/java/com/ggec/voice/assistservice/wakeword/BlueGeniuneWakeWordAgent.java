@@ -32,4 +32,9 @@ public class BlueGeniuneWakeWordAgent extends WakeWordAgent {
     public void continueSearch() {
         Listener.canDetect.getAndSet(true);
     }
+
+    @Override
+    public void pauseSearch() {
+        Listener.canDetect.set(false);
+    }
 }
