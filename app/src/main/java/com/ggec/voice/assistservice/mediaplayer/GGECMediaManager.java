@@ -148,7 +148,7 @@ public class GGECMediaManager {
             if (pendingItem instanceof AvsSpeakItem) {
                 Log.i(TAG, "Sending SpeechStartedEvent");
                 AlexaManager.getInstance(MyApplication.getContext())
-                        .sendEvent(Event.getSpeechStartedEvent(pendingItem.getToken()), null);
+                        .sendEvent(Event.getSpeechStartedEvent(pendingItem.getToken()), new ImplAsyncCallback("sendSpeechStarted"));
             } else if(pendingItem instanceof AvsAlertPlayItem){
                 SetAlertHelper.sendAlertEnteredForeground(AlexaManager.getInstance(MyApplication.getContext())
                         , pendingItem.getToken(), new ImplAsyncCallback("sendAlertEnteredForeground"));
@@ -264,9 +264,8 @@ public class GGECMediaManager {
         public void onBufferReady(AvsItem item, long offsetInMilliseconds, long stutterDurationInMilliseconds) {
 
             if(item != null) {
-                Log.i(TAG, "Sending getPlaybackStutterFinishEvent");
                 AlexaManager.getInstance(MyApplication.getContext())
-                        .sendEvent(Event.getPlaybackStutterFinishEvent(item.getToken(), offsetInMilliseconds, stutterDurationInMilliseconds), null);
+                        .sendEvent(Event.getPlaybackStutterFinishEvent(item.getToken(), offsetInMilliseconds, stutterDurationInMilliseconds), new ImplAsyncCallback("getPlaybackStutterFinishEvent"));
             }
         }
 
@@ -283,8 +282,7 @@ public class GGECMediaManager {
             if (needSendPlaybackStartEvent) {
                 if (item instanceof AvsPlayAudioItem || item instanceof AvsPlayRemoteItem) {
                     needSendPlaybackStartEvent = false;
-                    Log.i(TAG, "Sending PlaybackStarted");
-                    AlexaManager.getInstance(MyApplication.getContext()).sendEvent(Event.getPlaybackStartedEvent(item.getToken(), offset), null);
+                    AlexaManager.getInstance(MyApplication.getContext()).sendEvent(Event.getPlaybackStartedEvent(item.getToken(), offset), new ImplAsyncCallback("PlaybackStarted"));
                 }
             }
         }
@@ -384,7 +382,7 @@ public class GGECMediaManager {
                 clear(false);
             }
             Log.d(TAG, "send PlaybackQueueCleared Event");
-            AlexaManager.getInstance(MyApplication.getContext()).sendEvent(Event.getPlaybackQueueClearedEvent(), null);
+            AlexaManager.getInstance(MyApplication.getContext()).sendEvent(Event.getPlaybackQueueClearedEvent(), new ImplAsyncCallback("PlaybackQueueCleared"));
         } else if (response instanceof AvsReplaceAllItem) {
             //clear our queue
             Log.w(TAG, "Immediately begin playback of the stream returned with the Play directive, and replace current and enqueued streams");
@@ -474,7 +472,7 @@ public class GGECMediaManager {
         if(playingItem!=null) {
             Log.d(TAG, "sendPlaybackStoppedEvent");
             AlexaManager.getInstance(MyApplication.getContext())
-                    .sendEvent(Event.getPlaybackStoppedEvent(playingItem.getToken(), position), null);
+                    .sendEvent(Event.getPlaybackStoppedEvent(playingItem.getToken(), position), new ImplAsyncCallback("sendPlaybackStoppedEvent"));
         }
     }
 
@@ -489,7 +487,7 @@ public class GGECMediaManager {
             Log.d(TAG, "sendPlaybackResumeEvent");
             event = Event.getPlaybackResumedEvent(item.getToken(), item.pausePosition);
         }
-        AlexaManager.getInstance(MyApplication.getContext()).sendEvent(event, null);
+        AlexaManager.getInstance(MyApplication.getContext()).sendEvent(event, new ImplAsyncCallback("event111"));
     }
 
     private void sendStopAlertEvent(String token){
@@ -552,7 +550,7 @@ public class GGECMediaManager {
     private void doWhenSpeechSynthesizerEnd(AvsItem completedItem){
         if (completedItem instanceof AvsSpeakItem) {
             AlexaManager.getInstance(MyApplication.getContext())
-                    .sendEvent(Event.getSpeechFinishedEvent(completedItem.getToken()), null);
+                    .sendEvent(Event.getSpeechFinishedEvent(completedItem.getToken()), new ImplAsyncCallback("sendSpeechFinished"));
         } else if(completedItem instanceof AvsAlertPlayItem) {
             sendStopAlertEvent(completedItem.getToken());
         }
