@@ -48,6 +48,11 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
         switchSearch(KWS_SEARCH);
     }
 
+    @Override
+    public void pauseSearch() {
+        recognizer.cancel();
+    }
+
     private void switchSearch(String searchName) {
         recognizer.stop();
 
@@ -63,6 +68,9 @@ public class CumSphinxWakeWordAgent extends WakeWordAgent implements Recognition
         Config config = Decoder.defaultConfig();
         config.setString("-hmm", new File(assetsDir, "en-us-ptm").getPath());
         config.setString("-dict", new File(assetsDir, "cmudict-en-us.dict").getPath());
+        config.setFloat("-kws_threshold", 1e-50);
+        config.setInt("-kws_delay", 0);
+
 //        config.setString("-rawlogdir", mContext.getExternalFilesDir("rawlog2").getPath());
         recognizer = new SpeechRecognizer(config);
 //        recognizer = SpeechRecognizerSetup.defaultSetup()
