@@ -7,6 +7,10 @@
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/auth/auth.iml" filepath="$PROJECT_DIR$/auth/auth.iml" />
       <module fileurl="file://$PROJECT_DIR$/bluetoothconnect/bluetoothconnect.iml" filepath="$PROJECT_DIR$/bluetoothconnect/bluetoothconnect.iml" />
+      <module fileurl="file://$PROJECT_DIR$/library-core-release/library-core-release.iml" filepath="$PROJECT_DIR$/library-core-release/library-core-release.iml" />
+      <module fileurl="file://$PROJECT_DIR$/library-dash-release/library-dash-release.iml" filepath="$PROJECT_DIR$/library-dash-release/library-dash-release.iml" />
+      <module fileurl="file://$PROJECT_DIR$/library-hls-release/library-hls-release.iml" filepath="$PROJECT_DIR$/library-hls-release/library-hls-release.iml" />
+      <module fileurl="file://$PROJECT_DIR$/library-smoothstreaming-release/library-smoothstreaming-release.iml" filepath="$PROJECT_DIR$/library-smoothstreaming-release/library-smoothstreaming-release.iml" />
       <module fileurl="file://$PROJECT_DIR$/toollibrary/toollibrary.iml" filepath="$PROJECT_DIR$/toollibrary/toollibrary.iml" />
       <module fileurl="file://$PROJECT_DIR$/wakewordassest/wakewordassest.iml" filepath="$PROJECT_DIR$/wakewordassest/wakewordassest.iml" />
       <module fileurl="file://$PROJECT_DIR$/wakeworddetectmodule/wakeworddetectmodule.iml" filepath="$PROJECT_DIR$/wakeworddetectmodule/wakeworddetectmodule.iml" />
