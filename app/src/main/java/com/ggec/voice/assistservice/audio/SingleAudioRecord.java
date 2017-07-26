@@ -6,6 +6,8 @@ import android.media.MediaRecorder;
 
 import com.ggec.voice.toollibrary.log.Log;
 
+import ai.kitt.snowboy.Constants;
+
 /**
  * Created by ggec on 2017/5/24.
  * Only one instance in app, for wake word detect and speech recognize.
@@ -24,10 +26,16 @@ public class SingleAudioRecord {
         int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
 
 //        bufferSizeInBytes = Math.round((float)recorder_sample_rate * BUFFER_SIZE_SECONDS);
-        bufferSizeInBytes = AudioRecord.getMinBufferSize(recorder_sample_rate,
-                recorder_channels,
-                recorder_audio_encoding
-        );
+        int bufferSize = (int)(Constants.SAMPLE_RATE * 0.1 * 2);
+        if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
+            bufferSize = Constants.SAMPLE_RATE * 2;
+        }
+        bufferSizeInBytes = bufferSize;
+
+//        bufferSizeInBytes = AudioRecord.getMinBufferSize(recorder_sample_rate,
+//                recorder_channels,
+//                recorder_audio_encoding
+//        );
 
         audioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
                 recorder_sample_rate,

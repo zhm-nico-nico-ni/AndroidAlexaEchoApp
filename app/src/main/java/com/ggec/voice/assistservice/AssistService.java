@@ -105,8 +105,8 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
             });
 
 //            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent(this, this);
-            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
-//        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
+//            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
+        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
         }
     }
 

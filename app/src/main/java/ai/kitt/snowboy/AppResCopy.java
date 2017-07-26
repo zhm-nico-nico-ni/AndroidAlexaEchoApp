@@ -26,7 +26,7 @@ public class AppResCopy {
                         Log.i(TAG, "mkdir ok: "+sdcardDstDir);
                     }
                 } else {
-                     Log.w(TAG, sdcardDstDir+" already exists! ");
+                    Log.w(TAG, sdcardDstDir+" already exists! ");
                 }
                 for (String fileName : fileNames) {
                     copyFilesFromAssets(context,assetsSrcDir + "/" + fileName,sdcardDstDir+"/"+fileName, override);
@@ -61,6 +61,6 @@ public class AppResCopy {
     }
 
     public static void copyResFromAssetsToSD(Context context) {
-        copyFilesFromAssets(context, Constants.ASSETS_RES_DIR, envWorkSpace+"/", true);
+        copyFilesFromAssets(context, Constants.ASSETS_RES_DIR, envWorkSpace, false);
     }
 }
