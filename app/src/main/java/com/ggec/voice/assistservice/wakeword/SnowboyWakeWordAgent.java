@@ -23,6 +23,7 @@ public class SnowboyWakeWordAgent extends WakeWordAgent implements ISnowEventCal
 
     @Override
     protected void init() {
+        Log.d(TAG, "initd");
         recordingThread = new RecordingThread(this, null /*new AudioDataSaver()*/);
     }
 

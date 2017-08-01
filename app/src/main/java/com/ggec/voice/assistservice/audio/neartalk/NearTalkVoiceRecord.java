@@ -21,8 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import be.tarsos.dsp.SilenceDetector;
-import be.tarsos.dsp.io.TarsosDSPAudioFloatConverter;
 import be.tarsos.dsp.io.TarsosDSPAudioFormat;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -44,7 +42,6 @@ public class NearTalkVoiceRecord extends Thread {
     private final static String TAG = "NearTalkVoiceRecord";
 
     private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
-    private final SilenceDetector continuingSilenceDetector;
 
     private NearTalkState mState;
     private final String mFilePath;
@@ -65,8 +62,6 @@ public class NearTalkVoiceRecord extends Thread {
                 , true
                 , false);
 
-        // 这里的最小声音分贝值可以根据先前的输入值来判断
-        continuingSilenceDetector = new SilenceDetector(silenceThreshold, false);
 
         mFilePath = filepath;
         mShareFile = new NearTalkRandomAccessFile(mFilePath);
@@ -87,11 +82,9 @@ public class NearTalkVoiceRecord extends Thread {
         int numberOfReadFloat;
         int bufferSizeInBytes = 320;// 10ms chunk
         byte audioBuffer[] = new byte[bufferSizeInBytes];
-        float tempFloatBuffer[] = new float[bufferSizeInBytes / 2];
 
         mState = new NearTalkState();
         mState.initTime = SystemClock.elapsedRealtime();
-        boolean mIsSilent = true;
 
         long currentDataPointer = mBeginPosition;
         try {
@@ -102,45 +95,21 @@ public class NearTalkVoiceRecord extends Thread {
                 numberOfReadFloat = SingleAudioRecord.getInstance().getAudioRecorder().read(audioBuffer, 0, bufferSizeInBytes);
 
                 if (numberOfReadFloat > 0) {
-                    TarsosDSPAudioFloatConverter
-                            .getConverter(tarsosDSPAudioFormat)
-                            .toFloatArray(audioBuffer, tempFloatBuffer, numberOfReadFloat / 2);
 
-                    boolean isSilent = continuingSilenceDetector.isSilence(tempFloatBuffer);
                     long currentTime = SystemClock.elapsedRealtime();
 
-                    if (!isSilent && mState.beginSpeakTime == 0) {
-                        Log.d(TAG, "begin " + continuingSilenceDetector.currentSPL());
+                    if (mState.beginSpeakTime == 0) {
+                        Log.d(TAG, "begin ");
                         mState.beginSpeakTime = currentTime;
-                    } else {
-                        if (isSilent != mIsSilent) {
-
-                            if (!mIsSilent) {
-                                Log.d(TAG, "record silent time :" + (currentTime - mState.lastSilentTime) + " spl:" + continuingSilenceDetector.currentSPL());
-                                mState.lastSilentTime = currentTime;
-                                mState.lastSilentRecordIndex = currentDataPointer;
-
-                            } else {
-                                Log.d(TAG, "current is slient:" + continuingSilenceDetector.currentSPL());
-                            }
-                            mIsSilent = isSilent;
-                        }
                     }
 
-                    if (mState.beginSpeakTime == 0 &&
-                            currentTime - mState.initTime >= MAX_WAIT_TIME) {
+                    if (currentTime - mState.initTime >= MAX_WAIT_TIME) {
                         Log.d(TAG, "finish: wait to long ");
-                        setRecordLocalState(RecordState.ERROR);
-                        break;
-                    } else if (isSilent &&
-                            mState.lastSilentTime != 0 &&
-                            currentTime - mState.lastSilentTime >= MAX_WAIT_END_TIME) {
                         setRecordLocalState(RecordState.FINISH);
-                        Log.d(TAG, "OK: complete after speak ");
                         break;
                     }
 
-                    if (!mIsSilent && mState.beginSpeakTime > 0) {
+                    if (mState.beginSpeakTime > 0) {
                         try {
                             mShareFile.seek(currentDataPointer);
                             //write file
@@ -153,6 +122,10 @@ public class NearTalkVoiceRecord extends Thread {
                         }
 
                     }
+
+                    long diff = SystemClock.elapsedRealtime() - currentTime;
+                    if(diff >= 5)
+                        Log.w(TAG, "process use to long !!      " + diff);
                 }
             }
 

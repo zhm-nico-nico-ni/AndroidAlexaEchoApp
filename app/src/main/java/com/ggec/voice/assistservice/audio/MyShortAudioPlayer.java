@@ -14,7 +14,7 @@ import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
+import com.google.android.exoplayer2.extractor.wav.WavExtractor;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -56,7 +56,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
         ExtractorMediaSource mediaSource = new ExtractorMediaSource(
                 Uri.parse(path),
                 new DefaultDataSourceFactory(MyApplication.getContext(), "GGEC"),
-                Mp3Extractor.FACTORY,
+                WavExtractor.FACTORY,
                 null,
                 new ExtractorMediaSource.EventListener() {
                     @Override

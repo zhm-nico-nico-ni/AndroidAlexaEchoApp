@@ -119,6 +119,7 @@ public class RecordingThread {
                 // post a higher CPU usage:
                 // sendMessage(MsgEnum.MSG_VAD_SPEECH, null);
             } else if (result > 0) {
+                stopRecording();
                 sendMessage(MsgEnum.MSG_ACTIVE, null);
                 Log.i("Snowboy: ", "Hotword " + Integer.toString(result) + " detected!");
 //                player.start();

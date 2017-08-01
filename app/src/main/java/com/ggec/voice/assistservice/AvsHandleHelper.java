@@ -10,7 +10,6 @@ import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord;
-import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord2;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
@@ -56,7 +55,7 @@ public class AvsHandleHelper {
     private static final String TAG = "GGECAvsHandleHelper";
     private static volatile AvsHandleHelper sAvsHandleHelper;
     private GGECMediaManager audioManager;
-    private NearTalkVoiceRecord2 myNearTalkVoiceRecord;
+    private NearTalkVoiceRecord myNearTalkVoiceRecord;
     private MyShortAudioPlayer mMyShortAudioPlayer;
 
     private AvsHandleHelper() {
@@ -221,7 +220,7 @@ public class AvsHandleHelper {
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {
-            myNearTalkVoiceRecord = new NearTalkVoiceRecord2(endIndexInSamples, path , NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
+            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path , NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
         } catch (FileNotFoundException e) {
             callback.failure(e);
             audioManager.continueSound();
@@ -270,7 +269,7 @@ public class AvsHandleHelper {
                     myNearTalkVoiceRecord.start();
                 }
             });
-        } else {// FIXME 这里很慢。。。
+        } else {
             myNearTalkVoiceRecord.start();
         }
     }
@@ -372,7 +371,8 @@ public class AvsHandleHelper {
     }
     public void initAudioPlayer(){
         if(mMyShortAudioPlayer== null){
-            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.mp3");
+            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///snowboy/ding.wav");
+//            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.wav");
         }
     }
 }
