@@ -801,7 +801,7 @@ public final class DiskLruCache implements Closeable {
                 if (entry.currentEditor != this) {
                     throw new IllegalStateException();
                 }
-                return new RandomAccessFile(entry.getCleanFile(index), "rw");
+                return new RandomAccessFile(entry.getCleanFile(index), "rws");
             }
         }
 
