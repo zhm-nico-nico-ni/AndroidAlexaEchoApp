@@ -45,19 +45,19 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
 //        return mIsActuallyClose;
 //    }
 
-    public void setActuallyLong(long actuallyLong){
+    public synchronized void setActuallyLong(long actuallyLong){
         this.actuallyLong = actuallyLong;
     }
 
-    public long getActuallyLong() {
+    public synchronized long getActuallyLong() {
         return actuallyLong;
     }
 
-    public long getWriteLength(){
+    public synchronized long getWriteLength(){
         return writeLength;
     }
 
-    public void write(byte b[], int off, int len) throws IOException {
+    public synchronized void write(byte b[], int off, int len) throws IOException {
         super.write(b, off, len);
         writeLength += len;
     }

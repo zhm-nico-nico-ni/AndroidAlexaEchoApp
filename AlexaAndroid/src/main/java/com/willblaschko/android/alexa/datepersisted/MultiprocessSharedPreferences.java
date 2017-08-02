@@ -60,7 +60,7 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
     private BroadcastReceiver mReceiver;
 
     private final static String AUTHORITY = BuildConfig.APP_PACKAGE_NAME + ".provider.MultiprocessSharedPreferences";
-    private static volatile Uri AUTHORITY_URI = Uri.parse("content://" + AUTHORITY);
+    private static final Uri AUTHORITY_URI = Uri.parse("content://" + AUTHORITY);
     private UriMatcher mUriMatcher;
     private static final String KEY = "value";
     private static final String KEY_NAME = "name";
