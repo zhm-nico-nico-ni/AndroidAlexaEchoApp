@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.utility.Util;
 
 import okhttp3.HttpUrl;
@@ -74,7 +75,9 @@ public class SharedPreferenceUtil {
         preferences.putString(TokenManager.PREF_CLIENT_ID, clientId);
         preferences.putString(AuthorizationManager.CODE_VERIFIER, codeVerify);
         //comes back in seconds, needs to be milis
-        preferences.putLong(TokenManager.PREF_TOKEN_EXPIRES, (System.currentTimeMillis() + expires_in * 1000));
+        long t = System.currentTimeMillis() + expires_in * 1000;
+        Log.i(Log.TAG_APP, "putAuthToken2 " + t);
+        preferences.putLong(TokenManager.PREF_TOKEN_EXPIRES, t);
         return preferences.commit();
     }
 

@@ -61,24 +61,42 @@ public class OpenDownchannel extends SendEvent {
         try {
             currentCall = client.newCall(request);
             response = currentCall.execute();
-            final String boundary = getBoundary(response);
-            BufferedSource source = response.body().source();
-            Buffer buffer = new Buffer();
-            Log.d(TAG, "on response 0 :"+boundary);
-            if (callback != null) {
-                callback.start();
-            }
-            while (!source.exhausted()) {
-                long all = source.read(buffer, 8192);// okio.Segment.SIZE
-                Log.d(TAG, "on response 1. " +all);
-                AvsResponse val = new AvsResponse();
+            if(response.isSuccessful()) {
+                final String boundary = getBoundary(response);
+                BufferedSource source = response.body().source();
+                Buffer buffer = new Buffer();
+                Log.d(TAG, "on response 0 :" + boundary);
+                if (callback != null) {
+                    callback.start();
+                }
+                while (!source.exhausted()) {
+                    long all = source.read(buffer, 8192);// okio.Segment.SIZE
+                    Log.d(TAG, "on response 1. " + all);
+                    AvsResponse val = new AvsResponse();
 
+                    try {
+                        val = ResponseParser.parseResponse(buffer.readByteArray(), boundary, true, callback);
+                    } catch (AvsResponseException ex) {
+                        if (ex.isUnAuthorized()) {
+                            onError(callback, ex);
+                            break;
+                        } else {
+                            Log.e(TAG, "on response parseResponse error: " + ex.getMessage(), ex);
+                        }
+                    } catch (Exception exp) {
+                        Log.e(TAG, "on response parseResponse error: " + exp.getMessage(), exp);
+                    }
+
+                    if (callback != null) {
+                        callback.success(val);
+                    }
+                }
+            } else {
                 try {
-                    val = ResponseParser.parseResponse(buffer.readByteArray(), boundary, true, callback);
-                } catch (AvsResponseException ex){
-                    if(ex.isUnAuthorized()) {
+                    ResponseParser.parseResponseFail(response.body().string());
+                } catch (AvsResponseException ex) {
+                    if (ex.isUnAuthorized()) {
                         onError(callback, ex);
-                        break;
                     } else {
                         Log.e(TAG, "on response parseResponse error: " + ex.getMessage(), ex);
                     }
@@ -86,9 +104,6 @@ public class OpenDownchannel extends SendEvent {
                     Log.e(TAG, "on response parseResponse error: " + exp.getMessage(), exp);
                 }
 
-                if (callback != null) {
-                    callback.success(val);
-                }
             }
         } catch (IOException e) {
             onError(callback, e);
