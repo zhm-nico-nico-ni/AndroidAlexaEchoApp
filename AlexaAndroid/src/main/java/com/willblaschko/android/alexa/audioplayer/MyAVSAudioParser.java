@@ -115,7 +115,10 @@ public class MyAVSAudioParser {
 
     private String parseResponse(Response response) throws IOException {
         String playUri = response.request().url().toString();
-        if (PLAY_LIST_PATTERN.matcher(response.header("Content-Type")).find()) {
+        if(!response.isSuccessful()) {
+            Log.d(TAG, "play directly code:"+response.code() + " msg:"+response.message());
+            mAvsPlayRemoteItem.setConvertUrl(playUri);
+        } else if (PLAY_LIST_PATTERN.matcher(response.header("Content-Type")).find()) {
             // audio/x-mpegurl 是声明文件了，解析
             BufferedReader bufferedReader = new BufferedReader(response.body().charStream());
             String responseFirstLine = bufferedReader.readLine();
