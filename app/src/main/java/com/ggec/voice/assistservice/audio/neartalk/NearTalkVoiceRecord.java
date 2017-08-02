@@ -70,6 +70,7 @@ public class NearTalkVoiceRecord extends Thread {
 
     @Override
     public void run() {
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
         LedControl.myLedCtl(2);
         long bt = SystemClock.elapsedRealtime();
         if (!SingleAudioRecord.getInstance().isRecording()) {
