@@ -7,7 +7,7 @@ import android.os.SystemClock;
  *
  */
 
-public class NearTalkState {
+public class TalkState {
     public long initTime;
     public long beginSpeakTime;
     public long lastSilentTime;

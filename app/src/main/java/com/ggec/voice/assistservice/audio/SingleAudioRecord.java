@@ -14,19 +14,21 @@ import ai.kitt.snowboy.Constants;
  */
 
 public class SingleAudioRecord {
-//    private static final float BUFFER_SIZE_SECONDS = 0.4F;
+    //    private static final float BUFFER_SIZE_SECONDS = 0.4F;
     private static volatile SingleAudioRecord sInstance;
     private final AudioRecord audioRecorder;
     private final int bufferSizeInBytes;
 
-    private SingleAudioRecord(){
+    private AudioPostProcessEffect mEffectControl;
+
+    private SingleAudioRecord() {
 
         int recorder_sample_rate = 16000;
         int recorder_channels = AudioFormat.CHANNEL_IN_MONO;
         int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
 
 //        bufferSizeInBytes = Math.round((float)recorder_sample_rate * BUFFER_SIZE_SECONDS);
-        int bufferSize = (int)(Constants.SAMPLE_RATE * 0.1 * 2);
+        int bufferSize = (int) (Constants.SAMPLE_RATE * 0.1 * 2);
         if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
             bufferSize = Constants.SAMPLE_RATE * 2;
         }
@@ -44,52 +46,60 @@ public class SingleAudioRecord {
                 bufferSizeInBytes);
 
 
-        if(this.audioRecorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
+        if (this.audioRecorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
             this.audioRecorder.release();
-            Log.e("SingleAudioRecord","Failed to initialize recorder. Microphone might be already in use.");
+            Log.e("SingleAudioRecord", "Failed to initialize recorder. Microphone might be already in use.");
         }
 
+//        mEffectControl = new AudioPostProcessEffect(audioRecorder.getAudioSessionId());
+//        mEffectControl.enableAutoGainControl();
+//        mEffectControl.enableEchoCanceler();
+//        mEffectControl.enableNoiseSuppressor();
+
+//        mEffectControl.releaseNoiseSuppressor();
+//        mEffectControl.releaseEchoCanceler();
     }
 
-    public static synchronized SingleAudioRecord getInstance(){
-        if(sInstance == null){
+    public static synchronized SingleAudioRecord getInstance() {
+        if (sInstance == null) {
             sInstance = new SingleAudioRecord();
         }
         return sInstance;
     }
 
-    public void startRecording(){
+    public void startRecording() {
         isRecording = true;
-        if(audioRecorder.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) {
+        if (audioRecorder.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) {
             audioRecorder.startRecording();
         }
     }
 
-    public int getState(){
+    public int getState() {
         return audioRecorder.getState();
     }
 
-    public boolean isRecording(){
+    public boolean isRecording() {
         return isRecording;
 //        return audioRecorder.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING;
     }
 
-    public AudioRecord getAudioRecorder(){
+    public AudioRecord getAudioRecorder() {
         return audioRecorder;
     }
 
     boolean isRecording;
-    public void stop(){
+
+    public void stop() {
         isRecording = false;
 //        audioRecorder.stop();
-        Log.d(Log.TAG_APP, "stop and read " );
+        Log.d(Log.TAG_APP, "stop and read ");
     }
 
-    public void release(){
+    public void release() {
         audioRecorder.release();
     }
 
-    public int getBufferSizeInBytes(){
+    public int getBufferSizeInBytes() {
         return bufferSizeInBytes;
     }
 
@@ -141,7 +151,6 @@ public class SingleAudioRecord {
      * @param signedData    whether the data is signed
      * @return a double array, or <code>null</code> if byteArray is of zero length
      * @throws java.lang.ArrayIndexOutOfBoundsException if index goes out of bounds
-     *
      */
     public static double[] littleEndianBytesToValues(byte[] data,
                                                      int offset,
@@ -185,16 +194,16 @@ public class SingleAudioRecord {
             throws ArrayIndexOutOfBoundsException {
 
         byte[] result = new byte[2];
-        result[1] = (byte)(( (int) data >> 8) & 0xFF);
+        result[1] = (byte) (((int) data >> 8) & 0xFF);
         result[0] = (byte) (data);
 
 
         return result;
     }
 
-    public static void littleEndianBytesToValues(double data, byte [] out, int index)
+    public static void littleEndianBytesToValues(double data, byte[] out, int index)
             throws ArrayIndexOutOfBoundsException {
-        out[index + 1] = (byte)(( (int) data >> 8) & 0xFF);
+        out[index + 1] = (byte) (((int) data >> 8) & 0xFF);
         out[index] = (byte) (data);
     }
 }

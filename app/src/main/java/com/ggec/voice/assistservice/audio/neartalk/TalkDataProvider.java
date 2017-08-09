@@ -1,35 +1,35 @@
 package com.ggec.voice.assistservice.audio.neartalk;
 
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+
+import okio.Buffer;
 
 /**
- * Created by ggec on 2017/4/25.
+ * Created by ggec on 2017/8/9.
  */
 
-public class NearTalkRandomAccessFile extends RandomAccessFile {
-    private boolean mIsClose, mCanceled;
+public class TalkDataProvider {
+    private boolean mIsEnd, mCanceled;
     private volatile long actuallyLong;
     private volatile long writeLength;
+    private volatile Buffer mBuffer = new Buffer();
 
-    public NearTalkRandomAccessFile(String name) throws FileNotFoundException {
-        super(name, "rwd");
+    public TalkDataProvider(String name) {
+
     }
 
-    @Override
-    public void close() {
-        mIsClose = true;
+    public synchronized void setEnd(long actuallyLong) {
+        this.actuallyLong = actuallyLong;
+        mIsEnd = true;
     }
 
-    public boolean isClose() {
-        return mIsClose;
+    public boolean isEnd() {
+        return mIsEnd;
     }
 
     public void cancel() {
         mCanceled = true;
-        close();
+        setEnd(-1);
     }
 
     public boolean isCanceled() {
@@ -45,9 +45,6 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
 //        return mIsActuallyClose;
 //    }
 
-    public synchronized void setActuallyLong(long actuallyLong){
-        this.actuallyLong = actuallyLong;
-    }
 
     public synchronized long getActuallyLong() {
         return actuallyLong;
@@ -58,7 +55,11 @@ public class NearTalkRandomAccessFile extends RandomAccessFile {
     }
 
     public synchronized void write(byte b[], int off, int len) throws IOException {
-        super.write(b, off, len);
+        mBuffer.write(b, off, len);
         writeLength += len;
+    }
+
+    public synchronized int read(byte[] buffer) {
+        return mBuffer.read(buffer);
     }
 }

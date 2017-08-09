@@ -9,7 +9,7 @@ import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
-import com.ggec.voice.assistservice.audio.neartalk.NearTalkVoiceRecord;
+import com.ggec.voice.assistservice.audio.neartalk.FarTalkVoiceRecord;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
@@ -55,7 +55,7 @@ public class AvsHandleHelper {
     private static final String TAG = "GGECAvsHandleHelper";
     private static volatile AvsHandleHelper sAvsHandleHelper;
     private GGECMediaManager audioManager;
-    private NearTalkVoiceRecord myNearTalkVoiceRecord;
+    private FarTalkVoiceRecord myTalkVoiceRecord;
     private MyShortAudioPlayer mMyShortAudioPlayer;
 
     private AvsHandleHelper() {
@@ -190,11 +190,11 @@ public class AvsHandleHelper {
 
     public void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
         Log.d(TAG, "stopCaptureNearTalkVoiceRecord called " + justStopMic);
-        if (myNearTalkVoiceRecord != null && !myNearTalkVoiceRecord.isInterrupted()) {
+        if (myTalkVoiceRecord != null && !myTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
-                myNearTalkVoiceRecord.interrupt(false);
+                myTalkVoiceRecord.stopCapture(false);
             } else {
-                myNearTalkVoiceRecord.doActuallyInterrupt();
+                myTalkVoiceRecord.doActuallyInterrupt();
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 alexaManager.cancelAudioRequest();
             }
@@ -220,14 +220,14 @@ public class AvsHandleHelper {
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
 
         try {
-            myNearTalkVoiceRecord = new NearTalkVoiceRecord(endIndexInSamples, path , NearTalkVoiceRecord.DEFAULT_SILENT_THRESHOLD, callback, needTips ? 500 : waitMicTimeOut );
+            myTalkVoiceRecord = new FarTalkVoiceRecord(endIndexInSamples, path, callback, needTips ? 500 : waitMicTimeOut );
         } catch (FileNotFoundException e) {
             callback.failure(e);
             audioManager.continueSound();
             return;
         }
 
-        myNearTalkVoiceRecord.startHttpRequest(endIndexInSamples, new IMyVoiceRecordListener(path){
+        myTalkVoiceRecord.startHttpRequest(endIndexInSamples, new IMyVoiceRecordListener(path){
             @Override
             public void start() {
                 callback.start();
@@ -266,11 +266,11 @@ public class AvsHandleHelper {
                 @Override
                 public void onCompletion() {
                     Log.d(TAG, "mMyShortAudioPlayer# onCompletion");
-                    myNearTalkVoiceRecord.start();
+                    myTalkVoiceRecord.start();
                 }
             });
         } else {
-            myNearTalkVoiceRecord.start();
+            myTalkVoiceRecord.start();
         }
     }
 

@@ -1,5 +1,7 @@
 package com.ggec.voice.assistservice.audio.neartalk;
 
+import android.os.Handler;
+import android.os.Message;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 
@@ -21,52 +23,73 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import be.tarsos.dsp.io.TarsosDSPAudioFormat;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import okio.BufferedSink;
 
 /**
  * Created by ggec on 2017/4/25.
- * Near Talk, use stop capture directive
+ * Far Field Talk, 0 - 20 (ft), use stop capture directive
  */
 
-public class NearTalkVoiceRecord extends Thread {
+public class FarTalkVoiceRecord extends Thread {
 
-    public final static float DEFAULT_SILENT_THRESHOLD = -70f;
 
     private final int MAX_WAIT_TIME = 8 * 1000;
     private final int MAX_RECORD_TIME = 10 * 1000;
-    private int MAX_WAIT_END_TIME = 500;
 
-    private final static String TAG = "NearTalkVoiceRecord";
+    private final static String TAG = "FarTalkVoiceRecord";
 
-    private final TarsosDSPAudioFormat tarsosDSPAudioFormat;
-
-    private NearTalkState mState;
-    private final String mFilePath;
+    private TalkState mState;
     private volatile int recordState = RecordState.EMPTY;
     private volatile int recordHttpState = RecordState.EMPTY;
-    private volatile NearTalkRandomAccessFile mShareFile;
+
+    private final String mFilePath;
+
+    private volatile TalkDataProvider mShareFile;
     private IMyVoiceRecordListener mListener;
-    private final long mBeginPosition;
 
-    public NearTalkVoiceRecord(long beginPosition, String filepath, float silenceThreshold, @NonNull IMyVoiceRecordListener listener, int waitTimeOut) throws FileNotFoundException {
-        mBeginPosition = beginPosition;
+    public FarTalkVoiceRecord(long beginPosition, String filepath, @NonNull IMyVoiceRecordListener listener, int waitTimeOut) throws FileNotFoundException {
+        currentDataPointer = beginPosition;
         mListener = listener;
-        MAX_WAIT_END_TIME = waitTimeOut;
-        tarsosDSPAudioFormat = new TarsosDSPAudioFormat(
-                16000
-                , 16
-                , 1
-                , true
-                , false);
-
 
         mFilePath = filepath;
-        mShareFile = new NearTalkRandomAccessFile(mFilePath);
+        mShareFile = new TalkDataProvider(mFilePath);
 
     }
+
+    private boolean handleBreak = false;
+    long currentDataPointer;
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            if(handleBreak) return;
+            byte[] audioBuffer = (byte[]) msg.obj;
+            int numberByteRead = msg.arg1;
+
+            long currentTime = SystemClock.elapsedRealtime();
+
+            if (currentTime - mState.initTime >= MAX_WAIT_TIME) {
+                Log.d(TAG, "finish: wait to long ");
+                setRecordLocalState(RecordState.FINISH);
+                handleBreak = true;
+                return;
+            }
+
+            try {
+                //write file
+                mShareFile.write(audioBuffer, 0, numberByteRead);
+                currentDataPointer += numberByteRead;
+
+                if (currentTime - mState.initTime > MAX_RECORD_TIME) {
+                    handleBreak = true;
+                    return;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
     @Override
     public void run() {
@@ -80,49 +103,23 @@ public class NearTalkVoiceRecord extends Thread {
         }
 
         setRecordLocalState(RecordState.START);
-        int numberOfReadFloat;
+        int numberByteRead;
         int bufferSizeInBytes = 320;// 10ms chunk
         byte audioBuffer[] = new byte[bufferSizeInBytes];
 
-        mState = new NearTalkState();
+        mState = new TalkState();
         mState.initTime = SystemClock.elapsedRealtime();
 
-        long currentDataPointer = mBeginPosition;
         try {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
-            while (SingleAudioRecord.getInstance().isRecording()) {
+            while (SingleAudioRecord.getInstance().isRecording() && !handleBreak) {
 //                numberOfReadFloat = audioRecorder.read(audioBuffer, 0, bufferSizeInBytes, AudioRecord.READ_NON_BLOCKING);
-                numberOfReadFloat = SingleAudioRecord.getInstance().getAudioRecorder().read(audioBuffer, 0, bufferSizeInBytes);
+                numberByteRead = SingleAudioRecord.getInstance().getAudioRecorder().read(audioBuffer, 0, bufferSizeInBytes);
 
-                if (numberOfReadFloat > 0) {
-
+                if (numberByteRead > 0) {
                     long currentTime = SystemClock.elapsedRealtime();
-
-                    if (mState.beginSpeakTime == 0) {
-                        Log.d(TAG, "begin ");
-                        mState.beginSpeakTime = currentTime;
-                    }
-
-                    if (currentTime - mState.initTime >= MAX_WAIT_TIME) {
-                        Log.d(TAG, "finish: wait to long ");
-                        setRecordLocalState(RecordState.FINISH);
-                        break;
-                    }
-
-                    if (mState.beginSpeakTime > 0) {
-                        try {
-                            mShareFile.seek(currentDataPointer);
-                            //write file
-                            mShareFile.write(audioBuffer, 0, numberOfReadFloat);
-                            currentDataPointer += numberOfReadFloat;
-
-                            if (currentTime - mState.beginSpeakTime > MAX_RECORD_TIME) break;
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                    }
+                    handler.obtainMessage(1, numberByteRead, 0, audioBuffer.clone() /*Arrays.copyOf(audioBuffer, numberByteRead)*/).sendToTarget();
 
                     long diff = SystemClock.elapsedRealtime() - currentTime;
                     if(diff >= 5)
@@ -130,21 +127,17 @@ public class NearTalkVoiceRecord extends Thread {
                 }
             }
 
-            if (mState.beginSpeakTime > 0) {
-                mShareFile.close();
-                mShareFile.setActuallyLong(mState.lastSilentRecordIndex);
+            if(getRecordLocalState() != RecordState.CANCEL) {
+                mShareFile.setEnd(mState.lastSilentRecordIndex);
+                Log.d(TAG, " important !!!!!!!!!!!!!!!! size:" + currentDataPointer + " act:" + mState.lastSilentRecordIndex);
             } else {
+                Log.d(TAG, " important !!!!!!!!!!!!!!!! cancel");
                 mShareFile.cancel();
             }
 
-            Log.d(TAG, " important !!!!!!!!!!!!!!!! size:" + currentDataPointer + " act:" + mState.lastSilentRecordIndex);
-
         } finally {
-            if (mShareFile != null) {
-                IOUtils.closeQuietly(mShareFile);
-            }
+            stopRecord(mState.lastSilentRecordIndex);
         }
-        stopRecord(mState.lastSilentRecordIndex);
     }
 
     private void stopRecord(long actuallyLong) {
@@ -153,8 +146,9 @@ public class NearTalkVoiceRecord extends Thread {
         boolean success = getRecordLocalState() != RecordState.CANCEL;
         if (!success) {
             new File(mFilePath).delete();
-            if (getRecordLocalState() == RecordState.ERROR)
+            if (getRecordLocalState() == RecordState.ERROR) {
                 mListener.failure(null, "", -1, null);
+            }
         }
     }
 
@@ -166,38 +160,35 @@ public class NearTalkVoiceRecord extends Thread {
     @Override
     @Deprecated
     public void interrupt() {
-//        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
-//        Log.d(TAG, "NearTalkVoiceRecord # interrupt");
-//        recordState = MyVoiceRecord.RecordState.interrupt;
-//        mShareFile.cancel();
+//        warn 这里不能这的调用super的方法，否则只能返回no content
     }
 
-    public void interrupt(boolean stopAll) {
-//        super.interrupt();//warn 这里不能这的调用super的方法，否则只能返回no content
+    public void stopCapture(boolean stopAll) {
         if(isInterrupted()){
             return;
         }
 
         if (stopAll) { // stop mic record and http
-            Log.d(TAG, "NearTalkVoiceRecord # interrupt");
+            Log.d(TAG, "FarTalkVoiceRecord # stopCapture");
             setRecordLocalState(RecordState.CANCEL);
             setRecordHttpState(RecordState.CANCEL);
         } else { // just stop mic
-            Log.d(TAG, "NearTalkVoiceRecord # stop capture");
-            setRecordHttpState(RecordState.CANCEL);
+            Log.d(TAG, "FarTalkVoiceRecord # stop capture");
             setRecordLocalState(RecordState.STOP_CAPTURE);
         }
 
-        if(!mShareFile.isCanceled() && !mShareFile.isClose()) {
+        if(!mShareFile.isEnd()) {
             SingleAudioRecord.getInstance().stop();
         }
-        mShareFile.cancel();
+        if (stopAll) {
+            mShareFile.cancel();
+        }
     }
 
     public void doActuallyInterrupt() {
-        Log.d(TAG, "NearTalkVoiceRecord # doActuallyInterrupt");
+        Log.d(TAG, "FarTalkVoiceRecord # doActuallyInterrupt");
 
-        interrupt(true);
+        stopCapture(true);
         if (!super.isInterrupted()) super.interrupt();
     }
 
@@ -255,23 +246,23 @@ public class NearTalkVoiceRecord extends Thread {
     }
 
     private class NearTalkFileDataRequestBody extends RequestBody {
-        private NearTalkRandomAccessFile mFile;
+        private TalkDataProvider mFile;
         private long pointer;
         private FileOutputStream mRecordOutputStream;
         private ByteArrayOutputStream mByteArrayStream;
 
-        public NearTalkFileDataRequestBody(final NearTalkRandomAccessFile file, long beginPosition) {
+        public NearTalkFileDataRequestBody(final TalkDataProvider file, long beginPosition) {
             if (file == null) throw new NullPointerException("content == null");
             mFile = file;
             mByteArrayStream = new ByteArrayOutputStream();
             pointer = beginPosition;
 //            if (BuildConfig.DEBUG) { // Record wav
-//                try {
-//                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
-//                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
-//                } catch (FileNotFoundException e) {
-//                    e.printStackTrace();
-//                }
+                try {
+                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
+                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
 //            }
         }
 
@@ -282,7 +273,7 @@ public class NearTalkVoiceRecord extends Thread {
 
         @Override
         public void writeTo(BufferedSink sink) throws IOException {
-            if (mFile.isClose() && mByteArrayStream.size() > 0) {
+            if (mFile.isEnd() && !mFile.isCanceled() && mByteArrayStream.size() > 0) {
                 Log.w(TAG, "writeTo0000:" + mByteArrayStream.size());
                 sink.write(mByteArrayStream.toByteArray());
                 sink.flush();
@@ -290,19 +281,18 @@ public class NearTalkVoiceRecord extends Thread {
                 //We encourage streaming captured audio to AVS in 10ms chunks at 320 bytes (320 byte DATA frames sent as single units).
                 // Larger chunk sizes create unnecessary buffering, which negatively impacts AVS’ ability to process audio and may result in higher latencies.
                 byte[] buffer = new byte[320*5];
-                Log.d(TAG, "writeTo0 isClose:" + mFile.isClose() + " l:" + mFile.getWriteLength());
+                Log.d(TAG, "writeTo0 isClose:" + mFile.isEnd() + " l:" + mFile.getWriteLength());
                 try {
-                    while (!mFile.isClose()) {
+                    while (!mFile.isEnd()) {
                         long act = mFile.getActuallyLong();
                         if ((act == 0 && mFile.getWriteLength() > pointer) || pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
-
                         }
                     }
 
-                    Log.d(TAG, "writeTo1 isClose:" + mFile.isClose() + "\n cancel:" + mFile.isCanceled()
+                    Log.d(TAG, "writeTo1 isClose:" + mFile.isEnd() + "\n cancel:" + mFile.isCanceled()
                             + " interrupted:" + isInterrupted() + " http:"+getRecordHttpState() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
                     if (!mFile.isCanceled() && getRecordLocalState() != RecordState.CANCEL && getRecordLocalState() != RecordState.ERROR
                             && getRecordHttpState() != RecordState.ERROR && getRecordHttpState() != RecordState.CANCEL) {
@@ -313,22 +303,13 @@ public class NearTalkVoiceRecord extends Thread {
                         }
                         LedControl.myLedCtl(3);
                         Log.d(TAG, "write remaining end");
-                    } else if (mFile.isClose() && mFile.getWriteLength() == 0) {
+                    } else if (mFile.isEnd() && mFile.getWriteLength() <= 0) {
                         //is cancel here
                         Log.d(TAG, "writeTo1 cancel http!");
                         setRecordHttpState(RecordState.CANCEL);
                         AlexaManager.getInstance(MyApplication.getContext()).cancelAudioRequest();
                     }
-                    if(getRecordHttpState() != RecordState.CANCEL && getRecordLocalState() != RecordState.STOP_CAPTURE) {
-                        int actl = (int) mFile.getActuallyLong();
-                        if (actl > 0 && actl < mByteArrayStream.size()) {
-                            Log.d(TAG, "trying change ByteArrayStream size to " + actl);
-                            byte[] raw = mByteArrayStream.toByteArray();
-                            mByteArrayStream.reset();
-                            mByteArrayStream.write(raw, 0, actl);
-                            Log.d(TAG, "change ByteArrayStream size to " + mByteArrayStream.size());
-                        }
-                    }
+
 //                try {
 //                    mFile.doActuallyClose(); //这里应该是异步线程调用close，会导致难以恢复的异常,千万别调用
 //                } catch (final IOException ioe) {
@@ -349,7 +330,7 @@ public class NearTalkVoiceRecord extends Thread {
             if (mFile.getActuallyLong() > 0 && pointer > mFile.getActuallyLong() || getRecordLocalState() == RecordState.STOP_CAPTURE) {
                 return true;
             }
-            mFile.seek(pointer);
+
             int readCount = mFile.read(buffer);
 
             if (readCount > 0) {

@@ -76,7 +76,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         );
 
         AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        audioManager.setMode(AudioManager.MODE_NORMAL);
         audioManager.setSpeakerphoneOn(true);
     }
 
@@ -106,7 +106,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
 
 //            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent(this, this);
 //            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
-        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
+//        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
         }
     }
 

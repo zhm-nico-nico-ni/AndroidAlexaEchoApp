@@ -51,7 +51,7 @@ public class NearTalkVoiceRecord2 extends Thread {
 
     private final static String TAG = "NearTalkVoiceRecord2";
 
-    private NearTalkState mState;
+    private TalkState mState;
     private final String mFilePath;
     private volatile int recordState = RecordState.EMPTY;
     private volatile int recordHttpState = RecordState.EMPTY;
@@ -73,8 +73,8 @@ public class NearTalkVoiceRecord2 extends Thread {
         mFilePath = filepath;
         mShareFile = new NearTalkRandomAccessFile2(mFilePath);
 
-        classifier = new SpeechClassifier(10, 0.003, 13, 0); //13, 50 ;// pc 40
-        speechMarker = new SpeechMarker(100, 300, 50); // echo 大部分时候只等待不够300ms
+        classifier = new SpeechClassifier(10, 0.003, 0, 0); //13, 50 ;// pc 40
+        speechMarker = new SpeechMarker(100, 500, 50); // echo 大部分时候只等待不够300ms
         speechMarker.setPredecessor(classifier);
         speechMarker.reset();
     }
@@ -154,12 +154,15 @@ public class NearTalkVoiceRecord2 extends Thread {
         int bufferSizeInBytes = 320;// 10ms chunk
         byte audioBuffer[] = new byte[bufferSizeInBytes];
 
-        mState = new NearTalkState();
+        mState = new TalkState();
         mState.initTime = SystemClock.elapsedRealtime();
 
 
         currentDataPointer = mBeginPosition;
         classifier.getConvertData(new DataStartSignal(16000));
+//        byte []a = new byte[SingleAudioRecord.getInstance().getBufferSizeInBytes()];
+//        int c = SingleAudioRecord.getInstance().getAudioRecorder().read(a, 0, a.length);
+//        Log.w(TAG, "cc="+c + "  "+ a.length);
         try {
             // While data come from microphone.
             Log.d(TAG, "init file:" + mFilePath);
@@ -272,7 +275,7 @@ public class NearTalkVoiceRecord2 extends Thread {
     }
 
     public void startHttpRequest(long endIndexInSamples, final AsyncCallback<AvsResponse, Exception> callback, IGetContextEventCallBack getContextEventCallBack) {
-        AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest("NEAR_FIELD"
+        AlexaManager.getInstance(MyApplication.getContext()).sendAudioRequest("FAR_FIELD"
                 , new NearTalkFileDataRequestBody(mShareFile, endIndexInSamples)
                 , new AsyncCallback<AvsResponse, Exception>() {
                     @Override
