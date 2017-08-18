@@ -371,8 +371,7 @@ public class AvsHandleHelper {
     }
     public void initAudioPlayer(){
         if(mMyShortAudioPlayer== null){
-            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///snowboy/ding.wav");
-//            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.wav");
+            mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.wav");
         }
     }
 }

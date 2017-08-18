@@ -51,6 +51,8 @@ public class SingleAudioRecord {
             Log.e("SingleAudioRecord", "Failed to initialize recorder. Microphone might be already in use.");
         }
 
+        Log.e("SingleAudioRecord", "Inited");
+
 //        mEffectControl = new AudioPostProcessEffect(audioRecorder.getAudioSessionId());
 //        mEffectControl.enableAutoGainControl();
 //        mEffectControl.enableEchoCanceler();

@@ -280,12 +280,15 @@ public class FarTalkVoiceRecord extends Thread {
             } else {
                 //We encourage streaming captured audio to AVS in 10ms chunks at 320 bytes (320 byte DATA frames sent as single units).
                 // Larger chunk sizes create unnecessary buffering, which negatively impacts AVS’ ability to process audio and may result in higher latencies.
-                byte[] buffer = new byte[320*5];
+                byte[] buffer = new byte[320];
                 Log.d(TAG, "writeTo0 isClose:" + mFile.isEnd() + " l:" + mFile.getWriteLength());
+
                 try {
                     while (!mFile.isEnd()) {
                         long act = mFile.getActuallyLong();
-                        if ((act == 0 && mFile.getWriteLength() > pointer) || pointer < mFile.getActuallyLong()) {
+                        if(handleStopCapture()) {
+                            break;
+                        } else if ((act == 0 && mFile.getWriteLength() > pointer) || pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
@@ -293,10 +296,10 @@ public class FarTalkVoiceRecord extends Thread {
                     }
 
                     Log.d(TAG, "writeTo1 isClose:" + mFile.isEnd() + "\n cancel:" + mFile.isCanceled()
-                            + " interrupted:" + isInterrupted() + " http:"+getRecordHttpState() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
+                            + " interrupted:" + isInterrupted() + " http:" + getRecordHttpState() + "\n pointer:" + pointer + " act_length:" + mFile.getActuallyLong());
                     if (!mFile.isCanceled() && getRecordLocalState() != RecordState.CANCEL && getRecordLocalState() != RecordState.ERROR
                             && getRecordHttpState() != RecordState.ERROR && getRecordHttpState() != RecordState.CANCEL) {
-                        while (pointer < mFile.getActuallyLong()) {
+                        while (getRecordLocalState() != RecordState.STOP_CAPTURE && pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 break;
                             }
@@ -323,6 +326,17 @@ public class FarTalkVoiceRecord extends Thread {
                     IOUtils.closeQuietly(mRecordOutputStream);
                     Log.d(TAG, "writeToSink end, actually_end_point:" + mFile.getActuallyLong() + " p:" + pointer + " diff: " + (mFile.getActuallyLong() - pointer));
                 }
+
+            }
+        }
+
+        private boolean handleStopCapture(){
+            if(getRecordLocalState() == RecordState.STOP_CAPTURE){
+                Log.d(TAG, "writeTo# handleStopCapture");
+                LedControl.myLedCtl(3);
+                return true;
+            } else {
+                return false;
             }
         }
 
