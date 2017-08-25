@@ -83,6 +83,11 @@ public class MyShortAudioPlayer2 implements ExoPlayer.EventListener {
     }
 
     @Override
+    public void onRepeatModeChanged(int repeatMode) {
+
+    }
+
+    @Override
     public void onPlayerError(ExoPlaybackException error) {
 
     }

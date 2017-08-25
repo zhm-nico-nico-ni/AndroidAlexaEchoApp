@@ -70,6 +70,11 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     @Override
+    public void onRepeatModeChanged(int repeatMode) {
+
+    }
+
+    @Override
     public void onPlayerError(ExoPlaybackException error) {
         deletePlayFile();
         if (mListener != null) mListener.onError(error);

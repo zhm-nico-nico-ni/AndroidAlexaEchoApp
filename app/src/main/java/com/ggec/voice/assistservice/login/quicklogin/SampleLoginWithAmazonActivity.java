@@ -25,7 +25,6 @@ import com.amazon.identity.auth.device.api.authorization.Scope;
 import com.amazon.identity.auth.device.api.authorization.ScopeFactory;
 import com.amazon.identity.auth.device.api.workflow.RequestContext;
 import com.ggec.voice.assistservice.AssistService;
-import com.ggec.voice.assistservice.AvsHandleHelper;
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.R;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
@@ -192,7 +191,7 @@ public class SampleLoginWithAmazonActivity extends Activity {
     private void startAssistIfGetPermission(){
         if(PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, RECORD_AUDIO)){
             // start service
-            AvsHandleHelper.getAvsHandleHelper().initAudioPlayer();
+//            AvsHandleHelper.getAvsHandleHelper().initAudioPlayer();
             startService(new Intent(this, AssistService.class));
         } else {
             ActivityCompat.requestPermissions(this, new String[]{RECORD_AUDIO}, 3001);

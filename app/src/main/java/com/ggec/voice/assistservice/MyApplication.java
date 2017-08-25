@@ -23,6 +23,8 @@ import org.acra.sender.ReportSenderFactory;
 
 import java.io.File;
 
+import ai.kitt.snowboy.AppResCopy;
+
 import static org.acra.ReportField.ANDROID_VERSION;
 import static org.acra.ReportField.APP_VERSION_CODE;
 import static org.acra.ReportField.APP_VERSION_NAME;
@@ -63,7 +65,7 @@ public class MyApplication extends Application {
 
         ConstParam.OctetStreamPath = this.getExternalFilesDir("xx321").getPath();
         sContext = this;
-//        AppResCopy.copyResFromAssetsToSD(this);
+        AppResCopy.copyResFromAssetsToSD(this);
         Stetho.initializeWithDefaults(this);
         MultiDex.install(this);
         startService(BackGroundProcessServiceControlCommand.createIntentByType(this, BackGroundProcessServiceControlCommand.NETWORK_CONNECT));
@@ -72,7 +74,7 @@ public class MyApplication extends Application {
 
         //Log开关
         if (!BuildConfig.DEBUG) {
-            Log.LOG_LEVEL = (android.util.Log.ERROR);
+            Log.LOG_LEVEL = (android.util.Log.VERBOSE);
         } else {
             Log.LOG_LEVEL = (android.util.Log.VERBOSE);
         }

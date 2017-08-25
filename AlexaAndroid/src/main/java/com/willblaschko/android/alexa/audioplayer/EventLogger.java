@@ -98,6 +98,11 @@ import java.util.Locale;
   }
 
   @Override
+  public void onRepeatModeChanged(int repeatMode) {
+
+  }
+
+  @Override
   public void onPositionDiscontinuity() {
     Log.d(TAG, "positionDiscontinuity");
   }

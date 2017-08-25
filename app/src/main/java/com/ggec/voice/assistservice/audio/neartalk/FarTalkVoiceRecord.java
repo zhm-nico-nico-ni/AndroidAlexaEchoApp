@@ -257,12 +257,12 @@ public class FarTalkVoiceRecord extends Thread {
             mByteArrayStream = new ByteArrayOutputStream();
             pointer = beginPosition;
 //            if (BuildConfig.DEBUG) { // Record wav
-                try {
-                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
-                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    mRecordOutputStream = new FileOutputStream(mFilePath + ".pcm");
+//                    Log.w(TAG, "create record file:"+mFilePath + ".pcm");
+//                } catch (FileNotFoundException e) {
+//                    e.printStackTrace();
+//                }
 //            }
         }
 
