@@ -19,6 +19,6 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:25.2.0'
+    //    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile files('libs/alexa.auth.proto-1.0.jar')
 }

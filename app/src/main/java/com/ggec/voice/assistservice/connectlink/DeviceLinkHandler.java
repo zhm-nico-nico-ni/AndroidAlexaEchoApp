@@ -21,6 +21,7 @@ import com.ggec.voice.bluetoothconnect.proto.impl.SendWifiConfig2DeviceReq;
 import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.SharedPreferenceUtil;
+import com.willblaschko.android.alexa.TokenManager;
 
 import java.nio.ByteBuffer;
 
@@ -63,6 +64,8 @@ public class DeviceLinkHandler extends LinkHandler implements WifiControl.IContr
             ack.resCode = ProtoResult.SUCCESS;
             ack.deviceSerialNumber = Util.getProductId(MyApplication.getContext());
             ack.productId = BuildConfig.PRODUCT_ID;
+            ack.deviceIsAuthed = com.willblaschko.android.alexa.utility.Util.getPreferences(MyApplication.getContext()).
+                    contains(TokenManager.PREF_ACCESS_TOKEN) ?  (byte) 1 : 0;
             sendData(ack);
         } else if (uri == ProtoURI.SendAuth2DeviceReqURI) {
             SendAuth2DeviceReq received = new SendAuth2DeviceReq();
