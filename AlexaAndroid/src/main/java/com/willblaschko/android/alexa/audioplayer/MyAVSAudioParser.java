@@ -2,7 +2,6 @@ package com.willblaschko.android.alexa.audioplayer;
 
 import android.text.TextUtils;
 
-import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.audioplayer.pls.Playlist;
 import com.willblaschko.android.alexa.audioplayer.pls.PlaylistParser;
@@ -19,6 +18,8 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
+//import com.facebook.stetho.okhttp3.StethoInterceptor;
 
 /**
  * Created by ggec on 2017/5/15.
@@ -70,7 +71,7 @@ public class MyAVSAudioParser {
                     .writeTimeout(8, TimeUnit.SECONDS)
                     .connectTimeout(10, TimeUnit.SECONDS)
                     .retryOnConnectionFailure(true)
-                    .addNetworkInterceptor(new StethoInterceptor())
+//                    .addNetworkInterceptor(new StethoInterceptor())
                     .build();
         }
         return okHttpClient;
@@ -92,7 +93,7 @@ public class MyAVSAudioParser {
         final HttpUrl urll = HttpUrl.parse(url);
         OkHttpClient okHttpClient;
         if (urll.isHttps()) {
-            okHttpClient = ClientUtil.getHttp2Client().newBuilder().addNetworkInterceptor(new StethoInterceptor()).build();
+            okHttpClient = ClientUtil.getHttp2Client().newBuilder()/*.addNetworkInterceptor(new StethoInterceptor())*/.build();
         } else {
             okHttpClient = getHttpClient();
         }

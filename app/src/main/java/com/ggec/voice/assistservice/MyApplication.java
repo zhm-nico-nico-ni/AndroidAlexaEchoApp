@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.multidex.MultiDex;
 
-import com.facebook.stetho.Stetho;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.crashreport.LogSenderFactory;
@@ -48,6 +47,8 @@ import static org.acra.ReportField.TOTAL_MEM_SIZE;
 import static org.acra.ReportField.USER_APP_START_DATE;
 import static org.acra.ReportField.USER_CRASH_DATE;
 
+//import com.facebook.stetho.Stetho;
+
 /**
  * Created by ggec on 2017/3/29.
  */
@@ -66,7 +67,7 @@ public class MyApplication extends Application {
         ConstParam.OctetStreamPath = this.getExternalFilesDir("xx321").getPath();
         sContext = this;
         AppResCopy.copyResFromAssetsToSD(this);
-        Stetho.initializeWithDefaults(this);
+//        Stetho.initializeWithDefaults(this);
         MultiDex.install(this);
         startService(BackGroundProcessServiceControlCommand.createIntentByType(this, BackGroundProcessServiceControlCommand.NETWORK_CONNECT));
         startService(BackGroundProcessServiceControlCommand.createIntentByType(this, BackGroundProcessServiceControlCommand.USER_INACTIVITY_REPORT));
