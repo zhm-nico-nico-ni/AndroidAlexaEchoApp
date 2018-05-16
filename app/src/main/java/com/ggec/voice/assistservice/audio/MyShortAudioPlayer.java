@@ -57,7 +57,7 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
                 Uri.parse(path),
                 new DefaultDataSourceFactory(MyApplication.getContext(), "GGEC"),
                 WavExtractor.FACTORY,
-                null,
+                new Handler(),
                 new ExtractorMediaSource.EventListener() {
                     @Override
                     public void onLoadError(IOException e) {
@@ -111,17 +111,27 @@ public class MyShortAudioPlayer implements ExoPlayer.EventListener {
     }
 
     @Override
+    public void onShuffleModeEnabledChanged(boolean b) {
+
+    }
+
+    @Override
     public void onPlayerError(ExoPlaybackException error) {
         error.printStackTrace();
     }
 
     @Override
-    public void onPositionDiscontinuity() {
+    public void onPositionDiscontinuity(int i) {
 
     }
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+    }
+
+    @Override
+    public void onSeekProcessed() {
 
     }
 

@@ -75,18 +75,28 @@ public class MyExoPlayer implements ExoPlayer.EventListener {
     }
 
     @Override
+    public void onShuffleModeEnabledChanged(boolean b) {
+
+    }
+
+    @Override
     public void onPlayerError(ExoPlaybackException error) {
         deletePlayFile();
         if (mListener != null) mListener.onError(error);
     }
 
     @Override
-    public void onPositionDiscontinuity() {
+    public void onPositionDiscontinuity(int i) {
 
     }
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+    }
+
+    @Override
+    public void onSeekProcessed() {
 
     }
 

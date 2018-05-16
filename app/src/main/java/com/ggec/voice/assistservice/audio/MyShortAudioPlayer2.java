@@ -88,17 +88,27 @@ public class MyShortAudioPlayer2 implements ExoPlayer.EventListener {
     }
 
     @Override
+    public void onShuffleModeEnabledChanged(boolean b) {
+
+    }
+
+    @Override
     public void onPlayerError(ExoPlaybackException error) {
 
     }
 
     @Override
-    public void onPositionDiscontinuity() {
+    public void onPositionDiscontinuity(int i) {
 
     }
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+    }
+
+    @Override
+    public void onSeekProcessed() {
 
     }
 

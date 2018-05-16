@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by ggec on 2017/4/14.
@@ -371,5 +373,29 @@ public class Util {
             return mac;
         }
         return "02:00:00:00:00:00";
+    }
+
+    /**
+     * Encode a byte array into a string, while trimming off the last characters, as required by the Amazon token server
+     *
+     * See: http://brockallen.com/2014/10/17/base64url-encoding/
+     *
+     * @param arg our hashed string
+     * @return a new Base64 encoded string based on the hashed string
+     */
+    public static String base64UrlEncode(byte[] arg)
+    {
+        String s = Base64.encodeToString(arg, 0); // Regular base64 encoder
+//        s = s.split("=")[0]; // Remove any trailing '='s
+//        s = s.replace('+', '-'); // 62nd char of encoding
+//        s = s.replace('/', '_'); // 63rd char of encoding
+//        s = s.trim();
+        Pattern p = Pattern.compile("/|\t|\r|\n");
+        Matcher m = p.matcher(s);
+        String res = m.replaceAll("");
+        if(res.length() >30){
+            return res.substring(0, 29);
+        }
+        return res;
     }
 }

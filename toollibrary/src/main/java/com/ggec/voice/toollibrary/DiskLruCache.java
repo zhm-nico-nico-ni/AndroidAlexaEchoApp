@@ -1,5 +1,7 @@
 package com.ggec.voice.toollibrary;
 
+import com.ggec.voice.toollibrary.log.Log;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -801,6 +803,7 @@ public final class DiskLruCache implements Closeable {
                 if (entry.currentEditor != this) {
                     throw new IllegalStateException();
                 }
+                Log.w("zhm", "write binary path is: " + entry.getCleanFile(index).getPath());
                 return new RandomAccessFile(entry.getCleanFile(index), "rw");
             }
         }

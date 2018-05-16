@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
 import com.ggec.voice.toollibrary.DiskLruCache;
+import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
@@ -171,8 +172,17 @@ public class ResponseParser {
                     if (contentId != null) {
                         Matcher matcher = PATTERN.matcher(contentId);
                         if (matcher.find()) {
-                            String filePath = matcher.group(1);
-                            DiskLruCache.Editor editor = DishLruCacheHelper.getHelper().edit(filePath);
+                            final String filePath0 = matcher.group(1);
+                            Log.i(TAG, "before convert to :"+filePath0);
+                            final String filePath = Util.base64UrlEncode(filePath0.getBytes());
+                            Log.i(TAG, "convert to :"+filePath);
+                            DiskLruCache.Editor editor = null;
+                            try {
+                                editor = DishLruCacheHelper.getHelper().edit(filePath);
+                            }catch (Exception ex){
+                                Log.e(TAG, "Exception:");
+                                ex.printStackTrace();
+                            }
                             if (editor != null) {
                                 final RandomAccessFile finalWriteFile = editor.newRandomAccessFile(0);
                                 SingleFileLockHelper.getHelper().put(filePath);
@@ -213,11 +223,15 @@ public class ResponseParser {
                                     SingleFileLockHelper.getHelper().removeWritingFlag(filePath);
                                 }
                                 Log.d(TAG, "count:" + count + " put date to audio use: " + (System.currentTimeMillis() - nanoT1));
+                            } else {
+                                Log.w(TAG, "editor is null:");
                             }
                         } else {
                             Log.w(TAG, "breaking:");
                             break;
                         }
+                    } else {
+//                        Log.w(TAG, "contentId empty headers:"+headers);
                     }
 
 

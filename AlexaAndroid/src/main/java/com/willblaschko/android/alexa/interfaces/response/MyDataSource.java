@@ -93,6 +93,7 @@ public class MyDataSource implements DataSource {
     private long bytesSkipped;
     private RandomAccessFile randomAccessFile;
     private String mCid;
+    private String mCidToFilePath;
 
     /**
      * @param userAgent            The User-Agent string that should be used.
@@ -177,7 +178,8 @@ public class MyDataSource implements DataSource {
 
         mCid = dataSpec.uri.toString().substring(6);
         try {
-            DiskLruCache.Snapshot snapShot = DishLruCacheHelper.getHelper().get(mCid);
+            mCidToFilePath = com.ggec.voice.toollibrary.Util.base64UrlEncode(mCid.getBytes());
+            DiskLruCache.Snapshot snapShot = DishLruCacheHelper.getHelper().get(mCidToFilePath);
             if (snapShot != null) {
                 randomAccessFile = new RandomAccessFile(snapShot.getPath(0), "r");
             } else {
@@ -316,7 +318,7 @@ public class MyDataSource implements DataSource {
         if (read < readLength) {
             boolean isFileAlreadyLock = true;
             do {
-                boolean notFinish = SingleFileLockHelper.getHelper().getIsWriting(mCid);
+                boolean notFinish = SingleFileLockHelper.getHelper().getIsWriting(mCidToFilePath);
                 if (notFinish) {
                     try {
                         new CountDownLatch(1).await(50, TimeUnit.MILLISECONDS);
