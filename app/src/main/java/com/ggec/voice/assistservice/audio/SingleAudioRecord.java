@@ -39,7 +39,7 @@ public class SingleAudioRecord {
 //                recorder_audio_encoding
 //        );
 
-        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
+        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
                 recorder_sample_rate,
                 recorder_channels,
                 recorder_audio_encoding,
@@ -98,6 +98,7 @@ public class SingleAudioRecord {
     }
 
     public void release() {
+        isRecording = false;
         audioRecorder.release();
     }
 

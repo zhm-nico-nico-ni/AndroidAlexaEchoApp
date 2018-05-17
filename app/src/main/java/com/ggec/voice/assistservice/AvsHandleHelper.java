@@ -10,6 +10,8 @@ import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
 import com.ggec.voice.assistservice.audio.neartalk.FarTalkVoiceRecord;
+import com.ggec.voice.assistservice.audio.neartalk.bt.BtVoiceRecord;
+import com.ggec.voice.assistservice.bluetooth.sco.BtScoConnectManager;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
 import com.ggec.voice.assistservice.data.ImplAsyncCallback;
 import com.ggec.voice.assistservice.mediaplayer.GGECMediaManager;
@@ -57,9 +59,13 @@ public class AvsHandleHelper {
     private GGECMediaManager audioManager;
     private FarTalkVoiceRecord myTalkVoiceRecord;
     private MyShortAudioPlayer mMyShortAudioPlayer;
+    private BtScoConnectManager mBtScoManager;
+    private BtVoiceRecord myBtTalkVoiceRecord;
 
     private AvsHandleHelper() {
         audioManager = new GGECMediaManager();
+        mBtScoManager = new BtScoConnectManager();
+        mBtScoManager.init(MyApplication.getContext());
     }
 
     public static synchronized AvsHandleHelper getAvsHandleHelper() {
@@ -199,6 +205,17 @@ public class AvsHandleHelper {
                 alexaManager.cancelAudioRequest();
             }
         }
+
+        if (myBtTalkVoiceRecord != null && !myBtTalkVoiceRecord.isInterrupted()) {
+            if(justStopMic) {
+                myBtTalkVoiceRecord.stopCapture(false);
+            } else {
+                myBtTalkVoiceRecord.doActuallyInterrupt();
+                AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
+                alexaManager.cancelAudioRequest();
+            }
+        }
+
     }
 
     public void pauseSound(){
@@ -209,8 +226,11 @@ public class AvsHandleHelper {
         Initiator initiator = TextUtils.isEmpty(strInitiator) ? null : new Gson().fromJson(strInitiator, Initiator.class);
         String path = !TextUtils.isEmpty(rawPath) ? rawPath :
                 MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
-
-        startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, (int) waitMicTimeOut);
+        if(mBtScoManager.isBlueScoConnected()){
+            startBtScokVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, (int) waitMicTimeOut);
+        } else {
+            startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, (int) waitMicTimeOut);
+        }
     }
 
     private void startNearTalkVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, int waitMicTimeOut){
@@ -372,6 +392,67 @@ public class AvsHandleHelper {
     public void initAudioPlayer(){
         if(mMyShortAudioPlayer== null){
             mMyShortAudioPlayer = new MyShortAudioPlayer("asset:///start.wav");
+        }
+    }
+
+    private void startBtScokVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, int waitMicTimeOut){
+        boolean needTips = waitMicTimeOut<= 0;
+        Log.d(TAG, "startBtScokVoiceRecord " + path +  " initiator:"+initiator+" "+ needTips + "  "+waitMicTimeOut);
+
+        long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();
+
+        try {
+            myBtTalkVoiceRecord = new BtVoiceRecord(mBtScoManager.getAudioRecord(), endIndexInSamples, path, callback, needTips ? 500 : waitMicTimeOut );
+        } catch (FileNotFoundException e) {
+            callback.failure(e);
+            audioManager.continueSound();
+            return;
+        }
+
+        myBtTalkVoiceRecord.startHttpRequest(endIndexInSamples, new IMyVoiceRecordListener(path){
+            @Override
+            public void start() {
+                callback.start();
+            }
+
+            @Override
+            public void success(AvsResponse result, String filePath, boolean isAllSuccess) {
+                callback.success(result, filePath, isAllSuccess);
+                if(isAllSuccess && result.continueAudio) audioManager.continueSound();
+            }
+
+            @Override
+            public void failure(Exception error, String filePath, long actuallyLong, AvsResponse response) {
+                callback.failure(error, filePath, actuallyLong, response);
+                audioManager.continueSound();
+            }
+
+            @Override
+            public void complete() {
+                callback.complete();
+            }
+        }, new IGetContextEventCallBack() {
+            @Override
+            public List<Event> getContextEvent() {
+                return ContextUtil.getActuallyContextList(MyApplication.getContext(), getAudioAndSpeechState());
+            }
+
+            @Override
+            public Initiator getInitiator() {
+                return initiator;
+            }
+        });
+
+        if (needTips) {
+            mMyShortAudioPlayer.play(new MyShortAudioPlayer.IOnCompletionListener() {
+                @Override
+                public void onCompletion() {
+                    Log.d(TAG, "mMyShortAudioPlayer# onCompletion");
+                    myBtTalkVoiceRecord.start();
+                }
+            });
+        } else {
+            myBtTalkVoiceRecord.start();
         }
     }
 }

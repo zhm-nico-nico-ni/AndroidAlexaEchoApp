@@ -28,6 +28,7 @@ import com.ggec.voice.assistservice.AssistService;
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.R;
 import com.ggec.voice.assistservice.data.BackGroundProcessServiceControlCommand;
+import com.willblaschko.android.alexa.BroadCast;
 import com.willblaschko.android.alexa.SharedPreferenceUtil;
 import com.willblaschko.android.alexa.TokenManager;
 import com.willblaschko.android.alexa.keep.TokenResponse;
@@ -103,6 +104,7 @@ public class SampleLoginWithAmazonActivity extends Activity {
         findViewById(R.id.btn_start_record).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                sendBroadcast(new Intent(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER));
                 Intent it = BackGroundProcessServiceControlCommand.createIntentByType(v.getContext(), 1);
                 startService(it);
 
