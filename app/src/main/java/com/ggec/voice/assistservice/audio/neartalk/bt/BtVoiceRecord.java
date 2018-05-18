@@ -120,7 +120,7 @@ public class BtVoiceRecord extends Thread implements GGECAudioRecorder.AudioReco
         if (audioManager.isBluetoothScoOn()) {
             audioManager.setBluetoothScoOn(false);
             audioManager.stopBluetoothSco();
-//            audioManager.setMode(AudioManager.MODE_NORMAL);
+            audioManager.setMode(AudioManager.MODE_NORMAL);
         }
 
 
@@ -150,48 +150,11 @@ public class BtVoiceRecord extends Thread implements GGECAudioRecorder.AudioReco
         if (!super.isInterrupted()) super.interrupt();
     }
 
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-//            if(handleBreak) return;
-            byte[] audioBuffer = (byte[]) msg.obj;
-            int numberByteRead = msg.arg1;
-
-//            long currentTime = SystemClock.elapsedRealtime();
-//
-//            if (currentTime - mState.initTime >= MAX_WAIT_TIME) {
-//                Log.d(TAG, "finish: wait to long ");
-//                setRecordLocalState(RecordState.FINISH);
-//                handleBreak = true;
-//                return;
-//            }
-
-            try {
-                //write file
-                mShareFile.write(audioBuffer, 0, numberByteRead);
-//                currentDataPointer += numberByteRead;
-
-//                if (currentTime - mState.initTime > MAX_RECORD_TIME) {
-//                    handleBreak = true;
-//                    return;
-//                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    };
-
     @Override
     public void onAudioData(byte[] data, int size) {
-//        int numberByteRead;
-//        int bufferSizeInBytes = 320;// 10ms chunk
-//        byte audioBuffer[] = new byte[bufferSizeInBytes];
-//        handler.obtainMessage(1, size, 0, data.clone() /*Arrays.copyOf(audioBuffer, numberByteRead)*/).sendToTarget();
         try {
             mShareFile.write(data, 0, size);
             lastSilentRecordIndex += size;
-//            if(size % 5==0)
-//            Log.d(TAG, "onAudioData "+size);
         } catch (IOException e) {
             e.printStackTrace();
         }
