@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.os.ParcelUuid;
 import android.text.TextUtils;
 
 import com.ggec.voice.assistservice.audio.SingleAudioRecord;
@@ -52,28 +53,33 @@ public class BtScoConnectManager extends BroadcastReceiver {
             if(connectState == BluetoothAdapter.STATE_CONNECTED){
                 checkIsConnectSco();
                 if(mIsConnectSco){
-                    SingleAudioRecord.getInstance().release();
+                    SingleAudioRecord.release();
                 }
             } else {
                 mIsConnectSco = false;
             }
         } else if(TextUtils.equals(intent.getAction(), AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)) {
-            int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1);
+            int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR);
             if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
                 //Log.i(TAG,"AudioManager.SCO_AUDIO_STATE_CONNECTED");
                 Log.d(TAG, "SCO音频连接已建立");
                 mAudioManager.setBluetoothScoOn(true);//打开SCO
                 //Log.i(TAG,"Routing:" + mAudioManager.isBluetoothScoOn());
                 //mAudioManager.setMode(AudioManager.STREAM_MUSIC);
-                mAudioManager.setMode(AudioManager.MODE_IN_CALL);
+//                mAudioManager.setMode(AudioManager.MODE_IN_CALL);
 
                 if (mGGECAudioRecorder != null && !mGGECAudioRecorder.isEnd()) mGGECAudioRecorder.start();
-            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state
-                    && AudioManager.SCO_AUDIO_STATE_CONNECTED == intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_PREVIOUS_STATE, -1)) {//等待1s后再尝试
-//                mAudioManager.setMode(AudioManager.STREAM_MUSIC);
-                if(mGGECAudioRecorder != null && !mGGECAudioRecorder.isEnd()){
-                    mGGECAudioRecorder.interruptAll();
+            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
+                int preState = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_PREVIOUS_STATE, -1);
+                Log.d(TAG, "setSpeakerphoneOn state:" + state + "    pre:" + preState);
+                mAudioManager.setMode(AudioManager.MODE_NORMAL);
+                if(AudioManager.SCO_AUDIO_STATE_CONNECTED == preState) {
+                    if (mGGECAudioRecorder != null && !mGGECAudioRecorder.isEnd()) {
+                        mGGECAudioRecorder.interruptAll();
+                    }
                 }
+            } else if(AudioManager.SCO_AUDIO_STATE_ERROR == state){
+                mAudioManager.stopBluetoothSco();
             }
         }
     }
@@ -83,8 +89,7 @@ public class BtScoConnectManager extends BroadcastReceiver {
     }
 
     private void checkIsConnectSco(){
-        //TODO
-        mIsConnectSco = mAdapter.isEnabled() && mAudioManager.isBluetoothScoAvailableOffCall();
+        mIsConnectSco = mAdapter.isEnabled() && mAudioManager.isBluetoothScoAvailableOffCall() && isBlueConnected();
     }
 
     private boolean isBlueConnected(){
@@ -101,6 +106,8 @@ public class BtScoConnectManager extends BroadcastReceiver {
                 Set<BluetoothDevice> devices = adapter.getBondedDevices();
                 android.util.Log.i("BLUETOOTH","devices:"+devices.size());
 
+                ParcelUuid HFP_HS_UUID = ParcelUuid.fromString("0000111e-0000-1000-8000-00805f9b34fb");
+
                 for(BluetoothDevice device : devices){
                     Method isConnectedMethod = BluetoothDevice.class.getDeclaredMethod("isConnected", (Class[]) null);
                     method.setAccessible(true);
@@ -108,7 +115,14 @@ public class BtScoConnectManager extends BroadcastReceiver {
                     if(isConnected){
                         android.util.Log.i("BLUETOOTH","connected:"+device.getName());
 //                        deviceList.add(device);
-                        return true;
+
+                        for (ParcelUuid uuid: device.getUuids()){
+//                            android.util.Log.d("BLUETOOTH", "uuid:"+uuid.toString());
+                            if(uuid.equals(HFP_HS_UUID)){ // support HFP_HS_UUID, generally mean has microphone
+//                                android.util.Log.d("BLUETOOTH", "support microphone");
+                                return true;
+                            }
+                        }
                     }
                 }
             }
