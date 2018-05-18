@@ -199,6 +199,7 @@ public class AvsHandleHelper {
         if (myTalkVoiceRecord != null && !myTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
                 myTalkVoiceRecord.stopCapture(false);
+                new MyShortAudioPlayer2("asset:///thinking.mp3", null);
             } else {
                 myTalkVoiceRecord.doActuallyInterrupt();
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
@@ -209,6 +210,7 @@ public class AvsHandleHelper {
         if (myBtTalkVoiceRecord != null && !myBtTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
                 myBtTalkVoiceRecord.stopCapture(false);
+                new MyShortAudioPlayer2("asset:///thinking.mp3", null);
             } else {
                 myBtTalkVoiceRecord.doActuallyInterrupt();
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
