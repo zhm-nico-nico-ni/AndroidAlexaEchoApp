@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
 import com.example.administrator.appled.LedControl;
@@ -67,7 +68,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         mDeviceLinkHandler = new DeviceLinkHandler(this);
         IntentFilter filter = new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER);
         filter.addAction(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER);
-        registerReceiver(receiver, filter);
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
 
         startService(
                 BackGroundProcessServiceControlCommand.createIntentByType(this,
@@ -89,7 +90,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
             it.putExtra("rawPath", rawPath);
         }
         startService(it);
-        LedControl.myLedCtl(1);
+        LedControl.myLedCtl(LedControl.ON_WAKE_WORD_DETECT);
     }
 
 
@@ -99,7 +100,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
             AvsHandleHelper.getAvsHandleHelper().initAudioPlayer();
 
 //            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent(this, this);
-            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
+//            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
 //        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
         }
     }

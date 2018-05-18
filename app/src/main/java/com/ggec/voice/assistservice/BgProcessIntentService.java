@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 
 import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.audio.MyShortAudioPlayer2;
@@ -243,13 +244,14 @@ public class BgProcessIntentService extends IntentService {
         Observable.just(res).subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<String>() {
             @Override
             public void accept(String s) throws Exception {
-                LedControl.myLedCtl(6);
+                LedControl.myLedCtl(LedControl.ERROR);
                 new MyShortAudioPlayer2(s, new MyShortAudioPlayer2.IOnCompletionListener() {
                     @Override
                     public void onCompletion() {
-                        sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+                        LocalBroadcastManager.getInstance(BgProcessIntentService.this).
+                                sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
                         AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsLocalResumeItem());
-                        LedControl.myLedCtl(4);
+                        LedControl.myLedCtl(LedControl.IDLE);
                     }
                 });
             }
