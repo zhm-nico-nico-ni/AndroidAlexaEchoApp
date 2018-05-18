@@ -803,8 +803,13 @@ public final class DiskLruCache implements Closeable {
                 if (entry.currentEditor != this) {
                     throw new IllegalStateException();
                 }
-                Log.w("zhm", "write binary path is: " + entry.getCleanFile(index).getPath());
-                return new RandomAccessFile(entry.getCleanFile(index), "rw");
+                File f = entry.getCleanFile(index);
+                Log.w("zhm", "write binary path is: " + f.getPath());
+
+                if(f.exists()){
+                    f.delete();
+                }
+                return new RandomAccessFile(f, "rw");
             }
         }
 
