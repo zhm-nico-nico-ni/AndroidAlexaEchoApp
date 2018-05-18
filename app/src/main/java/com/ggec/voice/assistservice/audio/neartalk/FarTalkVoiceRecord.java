@@ -94,7 +94,7 @@ public class FarTalkVoiceRecord extends Thread {
     @Override
     public void run() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
-        LedControl.myLedCtl(2);
+        LedControl.myLedCtl(LedControl.LISTENING);
         long bt = SystemClock.elapsedRealtime();
         if (!SingleAudioRecord.getInstance().isRecording()) {
             SingleAudioRecord.getInstance().startRecording();
@@ -304,7 +304,7 @@ public class FarTalkVoiceRecord extends Thread {
                                 break;
                             }
                         }
-                        LedControl.myLedCtl(3);
+                        LedControl.myLedCtl(LedControl.THINKING);
                         Log.d(TAG, "write remaining end");
                     } else if (mFile.isEnd() && mFile.getWriteLength() <= 0) {
                         //is cancel here
@@ -333,7 +333,7 @@ public class FarTalkVoiceRecord extends Thread {
         private boolean handleStopCapture(){
             if(getRecordLocalState() == RecordState.STOP_CAPTURE){
                 Log.d(TAG, "writeTo# handleStopCapture");
-                LedControl.myLedCtl(3);
+                LedControl.myLedCtl(LedControl.THINKING);
                 return true;
             } else {
                 return false;

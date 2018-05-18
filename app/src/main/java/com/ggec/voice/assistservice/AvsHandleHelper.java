@@ -3,6 +3,7 @@ package com.ggec.voice.assistservice;
 import android.accounts.AuthenticatorException;
 import android.content.Intent;
 import android.support.annotation.MainThread;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
 import com.example.administrator.appled.LedControl;
@@ -366,17 +367,23 @@ public class AvsHandleHelper {
                 }
             }
 
+            @Override
+            public void complete() {
+                super.complete();
+                LedControl.myLedCtl(LedControl.IDLE);
+            }
         };
     }
 
     private void continueWakeWordDetect(){
-        MyApplication.getContext().sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
+        LocalBroadcastManager.getInstance(MyApplication.getContext())
+                .sendBroadcast(new Intent(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER));
         AvsHandleHelper.getAvsHandleHelper().handleAvsItem(new AvsLocalResumeItem());
     }
 
     //"asset:///error.mp3"
     private void playError(String res) {
-        LedControl.myLedCtl(5);
+        LedControl.myLedCtl(LedControl.ERROR);
         Log.d(TAG, "playError:"+res);
         Observable.just(res).subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<String>() {
             @Override
@@ -384,7 +391,7 @@ public class AvsHandleHelper {
                 new MyShortAudioPlayer2(s, new MyShortAudioPlayer2.IOnCompletionListener() {
                     @Override
                     public void onCompletion() {
-                        LedControl.myLedCtl(6);
+                        LedControl.myLedCtl(LedControl.IDLE);
                         continueWakeWordDetect();
                     }
                 });

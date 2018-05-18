@@ -69,17 +69,27 @@
             android:textSize="15sp" />
     </LinearLayout>
 
+
+    <TextView
+        android:id="@+id/recognize_state"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="idle"
+        android:layout_above="@+id/login_with_amazon"
+        />
+
     <Button
         android:visibility="visible"
         android:id="@+id/login_with_amazon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="10dp"
 
         android:padding="0dp"
-        android:text="login" />
+        android:text="login"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/btn_silent" />
 
 
 </RelativeLayout>

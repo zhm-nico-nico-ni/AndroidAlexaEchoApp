@@ -51,7 +51,11 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
 
             if (response == null || (!isSuccessful(response.responseCode) && response.isEmpty())) {
                 if (callback != null) {
-                    callback.failure(new AvsAudioException("Nothing came back"));
+                    String errorMsg = "Nothing came back:";
+                    if(response!=null){
+                        errorMsg+=" resCode:"+response.responseCode;
+                    }
+                    callback.failure(new AvsAudioException(errorMsg));
                 }
                 return;
             }
@@ -90,6 +94,6 @@ public abstract class SpeechSendAudio extends SpeechSendEvent {
      * @return
      */
     private boolean isSuccessful(int code) {
-        return code == -1 || (code >= 200 && code < 300 && code != 204);
+        return code == -1 || (code >= 200 && code < 300/* && code != 204*/);
     }
 }

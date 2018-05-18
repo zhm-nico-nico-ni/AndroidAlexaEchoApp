@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 
+import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.MyApplication;
 import com.ggec.voice.assistservice.audio.IMyVoiceRecordListener;
 import com.ggec.voice.assistservice.audio.neartalk.TalkDataProvider;
@@ -59,6 +60,7 @@ public class BtVoiceRecord extends Thread implements GGECAudioRecorder.AudioReco
         //audioManager.setBluetoothScoOn(true);
         audioManager.startBluetoothSco();
         ////////////////////////////
+        LedControl.myLedCtl(LedControl.LISTENING);
         Log.d(TAG, "run done");
     }
 
@@ -138,6 +140,8 @@ public class BtVoiceRecord extends Thread implements GGECAudioRecorder.AudioReco
 //        }
         if (stopAll) {
             mShareFile.cancel();
+        } else {
+            LedControl.myLedCtl(LedControl.THINKING);
         }
 
         Log.d(TAG, "stopCapture "+currentDataPointer);
@@ -207,9 +211,9 @@ public class BtVoiceRecord extends Thread implements GGECAudioRecorder.AudioReco
                 try {
                     while (!mFile.isEnd()) {
                         long act = mFile.getActuallyLong();
-                        if(handleStopCapture()) {
+                        /*if(handleStopCapture()) {
                             break;
-                        } else if ((act == 0 && mFile.getWriteLength() > pointer) || pointer < mFile.getActuallyLong()) {
+                        } else*/ if ((act == 0 && mFile.getWriteLength() > pointer) || pointer < mFile.getActuallyLong()) {
                             if (writeToSink(buffer, sink)) {
                                 Log.i(TAG, "writeToSink break!!");
                                 break;

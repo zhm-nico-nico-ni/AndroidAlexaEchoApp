@@ -141,7 +141,7 @@ public class NearTalkVoiceRecord2 extends Thread {
     @Override
     public void run() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
-        LedControl.myLedCtl(2);
+        LedControl.myLedCtl(LedControl.LISTENING);
         long bt = SystemClock.elapsedRealtime();
         if (!SingleAudioRecord.getInstance().isRecording()) {
             SingleAudioRecord.getInstance().startRecording();
@@ -385,7 +385,7 @@ public class NearTalkVoiceRecord2 extends Thread {
                                 break;
                             }
                         }
-                        LedControl.myLedCtl(3);
+                        LedControl.myLedCtl(LedControl.THINKING);
                         Log.d(TAG, "write remaining end");
                     } else if (mFile.isClose() && mFile.getWriteLength() == 0) {
                         //is cancel here

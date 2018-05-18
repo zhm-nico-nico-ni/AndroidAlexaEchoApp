@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.content.LocalBroadcastManager;
 
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.BuildConfig;
@@ -213,7 +214,8 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
                         }
                     }
                 };
-                mContext.registerReceiver(mReceiver, new IntentFilter(makeAction(mName)));
+                LocalBroadcastManager.getInstance(mContext)
+                    .registerReceiver(mReceiver, new IntentFilter(makeAction(mName)));
             }
         }
     }
@@ -224,7 +226,7 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
         if (mListeners != null) {
             mListeners.remove(listener);
             if (mListeners.isEmpty() && mReceiver != null) {
-                mContext.unregisterReceiver(mReceiver);
+                LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mReceiver);
             }
         }
     }
@@ -592,7 +594,7 @@ public class MultiprocessSharedPreferences extends ContentProvider implements Sh
             intent.setPackage(getContext().getPackageName());
             intent.putExtra(KEY_NAME, name);
             intent.putExtra(KEY, keysModified);
-            getContext().sendBroadcast(intent);
+            LocalBroadcastManager.getInstance(getContext()).sendBroadcast(intent);
         }
     }
 

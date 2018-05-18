@@ -27,7 +27,7 @@ public class Listener {
 //            it.putExtra("rawPath", rawPath);
 //        }
             MyApplication.getContext().startService(it);
-            LedControl.myLedCtl(1);
+            LedControl.myLedCtl(LedControl.ON_WAKE_WORD_DETECT);
 
         }
     }

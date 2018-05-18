@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
 import com.example.administrator.appled.LedControl;
@@ -145,7 +146,7 @@ public class GGECMediaManager {
 
         @Override
         public void playerPrepared(AvsItem pendingItem) {
-            LedControl.myLedCtl(5);
+            LedControl.myLedCtl(LedControl.SPEAK_AND_PLAY);
             if (pendingItem instanceof AvsSpeakItem) {
                 Log.i(TAG, "Sending SpeechStartedEvent");
                 AlexaManager.getInstance(MyApplication.getContext())
@@ -162,7 +163,7 @@ public class GGECMediaManager {
 
         @Override
         public void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds) {
-            LedControl.myLedCtl(4);
+            LedControl.myLedCtl(LedControl.IDLE);
             boolean isRemove = avsQueue1.remove(completedItem.messageID) != null;
             if (BuildConfig.DEBUG) {
                 Log.i(TAG, "SpeechSynthesizerCallback Complete " + completedItem.getToken() + " fired, remove old:" + isRemove);
@@ -197,7 +198,7 @@ public class GGECMediaManager {
 
         @Override
         public void playerPrepared(AvsItem pendingItem) {
-            LedControl.myLedCtl(5);
+            LedControl.myLedCtl(LedControl.SPEAK_AND_PLAY);
             almostDoneFired = false;
             playbackStartedFired = false;
             if(pendingItem instanceof AvsPlayRemoteItem){
@@ -230,7 +231,7 @@ public class GGECMediaManager {
 
         @Override
         public void itemComplete(AvsItem completedItem, boolean error, long offsetInMilliseconds) {
-            LedControl.myLedCtl(4);
+            LedControl.myLedCtl(LedControl.IDLE);
             if (BuildConfig.DEBUG) {
                 Log.i(TAG, "MediaAudioPlayerCallback Complete " + completedItem.getToken() + " fired");
             }
@@ -648,7 +649,8 @@ public class GGECMediaManager {
 //            setState(STATE_SPEAKING);
             } else if (current instanceof AvsExpectSpeechItem) {
                 //listen for user input
-                MyApplication.getContext().sendBroadcast(new Intent(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER));
+                LocalBroadcastManager.getInstance(MyApplication.getContext())
+                        .sendBroadcast(new Intent(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER));
                 pauseSound();
                 AvsExpectSpeechItem speechItem = (AvsExpectSpeechItem) current;
                 startListening(speechItem.getTimeoutInMiliseconds(), speechItem.initiator);

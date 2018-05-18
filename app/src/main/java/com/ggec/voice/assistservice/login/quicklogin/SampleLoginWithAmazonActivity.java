@@ -2,17 +2,21 @@ package com.ggec.voice.assistservice.login.quicklogin;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.amazon.identity.auth.device.AuthError;
@@ -24,6 +28,7 @@ import com.amazon.identity.auth.device.api.authorization.AuthorizeResult;
 import com.amazon.identity.auth.device.api.authorization.Scope;
 import com.amazon.identity.auth.device.api.authorization.ScopeFactory;
 import com.amazon.identity.auth.device.api.workflow.RequestContext;
+import com.example.administrator.appled.LedControl;
 import com.ggec.voice.assistservice.AssistService;
 import com.ggec.voice.assistservice.BuildConfig;
 import com.ggec.voice.assistservice.R;
@@ -52,6 +57,7 @@ public class SampleLoginWithAmazonActivity extends Activity {
 
     private RequestContext requestContext;
     private View mLoginButton;
+    private TextView mRecognizeState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,7 +110,8 @@ public class SampleLoginWithAmazonActivity extends Activity {
         findViewById(R.id.btn_start_record).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendBroadcast(new Intent(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER));
+                LocalBroadcastManager.getInstance(getBaseContext())
+                        .sendBroadcast(new Intent(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER));
                 Intent it = BackGroundProcessServiceControlCommand.createIntentByType(v.getContext(), 1);
                 startService(it);
 
@@ -152,7 +159,41 @@ public class SampleLoginWithAmazonActivity extends Activity {
         };
         findViewById(R.id.btn_volume).setOnClickListener(sss);
         findViewById(R.id.btn_silent).setOnClickListener(sss);
+
+        mRecognizeState = (TextView) findViewById(R.id.recognize_state);
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(broadcastReceiver
+                        , new IntentFilter(com.willblaschko.android.alexa.BroadCast.RECEIVE_LED_STATE_CHANGE));
     }
+
+    BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int s = intent.getIntExtra("state", 0);
+            switch (s) {
+                case LedControl.ON_WAKE_WORD_DETECT:
+                case LedControl.LISTENING:
+                    mRecognizeState.setText("Recognizing");
+                    break;
+                case LedControl.THINKING:
+                    mRecognizeState.setText("Thinking");
+                    break;
+                case LedControl.IDLE:
+                    mRecognizeState.setText("idle ...");
+                    break;
+                case LedControl.ERROR:
+                    mRecognizeState.setText("Error ");
+                    break;
+                case LedControl.SPEAK_AND_PLAY:
+                    mRecognizeState.setText("Speaking");
+                    break;
+                default:
+                    Log.w(TAG, "receive unknow state :"+s);
+                    mRecognizeState.setText("unknow state: " + s);
+                    break;
+            }
+        }
+    };
 
 
     @Override
