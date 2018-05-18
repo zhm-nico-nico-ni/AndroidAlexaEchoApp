@@ -39,7 +39,8 @@ public class SingleAudioRecord {
 //                recorder_audio_encoding
 //        );
 
-        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+        /// must always use MediaRecorder.AudioSource.MIC !!!!!!
+        audioRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
                 recorder_sample_rate,
                 recorder_channels,
                 recorder_audio_encoding,
@@ -97,9 +98,18 @@ public class SingleAudioRecord {
         Log.d(Log.TAG_APP, "stop and read ");
     }
 
-    public void release() {
-        isRecording = false;
-        audioRecorder.release();
+//    public void release() {
+//        isRecording = false;
+//        audioRecorder.release();
+//    }
+
+    public static synchronized void release() {
+        if(sInstance!=null){
+            Log.w("SingleAudioRecord", "SingleAudioRecord # release!!!");
+            sInstance.stop();
+            sInstance.audioRecorder.release();
+            sInstance = null;
+        }
     }
 
     public int getBufferSizeInBytes() {

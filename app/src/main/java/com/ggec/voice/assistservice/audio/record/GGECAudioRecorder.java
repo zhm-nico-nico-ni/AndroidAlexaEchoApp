@@ -56,7 +56,8 @@ public class GGECAudioRecorder extends Thread {
             return;
         }
 
-        mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, mSampleRate,
+        /// must always use MediaRecorder.AudioSource.MIC !!!!!!
+        mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, mSampleRate,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, mMinBufferSize);
 
         if (this.mAudioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
