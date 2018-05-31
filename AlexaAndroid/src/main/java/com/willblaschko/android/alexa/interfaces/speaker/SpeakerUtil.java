@@ -29,7 +29,7 @@ public class SpeakerUtil {
 
         if(oldVolume != vol) {
             Log.d(TAG, "Volume set to : " + vol + "/" + max + " (" + volume + ") adjust:" + adjust);
-            am.setStreamVolume(AudioManager.STREAM_MUSIC, (int) vol, 0);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, (int) vol, AudioManager.FLAG_SHOW_UI);
         } else {
             Log.d(TAG, "just send sendVolumeChangedEvent"+ vol + "/" + max + " (" + volume + ") adjust:" + adjust);
             alexaManager.sendEvent(Event.getVolumeChangedEvent(volume, vol == 0), callback);

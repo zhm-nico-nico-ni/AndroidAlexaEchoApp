@@ -117,14 +117,14 @@ public class GaiaLink {
     /**
      * Instance of this object.
      */
-    private static GaiaLink mInstance;
+    private volatile static GaiaLink mInstance;
 
     /**
      * To retrieve the instance for this class.
      *
      * @return The instance for the GaiaLink class.
      */
-    public static GaiaLink getInstance() {
+    public static synchronized GaiaLink getInstance() {
         if (mInstance == null) {
             mInstance = new GaiaLink();
         }

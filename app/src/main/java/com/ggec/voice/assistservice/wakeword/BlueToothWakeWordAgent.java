@@ -1,5 +1,6 @@
 package com.ggec.voice.assistservice.wakeword;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -14,12 +15,14 @@ import com.csr.gaia.library.Gaia;
 import com.csr.gaia.library.GaiaError;
 import com.csr.gaia.library.GaiaLink;
 import com.csr.gaia.library.GaiaPacket;
+import com.ggec.voice.toollibrary.Util;
 import com.ggec.voice.toollibrary.log.Log;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by ggec on 2018/5/18.
+ * gaia bluetooth wake word
  */
 
 public class BlueToothWakeWordAgent extends WakeWordAgent {
@@ -27,57 +30,10 @@ public class BlueToothWakeWordAgent extends WakeWordAgent {
 
     private AtomicBoolean mCanDetectWakeWord = new AtomicBoolean(true);
 
-    public BlueToothWakeWordAgent(Context context, IWakeWordAgentEvent listener) {
-        super(context, listener);
-    }
-
-    @Override
-    protected void init() {
-        GaiaLink.getInstance().setReceiveHandler(this.mGaiaHandler);
-        //
-        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
-        mContext.registerReceiver(new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                int connectState = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, -1);
-                if (connectState == BluetoothAdapter.STATE_CONNECTED) {
-                    tryConnectBTdevice();
-                } else if (connectState == BluetoothAdapter.STATE_DISCONNECTED) {
-                    if (GaiaLink.getInstance().isConnected()) {
-                        GaiaLink.getInstance().disconnect();
-                    }
-                }
-            }
-        }, filter);
+    @SuppressLint("HandlerLeak")
+    private Handler mGaiaHandler = new Handler() {
 
 
-    }
-
-    @Override
-    public void continueSearch() {
-        mCanDetectWakeWord.set(true);
-    }
-
-    @Override
-    public void pauseSearch() {
-        mCanDetectWakeWord.set(false);
-    }
-
-    private void tryConnectBTdevice() {
-        BluetoothManager bm = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter mBluetoothAdapter = bm.getAdapter();
-
-        BluetoothDevice mBluetoothDeviceConnected = null;
-        for (BluetoothDevice bt : mBluetoothAdapter.getBondedDevices()) {
-            if (bt.getName().equals("CSR8670-Stereo Gaming Headset")) {
-                mBluetoothDeviceConnected = bt; // get the selected Bluetooth device
-                break;
-            }
-        }
-        GaiaLink.getInstance().connect(mBluetoothDeviceConnected, GaiaLink.Transport.BT_SPP);//set up gaia connection through spp
-    }
-
-    private final Handler mGaiaHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
 //            String handleMessage = "Handle a message from Gaia: ";
@@ -121,7 +77,65 @@ public class BlueToothWakeWordAgent extends WakeWordAgent {
                     break;
             }
         }
-    };
+    };;
+
+    public BlueToothWakeWordAgent(Context context, IWakeWordAgentEvent listener) {
+        super(context, listener);
+        init2();
+    }
+
+    @Override
+    protected void init() {
+        //empty
+    }
+
+    protected void init2() {
+        GaiaLink.getInstance().setReceiveHandler(this.mGaiaHandler);
+        //
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
+        mContext.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int connectState = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, -1);
+                if (connectState == BluetoothAdapter.STATE_CONNECTED) {
+                    tryConnectBTdevice();
+                } else if (connectState == BluetoothAdapter.STATE_DISCONNECTED) {
+                    if (GaiaLink.getInstance().isConnected()) {
+                        GaiaLink.getInstance().disconnect();
+                    }
+                }
+            }
+        }, filter);
+
+        tryConnectBTdevice();
+    }
+
+    @Override
+    public void continueSearch() {
+        mCanDetectWakeWord.set(true);
+    }
+
+    @Override
+    public void pauseSearch() {
+        mCanDetectWakeWord.set(false);
+    }
+
+    private void tryConnectBTdevice() {
+        Log.d(TAG, "tryConnectBTdevice start " + this.mGaiaHandler);
+        BluetoothManager bm = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter mBluetoothAdapter = bm.getAdapter();
+
+        BluetoothDevice mBluetoothDeviceConnected = null;
+        for (BluetoothDevice bt : mBluetoothAdapter.getBondedDevices()) {
+            if (bt.getName().equals("CSR8670-Stereo Gaming Headset")) {
+                mBluetoothDeviceConnected = bt; // get the selected Bluetooth device
+                Log.d(TAG, "find CSR8670");
+                break;
+            }
+        }
+
+        GaiaLink.getInstance().connect(mBluetoothDeviceConnected, GaiaLink.Transport.BT_SPP);//set up gaia connection through spp
+    }
 
     /**
      * To manage packets from Gaia device which are "PACKET" directly by the library.
@@ -235,12 +249,15 @@ public class BlueToothWakeWordAgent extends WakeWordAgent {
                 byte[] eventId = packet.getPayload();
                 //int b = a[1]<<8+a[2];
 
-                if ((eventId[1] == 0x40) && (eventId[2] == 0xF9)) { //如果传过来标志位为1，则开始语音输入
+                if ((eventId[1] == (byte) 0x40) && (eventId[2] == (byte) 0xF9)) { //如果传过来标志位为1，则开始语音输入
+                    Log.d(TAG, "receive 40f9");
                     if (mCanDetectWakeWord.get()) {
                         mListener.onDetectWakeWord(null, 0, 0);
                     }
                 } else if ((eventId[1] == 0x40) && (eventId[2] == 0xFA)) { //如果传过来标志位为0，则停止语音输入
 //                    stopSpeechInput2();
+                } else {
+                    Log.d(TAG, "receive "+ Util.bytesToHex(eventId));
                 }
                 break;
             default:
