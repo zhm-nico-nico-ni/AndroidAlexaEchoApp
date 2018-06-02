@@ -211,7 +211,7 @@ public class AvsHandleHelper {
         if (myBtTalkVoiceRecord != null && !myBtTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
                 myBtTalkVoiceRecord.stopCapture(false);
-                new MyShortAudioPlayer2("asset:///thinking.mp3", null);
+//                new MyShortAudioPlayer2("asset:///thinking.mp3", null);
             } else {
                 myBtTalkVoiceRecord.doActuallyInterrupt();
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
@@ -306,8 +306,8 @@ public class AvsHandleHelper {
                 if(allSuccess && result.continueWakeWordDetect) {
                     continueWakeWordDetect();
                 }
-                if(!allSuccess){
-                    LedControl.myLedCtl(4);
+                if(!result.hasSpeechItem()){
+                    LedControl.myLedCtl(LedControl.IDLE);
                 }
             }
 
@@ -370,7 +370,7 @@ public class AvsHandleHelper {
             @Override
             public void complete() {
                 super.complete();
-                LedControl.myLedCtl(LedControl.IDLE);
+//                LedControl.myLedCtl(LedControl.IDLE);
             }
         };
     }
@@ -405,7 +405,7 @@ public class AvsHandleHelper {
     }
 
     private void startBtScokVoiceRecord(String path, final IMyVoiceRecordListener callback, final Initiator initiator, int waitMicTimeOut){
-        boolean needTips = waitMicTimeOut<= 0;
+        boolean needTips = false;// waitMicTimeOut<= 0;
         Log.d(TAG, "startBtScokVoiceRecord " + path +  " initiator:"+initiator+" "+ needTips + "  "+waitMicTimeOut);
 
         long endIndexInSamples = initiator == null ? 0 : initiator.getEndIndexInSamples();

@@ -1,5 +1,7 @@
 package com.willblaschko.android.alexa.interfaces;
 
+import com.willblaschko.android.alexa.interfaces.audioplayer.AvsAudioItem;
+
 import java.util.ArrayList;
 
 /**
@@ -16,5 +18,19 @@ public class AvsResponse extends ArrayList<AvsItem> {
         continueAudio = other.continueAudio;
         responseCode = other.responseCode;
         addAll(other);
+    }
+
+    public boolean hasSpeechItem(){
+        if (isEmpty()){
+            return false;
+        }else{
+            for(AvsItem item : this){
+                if(item instanceof AvsAudioItem){
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
