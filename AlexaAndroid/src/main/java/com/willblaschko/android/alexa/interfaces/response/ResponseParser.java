@@ -194,7 +194,7 @@ public class ResponseParser {
                                         @Override
                                         public void onData(byte[] array) {
                                             temp.write(array);
-                                            if (temp.size() >= 4 * 1024) {
+                                            if (temp.size() >= 3 * 1024) {
                                                 try {
                                                     finalWriteFile.write(temp.readByteArray());
                                                 } catch (IOException e) {
@@ -202,7 +202,7 @@ public class ResponseParser {
                                                 }
                                             }
                                             total += array.length;
-                                            if (total >= 8 * 1024 && !hasHandleDirectives.get() && callback != null) {
+                                            if (total >= 6 * 1024 && !hasHandleDirectives.get() && callback != null) {
                                                 hasHandleDirectives.set(true);
                                                 response.addOtherAvsResponse(sss(directives));
                                                 callback.handle(response);

@@ -34,12 +34,13 @@ public class ImplAsyncCallback implements AsyncCallback<AvsResponse, Exception> 
         mHandledResponse = result;
         Log.i(TAG, "Event " + name + " handle");
         handled = true;
-        sMainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                AvsHandleHelper.getAvsHandleHelper().handleResponse(result);
-            }
-        });
+        AvsHandleHelper.getAvsHandleHelper().handleResponse(result);
+//        sMainHandler.post(new Runnable() {
+//            @Override
+//            public void run() {
+//
+//            }
+//        });
     }
 
     @Override
