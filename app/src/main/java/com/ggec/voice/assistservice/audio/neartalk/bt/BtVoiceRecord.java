@@ -151,7 +151,7 @@ public class BtVoiceRecord extends Thread implements GGECAudioRecorder.AudioReco
         Log.d(TAG, "# doActuallyInterrupt");
 
         stopCapture(true);
-        if (!super.isInterrupted()) super.interrupt();
+//        if (!super.isInterrupted()) super.interrupt();
     }
 
     @Override

@@ -191,12 +191,14 @@ public class BgProcessIntentService extends IntentService {
             return;
         }
 
-        AvsHandleHelper.getAvsHandleHelper().startNearTalkRecord(rawPath, waitMicTimeOut, strInitiator);
+        if(!AvsHandleHelper.getAvsHandleHelper().stopCaptureNearTalkVoiceRecord(true)) {
+            //important, only stop mic
+            AvsHandleHelper.getAvsHandleHelper().startNearTalkRecord(rawPath, waitMicTimeOut, strInitiator);
+        }
     }
 
     private void pauseSoundAndRecordAudio() {
         AvsHandleHelper.getAvsHandleHelper().pauseSound();
-        AvsHandleHelper.getAvsHandleHelper().stopCaptureNearTalkVoiceRecord(false);
     }
 
     private void textTest() {

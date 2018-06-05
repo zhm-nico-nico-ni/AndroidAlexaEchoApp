@@ -195,7 +195,8 @@ public class AvsHandleHelper {
         return audioManager.getAudioAndSpeechState();
     }
 
-    public void stopCaptureNearTalkVoiceRecord(boolean justStopMic){
+    public boolean stopCaptureNearTalkVoiceRecord(boolean justStopMic){
+        boolean result = false;
         Log.d(TAG, "stopCaptureNearTalkVoiceRecord called " + justStopMic);
         if (myTalkVoiceRecord != null && !myTalkVoiceRecord.isInterrupted()) {
             if(justStopMic) {
@@ -206,6 +207,7 @@ public class AvsHandleHelper {
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 alexaManager.cancelAudioRequest();
             }
+            result = true;
         }
 
         if (myBtTalkVoiceRecord != null && !myBtTalkVoiceRecord.isInterrupted()) {
@@ -217,8 +219,10 @@ public class AvsHandleHelper {
                 AlexaManager alexaManager = AlexaManager.getInstance(MyApplication.getContext());
                 alexaManager.cancelAudioRequest();
             }
+            result = true;
         }
 
+        return result;
     }
 
     public void pauseSound(){

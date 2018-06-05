@@ -19,8 +19,10 @@ public class TalkDataProvider {
     }
 
     public synchronized void setEnd(long actuallyLong) {
-        this.actuallyLong = actuallyLong;
-        mIsEnd = true;
+        if(!mIsEnd) {
+            this.actuallyLong = actuallyLong;
+            mIsEnd = true;
+        }
     }
 
     public boolean isEnd() {

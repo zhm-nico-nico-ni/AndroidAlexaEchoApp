@@ -60,21 +60,38 @@ public class BtScoConnectManager extends BroadcastReceiver {
             }
         } else if(TextUtils.equals(intent.getAction(), AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)) {
             int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR);
+            Log.d(TAG, "EXTRA_SCO_AUDIO_STATE:"+state);
             if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
                 //Log.i(TAG,"AudioManager.SCO_AUDIO_STATE_CONNECTED");
-                Log.d(TAG, "SCO音频连接已建立");
-                mAudioManager.setBluetoothScoOn(true);//打开SCO
+                Log.d(TAG, "SCO音频连接已建立 " + (mGGECAudioRecorder== null? "mGGECAudioRecorderNull" : "is End:" + mGGECAudioRecorder.isEnd()));
+
                 //Log.i(TAG,"Routing:" + mAudioManager.isBluetoothScoOn());
                 //mAudioManager.setMode(AudioManager.STREAM_MUSIC);
 //                mAudioManager.setMode(AudioManager.MODE_IN_CALL);
 
-                if (mGGECAudioRecorder != null && !mGGECAudioRecorder.isEnd()) mGGECAudioRecorder.start();
-            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
+                if (mGGECAudioRecorder != null && !mGGECAudioRecorder.isEnd()) {
+                    Log.d(TAG, " now start sco!");
+                    mAudioManager.setBluetoothScoOn(true);//打开SCO
+//                    mAudioManager.startBluetoothSco();
+                    mGGECAudioRecorder.start();
+                } else {
+                    Log.w(TAG, " cancel start sco!");
+                    mAudioManager.setBluetoothScoOn(false);
+                    mAudioManager.stopBluetoothSco();
+                    mAudioManager.setMode(AudioManager.MODE_NORMAL);
+                }
+            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state || AudioManager.SCO_AUDIO_STATE_ERROR == state) {
                 int preState = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_PREVIOUS_STATE, -1);
                 Log.d(TAG, "setSpeakerphoneOn state:" + state + "    pre:" + preState);
+
+                if (mAudioManager.isBluetoothScoOn()) {
+                    mAudioManager.setBluetoothScoOn(false);
+                    mAudioManager.stopBluetoothSco();
+                }
                 mAudioManager.setMode(AudioManager.MODE_NORMAL);
-                if(AudioManager.SCO_AUDIO_STATE_CONNECTED == preState) {
+                if(AudioManager.SCO_AUDIO_STATE_CONNECTED == preState || AudioManager.SCO_AUDIO_STATE_CONNECTING == preState) {
                     if (mGGECAudioRecorder != null && !mGGECAudioRecorder.isEnd()) {
+                        Log.w(TAG, "SCO_AUDIO_STATE_DISCONNECTED, mGGECAudioRecorder.interruptAll()");
                         mGGECAudioRecorder.interruptAll();
                     }
                 }
@@ -135,8 +152,10 @@ public class BtScoConnectManager extends BroadcastReceiver {
 
     public GGECAudioRecorder getAudioRecord(){
         if(mGGECAudioRecorder == null || !mGGECAudioRecorder.isRecording()){
+            Log.d(TAG, "new GGECAudioRecorder");
             mGGECAudioRecorder = new GGECAudioRecorder();
         }
         return mGGECAudioRecorder;
     }
+
 }

@@ -77,6 +77,7 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:text="idle"
+        android:textSize="150px"
         android:layout_above="@+id/login_with_amazon"
         />
 
