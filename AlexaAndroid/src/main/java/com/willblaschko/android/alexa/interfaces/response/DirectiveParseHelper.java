@@ -1,6 +1,7 @@
 package com.willblaschko.android.alexa.interfaces.response;
 
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 
 import com.ggec.voice.toollibrary.log.Log;
 import com.willblaschko.android.alexa.data.Directive;
@@ -30,6 +31,7 @@ import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
 public class DirectiveParseHelper {
     private static String TAG = "DirectiveParseHelper";
+    public static String sLastUUID = "";
 
     public static final AvsItem parseDirective(@NonNull Directive directive, AvsResponse response)  {
         AvsItem item = null;
@@ -45,7 +47,9 @@ public class DirectiveParseHelper {
         } else if (AVSAPIConstants.SpeechSynthesizer.NAMESPACE.equals(headNameSpace)) {
             if (AVSAPIConstants.SpeechSynthesizer.Directives.Speak.NAME.equals(headName)) {
                 String cid = directive.getPayload().getUrl().substring(4);
-                item = new AvsSpeakItem(directive.getPayload().getToken(), cid, directive.getHeaderMessageId(), directive.getPayload().getFormat());
+                if(TextUtils.equals(directive.getHeaderDialogRequestId(), sLastUUID) || TextUtils.isEmpty(directive.getHeaderDialogRequestId())) {
+                    item = new AvsSpeakItem(directive.getPayload().getToken(), cid, directive.getHeaderMessageId(), directive.getPayload().getFormat());
+                }
             }
         } else if (AVSAPIConstants.Alerts.NAMESPACE.equals(headNameSpace)) {
             if (AVSAPIConstants.Alerts.Directives.SetAlert.NAME.equals(headName)) {
@@ -71,21 +75,23 @@ public class DirectiveParseHelper {
             }
         } else if(AVSAPIConstants.AudioPlayer.NAMESPACE.equals(headNameSpace)){
             if (AVSAPIConstants.AudioPlayer.Directives.Play.NAME.equals(headName)) {
-                if(directive.isPlayBehaviorReplaceAll()){
-                    response.add(0, new AvsReplaceAllItem(directive.getPayload().getToken()));
-                }
-                if(directive.isPlayBehaviorReplaceEnqueued()){
-                    response.add(new AvsReplaceEnqueuedItem(directive.getPayload().getToken()));
-                }
+                if(TextUtils.equals(directive.getHeaderDialogRequestId(), sLastUUID) || TextUtils.isEmpty(directive.getHeaderDialogRequestId())) {
+                    if (directive.isPlayBehaviorReplaceAll()) {
+                        response.add(0, new AvsReplaceAllItem(directive.getPayload().getToken()));
+                    }
+                    if (directive.isPlayBehaviorReplaceEnqueued()) {
+                        response.add(new AvsReplaceEnqueuedItem(directive.getPayload().getToken()));
+                    }
 
-                String url = directive.getPayload().getAudioItem().getStream().getUrl();
-                if (url.contains("cid:")) {
-                    item = new AvsPlayAudioItem(directive.getPayload().getToken(), url.substring(4), directive.getHeaderMessageId()
-                            , directive.getPayload().getAudioItem().getStream());
-                } else {
-                    item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url,
-                            directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(),
-                            directive.getHeaderMessageId(), directive.getPayload().getAudioItem().getStream());
+                    String url = directive.getPayload().getAudioItem().getStream().getUrl();
+                    if (url.contains("cid:")) {
+                        item = new AvsPlayAudioItem(directive.getPayload().getToken(), url.substring(4), directive.getHeaderMessageId()
+                                , directive.getPayload().getAudioItem().getStream());
+                    } else {
+                        item = new AvsPlayRemoteItem(directive.getPayload().getToken(), url,
+                                directive.getPayload().getAudioItem().getStream().getOffsetInMilliseconds(),
+                                directive.getHeaderMessageId(), directive.getPayload().getAudioItem().getStream());
+                    }
                 }
             } else if(AVSAPIConstants.AudioPlayer.Directives.Stop.NAME.equals(headName)){
                 response.continueAudio = false;

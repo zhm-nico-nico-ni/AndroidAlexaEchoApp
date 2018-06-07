@@ -488,6 +488,7 @@ public class GGECMediaManager {
         } else {
             Log.d(TAG, "sendPlaybackResumeEvent");
             event = Event.getPlaybackResumedEvent(item.getToken(), item.pausePosition);
+            LedControl.myLedCtl(LedControl.SPEAK_AND_PLAY);
         }
         AlexaManager.getInstance(MyApplication.getContext()).sendEvent(event, new ImplAsyncCallback("event111"));
     }

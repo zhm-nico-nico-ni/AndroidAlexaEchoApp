@@ -65,7 +65,7 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         onConnectingWifi();
         if (null != mWakeWordAgent) mWakeWordAgent.continueSearch();
 
-        mDeviceLinkHandler = new DeviceLinkHandler(this);
+//        mDeviceLinkHandler = new DeviceLinkHandler(this);
         IntentFilter filter = new IntentFilter(BroadCast.RECEIVE_START_WAKE_WORD_LISTENER);
         filter.addAction(BroadCast.RECEIVE_PAUSE_WAKE_WORD_LISTENER);
         LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);

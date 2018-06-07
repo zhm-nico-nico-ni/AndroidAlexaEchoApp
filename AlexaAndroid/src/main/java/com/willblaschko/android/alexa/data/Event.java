@@ -5,6 +5,7 @@ import com.willblaschko.android.alexa.data.message.Payload;
 import com.willblaschko.android.alexa.data.message.PayloadFactory;
 import com.willblaschko.android.alexa.data.message.request.audioplayer.PlaybackError;
 import com.willblaschko.android.alexa.data.message.request.speechrecognizer.Initiator;
+import com.willblaschko.android.alexa.interfaces.response.DirectiveParseHelper;
 import com.willblaschko.android.alexa.keep.AVSAPIConstants;
 
 import java.util.ArrayList;
@@ -126,11 +127,13 @@ public class Event {
     }
 
     public static String getSpeechRecognizerEvent(String profile, List<Event> events, Initiator initiator){
+        String dialogId = getUuid();
+        DirectiveParseHelper.sLastUUID = dialogId;
         Builder builder = new Builder();
         builder.setHeaderNamespace(AVSAPIConstants.SpeechRecognizer.NAMESPACE)
                 .setHeaderName(AVSAPIConstants.SpeechRecognizer.Events.Recognize.NAME)
                 .setHeaderMessageId(getUuid())
-                .setHeaderDialogRequestId(getUuid())
+                .setHeaderDialogRequestId(dialogId)
                 .setPayload(PayloadFactory
                         .createSpeechRecognizerPayload(profile, //"CLOSE_TALK", "NEAR_FIELD", "FAR_FIELD"
                                 "AUDIO_L16_RATE_16000_CHANNELS_1", initiator))
