@@ -127,7 +127,7 @@ public class BlueToothWakeWordAgent extends WakeWordAgent {
 
         BluetoothDevice mBluetoothDeviceConnected = null;
         for (BluetoothDevice bt : mBluetoothAdapter.getBondedDevices()) {
-            if (bt.getName().equals("CSR8670-Stereo Gaming Headset")) {
+            if (bt.getName().contains("GGEC IAR BT SMART SPEAKER")) {
                 mBluetoothDeviceConnected = bt; // get the selected Bluetooth device
                 Log.d(TAG, "find CSR8670");
                 break;
@@ -250,7 +250,7 @@ public class BlueToothWakeWordAgent extends WakeWordAgent {
                 //int b = a[1]<<8+a[2];
 
                 if ((eventId[1] == (byte) 0x40) && (eventId[2] == (byte) 0xF9)) { //如果传过来标志位为1，则开始语音输入
-                    Log.d(TAG, "receive 40f9");
+                    Log.w(TAG, " receive 40f9");
                     if (mCanDetectWakeWord.get()) {
                         mListener.onDetectWakeWord(null, 0, 0);
                     }

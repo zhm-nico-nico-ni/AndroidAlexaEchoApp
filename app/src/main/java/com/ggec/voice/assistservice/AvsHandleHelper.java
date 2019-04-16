@@ -233,7 +233,7 @@ public class AvsHandleHelper {
         Initiator initiator = TextUtils.isEmpty(strInitiator) ? null : new Gson().fromJson(strInitiator, Initiator.class);
         String path = !TextUtils.isEmpty(rawPath) ? rawPath :
                 MyApplication.getContext().getExternalFilesDir("near_talk").getPath() + "/" + System.currentTimeMillis();
-        if(mBtScoManager.isBlueScoConnected()){
+        if(false&&mBtScoManager.isBlueScoConnected()){
             startBtScokVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, (int) waitMicTimeOut);
         } else {
             startNearTalkVoiceRecord(path, getFileCallBack(waitMicTimeOut, "record", path), initiator, (int) waitMicTimeOut);

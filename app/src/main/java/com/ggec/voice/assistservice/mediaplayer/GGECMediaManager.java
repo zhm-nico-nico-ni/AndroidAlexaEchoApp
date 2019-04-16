@@ -89,7 +89,8 @@ public class GGECMediaManager {
     }
 
     public void clear(boolean stopCurrent) {
-        avsQueue1.clear();
+        if(stopCurrent)
+            avsQueue1.clear();
         avsQueue2.clear();
         if (stopCurrent) {
             if (mSpeechSynthesizerPlayer.isPlaying() && !(mSpeechSynthesizerPlayer.getCurrentItem() instanceof AvsAlertPlayItem)) {
@@ -622,7 +623,7 @@ public class GGECMediaManager {
 
             final AvsItem current = getItem();
 
-            Log.d(TAG, "Item type " + current.getClass().getName());
+//            Log.d(TAG, "Item type " + current.getClass().getName());
 
             if (current instanceof AvsPlayRemoteItem) {
                 //play a URL
@@ -660,7 +661,7 @@ public class GGECMediaManager {
                     tryPauseMediaAudio();
                     mSpeechSynthesizerPlayer.playItem((AvsAlertPlayItem) current);
                 }
-            } else {
+            } else if(current != null) {
                 avsQueue1.remove(current.messageID);
                 avsQueue2.remove(current.messageID);
 

@@ -99,10 +99,10 @@ public class AssistService extends Service implements IWakeWordAgentEvent, Devic
         if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)) {
             AvsHandleHelper.getAvsHandleHelper().initAudioPlayer();
 
-            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueToothWakeWordAgent(this, this);
+//            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueToothWakeWordAgent(this, this);
 //            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.BlueGeniuneWakeWordAgent(this, this);
 //            mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.CumSphinxWakeWordAgent(this, this);
-//        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
+        mWakeWordAgent = new com.ggec.voice.assistservice.wakeword.SnowboyWakeWordAgent(this, this);
         }
     }
 
